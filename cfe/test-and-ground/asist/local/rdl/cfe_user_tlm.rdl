@@ -1,0 +1,237 @@
+!This file supports the I&T Telemetry database for cFE S/C Simulator
+!       Date of last change: 31 Mar 2005
+!  INITIAL CREATION                                           SMA    31MAR05
+!  Added scx_tlm_cdh_sb_003.rdl                               SMA    31MAR05
+!  Added scx_tlm_cdh_evs_008.rdl, scx_tlm_cdh_evs_011.rdl     MOB    31MAR05
+!     and cfe_types.rdl and cfe_event_pseudo.rdl
+!  Added scx_tlm_cdh_time_005.rdl                             SMA    08APR05
+!     and scx_tlm_cdh_time_006.rdl
+!  Modified scx_tlm_cdh_evs_011 to scx_tlm_cdh_evs_001        MOB    12APR05
+!     incorrect APPID
+! Added scx_tlm_cdh_fs_002.rdl                                SMA    13APR05
+! Added scx_tlm_pse ... rdls                                  SMA    14APR05
+! Changed fs_002 to fs_007                                    MOB    14APR05
+! Added scx_tlm_cdh_sb_009.rdl and scx_tlm_pse_sb_041.rdl     SMA    18APR05
+! Changed #include "scx_tlm_cdh_fs_007.rdl" to                MOB    21APR05
+!    #include "scx_tlm_cdh_fs_002.rdl"
+! Upgraded includes to use template generated rdl.            SMA    22APR05
+! Added cfe_evs_app_data.rdl                                  SMA    28APR05
+! Renamed cfe_sb_routing_file.rdl to scx_file_sb_0255.rdl     TGC    28APR05
+!    and cfe_evs_app_data.rdl to scx_file_evs_0254.rdl
+! Added scx_file_evs_0253.rdl                                 TGC    28APR05
+! Removed non-template generated pse includes                 SMA    29APR05
+! Added sb_route_types.rdl                                    SMA    04MAY05
+! Added cpu2 and cpu3                                         SMA    12MAY05
+! Added support for CPU2 and CPU3 file pages                  SMA    19MAY05
+! Standardized file pages message ids. Add evs_types.rdl      SMA    19MAY05
+! Added telemetry includes for TIME TEST Application          SMA    02JUN05
+! Added pseudo tlm event msg pkts for ut_setupevent           TGC    20JUN05
+! Added pseudo_tlm_file_info_3839.rdl                         TGC    28JUN05
+! Added RDLs for SB Test Application                          TGC    06JUL06
+! Added MODIFY SLI ORDER=(1,2,3,4)                            SMA    19JUL05
+! Changed sb_route_types.rdl to sb_types.rdl                  SMA    25AUG05
+! Added new file rdls for SB                                  SMA    25AUG05 
+! Added es_types.rdl. Added ES Task Log rdls                  SMA    25AUG05
+! Added scx_tlm_cpu3_sb_stats_0074.rdl                        SMA    26AUG05
+! Added rdl for TBL telemetry for all cpus                    SMA    08NOV05
+! Added rdl for Table Registry Info Packet for all cpus       SMA    10NOV05
+! Added rdl for Table Registry File Packet for all cpus       SMA    14NOV05
+! Added rdl for TST TBL telemetry packets for all cpus        SMA    15NOV05
+! Renamed from user_tlm to cfe_user_tlm                       SMA    01DEC05
+! Noop es_types.rdl                                           SMA    15DEC05
+! Changed P3 to P0 in TST_SB telemetry                        SMA    03JAN06
+! Added table RDL include for CPU2                            SMA    02FEB06
+! Modified the comments for the default tables                WFM    07MAR06
+! Added file RDLs for the ER Log			      WFM    15NOV06
+! Added file RDLs for the CDS Registry & ES MemStats	      WFM    14MAY07
+! Added RDLs for the ES Query One command 		      WFM    31MAY07
+! Added file RDLs for the ES Tasks Log		 	      WFM    24SEP07
+!
+
+MODIFY UTC ABSOLUTE=TAI
+MODIFY SUTC ABSOLUTE=TAI
+MODIFY ULI ORDER=(1,2,3,4)
+MODIFY SLI ORDER=(1,2,3,4)
+
+#include "cfe_types.rdl"
+! #include "evs_types.rdl"
+! #include "sb_types.rdl"
+! #include "es_types.rdl"
+
+#include "scx_file_cpu1_evs_3840.rdl"
+#include "scx_file_cpu1_evs_3841.rdl"
+#include "scx_file_cpu1_sb_3842.rdl"
+#include "scx_file_cpu1_sb_3843.rdl"
+#include "scx_file_cpu1_sb_3844.rdl"
+#include "scx_file_cpu1_es_3845.rdl"
+#include "scx_file_cpu1_tbl_3846.rdl"
+! #include "scx_file_cpu1_tbl_3847.rdl"
+#include "scx_file_cpu1_es_3848.rdl"
+#include "scx_file_cpu1_es_3849.rdl"
+#include "scx_file_cpu1_es_3850.rdl"
+#include "scx_file_cpu2_evs_3872.rdl"
+#include "scx_file_cpu2_evs_3873.rdl"
+#include "scx_file_cpu2_sb_3874.rdl"
+#include "scx_file_cpu2_sb_3875.rdl"
+#include "scx_file_cpu2_sb_3876.rdl"
+#include "scx_file_cpu2_es_3877.rdl"
+#include "scx_file_cpu2_tbl_3878.rdl"
+! #include "scx_file_cpu2_tbl_3879.rdl"
+#include "scx_file_cpu2_es_3880.rdl"
+#include "scx_file_cpu2_es_3881.rdl"
+#include "scx_file_cpu2_es_3882.rdl"
+#include "scx_file_cpu3_evs_3904.rdl"
+#include "scx_file_cpu3_evs_3905.rdl"
+#include "scx_file_cpu3_sb_3906.rdl"
+#include "scx_file_cpu3_sb_3907.rdl"
+#include "scx_file_cpu3_sb_3908.rdl"
+#include "scx_file_cpu3_es_3909.rdl"
+#include "scx_file_cpu3_tbl_3910.rdl"
+! #include "scx_file_cpu3_tbl_3911.rdl"
+#include "scx_file_cpu3_es_3912.rdl"
+#include "scx_file_cpu3_es_3913.rdl"
+#include "scx_file_cpu3_es_3914.rdl"
+
+#include "scx_tlm_cpu1_es_hk_0000.rdl"
+#include "scx_tlm_cpu1_evs_hk_0001.rdl"
+#include "scx_tlm_cpu1_fs_hk_0002.rdl"
+#include "scx_tlm_cpu1_sb_hk_0003.rdl"
+#include "scx_tlm_cpu1_tbl_hk_0004.rdl"
+#include "scx_tlm_cpu1_time_hk_0005.rdl"
+#include "scx_tlm_cpu1_time_diag_0006.rdl"
+#include "scx_tlm_cpu1_evs_event_0008.rdl"
+#include "scx_tlm_cpu1_sb_network_0009.rdl"
+#include "scx_tlm_cpu1_sb_stats_0010.rdl"
+#include "scx_tlm_cpu1_es_app_0011.rdl"
+#include "scx_tlm_cpu1_es_memstats_0016.rdl"
+#include "scx_tlm_cpu1_tbl_reg_0012.rdl"
+#include "scx_tlm_cpu1_to_hk_0128.rdl"
+#include "scx_tlm_cpu1_ci_hk_0129.rdl"
+
+#include "scx_tlm_cpu2_es_hk_0032.rdl"
+#include "scx_tlm_cpu2_evs_hk_0033.rdl"
+#include "scx_tlm_cpu2_fs_hk_0034.rdl"
+#include "scx_tlm_cpu2_sb_hk_0035.rdl"
+#include "scx_tlm_cpu2_tbl_hk_0036.rdl"
+#include "scx_tlm_cpu2_time_hk_0037.rdl"
+#include "scx_tlm_cpu2_time_diag_0038.rdl"
+#include "scx_tlm_cpu2_evs_event_0040.rdl"
+#include "scx_tlm_cpu2_sb_network_0041.rdl"
+#include "scx_tlm_cpu2_sb_stats_0042.rdl"
+#include "scx_tlm_cpu2_es_app_0043.rdl"
+#include "scx_tlm_cpu2_tbl_reg_0044.rdl"
+#include "scx_tlm_cpu2_es_memstats_0048.rdl"
+#include "scx_tlm_cpu2_to_hk_0160.rdl"
+#include "scx_tlm_cpu2_ci_hk_0161.rdl"
+
+#include "scx_tlm_cpu3_es_hk_0064.rdl"
+#include "scx_tlm_cpu3_evs_hk_0065.rdl"
+#include "scx_tlm_cpu3_fs_hk_0066.rdl"
+#include "scx_tlm_cpu3_sb_hk_0067.rdl"
+#include "scx_tlm_cpu3_tbl_hk_0068.rdl"
+#include "scx_tlm_cpu3_time_hk_0069.rdl"
+#include "scx_tlm_cpu3_time_diag_0070.rdl"
+#include "scx_tlm_cpu3_evs_event_0072.rdl"
+#include "scx_tlm_cpu3_sb_network_0073.rdl"
+#include "scx_tlm_cpu3_sb_stats_0074.rdl"
+#include "scx_tlm_cpu3_es_app_0075.rdl"
+#include "scx_tlm_cpu3_tbl_reg_0076.rdl"
+#include "scx_tlm_cpu3_es_memstats_0080.rdl"
+#include "scx_tlm_cpu3_to_hk_0192.rdl"
+#include "scx_tlm_cpu3_ci_hk_0193.rdl"
+
+/* Test Application RDLs */
+
+#include "scx_tlm_cpu1_tst_time_add_1802.rdl"
+#include "scx_tlm_cpu1_tst_time_clkst_1801.rdl"
+#include "scx_tlm_cpu1_tst_time_comp_1804.rdl"
+#include "scx_tlm_cpu1_tst_time_hk_1792.rdl"
+#include "scx_tlm_cpu1_tst_time_lpsec_1800.rdl"
+#include "scx_tlm_cpu1_tst_time_met_1796.rdl"
+#include "scx_tlm_cpu1_tst_time_metsec_1797.rdl"
+#include "scx_tlm_cpu1_tst_time_metssub_1798.rdl"
+#include "scx_tlm_cpu1_tst_time_microsub_1806.rdl"
+#include "scx_tlm_cpu1_tst_time_st_1795.rdl"
+#include "scx_tlm_cpu1_tst_time_stcf_1799.rdl"
+#include "scx_tlm_cpu1_tst_time_submicro_1805.rdl"
+#include "scx_tlm_cpu1_tst_time_subtime_1803.rdl"
+#include "scx_tlm_cpu1_tst_time_tai_1793.rdl"
+#include "scx_tlm_cpu1_tst_time_utc_1794.rdl"
+#include "scx_tlm_cpu2_tst_time_add_1834.rdl"
+#include "scx_tlm_cpu2_tst_time_clkst_1833.rdl"
+#include "scx_tlm_cpu2_tst_time_comp_1836.rdl"
+#include "scx_tlm_cpu2_tst_time_hk_1824.rdl"
+#include "scx_tlm_cpu2_tst_time_lpsec_1832.rdl"
+#include "scx_tlm_cpu2_tst_time_met_1828.rdl"
+#include "scx_tlm_cpu2_tst_time_metsec_1829.rdl"
+#include "scx_tlm_cpu2_tst_time_metssub_1830.rdl"
+#include "scx_tlm_cpu2_tst_time_microsub_1838.rdl"
+#include "scx_tlm_cpu2_tst_time_st_1827.rdl"
+#include "scx_tlm_cpu2_tst_time_stcf_1831.rdl"
+#include "scx_tlm_cpu2_tst_time_submicro_1837.rdl"
+#include "scx_tlm_cpu2_tst_time_subtime_1835.rdl"
+#include "scx_tlm_cpu2_tst_time_tai_1825.rdl"
+#include "scx_tlm_cpu2_tst_time_utc_1826.rdl"
+#include "scx_tlm_cpu3_tst_time_add_1866.rdl"
+#include "scx_tlm_cpu3_tst_time_clkst_1865.rdl"
+#include "scx_tlm_cpu3_tst_time_comp_1868.rdl"
+#include "scx_tlm_cpu3_tst_time_hk_1856.rdl"
+#include "scx_tlm_cpu3_tst_time_lpsec_1864.rdl"
+#include "scx_tlm_cpu3_tst_time_met_1860.rdl"
+#include "scx_tlm_cpu3_tst_time_metsec_1861.rdl"
+#include "scx_tlm_cpu3_tst_time_metssub_1862.rdl"
+#include "scx_tlm_cpu3_tst_time_microsub_1870.rdl"
+#include "scx_tlm_cpu3_tst_time_st_1859.rdl"
+#include "scx_tlm_cpu3_tst_time_stcf_1863.rdl"
+#include "scx_tlm_cpu3_tst_time_submicro_1869.rdl"
+#include "scx_tlm_cpu3_tst_time_subtime_1867.rdl"
+#include "scx_tlm_cpu3_tst_time_tai_1857.rdl"
+#include "scx_tlm_cpu3_tst_time_utc_1858.rdl"
+#include "scx_tlm_cpu1_tst_sb_hk_1807.rdl"
+! #include "scx_tlm_cpu1_tst_sb_pipe3_1808.rdl"
+#include "scx_tlm_cpu1_tst_sb_pipe0_1808.rdl"
+#include "scx_tlm_cpu2_tst_sb_hk_1839.rdl"
+! #include "scx_tlm_cpu2_tst_sb_pipe3_1840.rdl"
+#include "scx_tlm_cpu2_tst_sb_pipe0_1840.rdl"
+#include "scx_tlm_cpu3_tst_sb_hk_1871.rdl"
+! #include "scx_tlm_cpu3_tst_sb_pipe3_1872.rdl"
+#include "scx_tlm_cpu3_tst_sb_pipe0_1872.rdl"
+#include "scx_tlm_cpu1_tst_tbl_hk_1809.rdl"
+#include "scx_tlm_cpu2_tst_tbl_hk_1841.rdl"
+#include "scx_tlm_cpu3_tst_tbl_hk_1873.rdl"
+#include "scx_tlm_cpu1_tst_tbl2_hk_1811.rdl"
+#include "scx_tlm_cpu2_tst_tbl2_hk_1843.rdl"
+#include "scx_tlm_cpu3_tst_tbl2_hk_1875.rdl"
+#include "scx_tlm_cpu1_tst_tbl_info_1814.rdl"
+#include "scx_tlm_cpu2_tst_tbl_info_1846.rdl"
+#include "scx_tlm_cpu3_tst_tbl_info_1878.rdl"
+#include "scx_tlm_cpu1_tst_es_hk_1815.rdl"
+#include "scx_tlm_cpu2_tst_es_hk_1847.rdl"
+#include "scx_tlm_cpu3_tst_es_hk_1879.rdl"
+
+/* Test Application Table RDLs */
+/* the includes below contain the default table packets for each cpu */
+#include "scx_table_cpu1_tst_tbl_4002p.rdl"
+#include "scx_table_cpu1_tst_es_4004.rdl"
+#include "scx_table_cpu1_tst_es_4005.rdl"
+#include "scx_table_cpu2_tst_tbl_4032p.rdl"
+#include "scx_table_cpu2_tst_es_4034.rdl"
+#include "scx_table_cpu2_tst_es_4035.rdl"
+#include "scx_table_cpu3_tst_tbl_4064p.rdl"
+#include "scx_table_cpu3_tst_es_4066.rdl"
+#include "scx_table_cpu3_tst_es_4067.rdl"
+ 
+/*  Event Message Pseudo Telemetry */
+#include  "scx_pseudo_tlm_cpu1_evs_event_3592.rdl"
+#include  "scx_pseudo_tlm_cpu2_evs_event_3624.rdl"
+#include  "scx_pseudo_tlm_cpu3_evs_event_3656.rdl"
+
+/*  File Information Pseudo Telemetry */
+#include  "pseudo_tlm_file_info_3839.rdl"
+
+/*  File Header Pseudo Telemetry */
+#include "pseudo_tlm_tbl_write_3838.rdl"
+
+/*  Telemetry Page Pseudo Telemetry */
+#include "pseudo_tlm_page_info_3837.rdl"
+

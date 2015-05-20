@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_fs_decompress.c 1.5 2010/10/25 18:26:06EDT jmdagost Exp  $
+** $Id: cfe_fs_decompress.c 1.14 2014/04/14 15:21:52GMT-05:00 lwalling Exp  $
 **
 **   File: CFE_FS_decompress.c
 **
@@ -16,11 +16,29 @@
 **
 **   Author:   A. Cudmore,    NASA/GSFC Code 582
 **             Ported from JWST, which was ported from Swift/BAT, 
-**             which was ported from the gunzip sources.
+**             which was ported from the GNU zip sources.
 **
 **   Purpose: cFE Port of the gzunzip software ported from Triana->Swift->JWST 
 **
 ** $Log: cfe_fs_decompress.c  $
+** Revision 1.14 2014/04/14 15:21:52GMT-05:00 lwalling 
+** Delete unsuccessful decompression output file
+** Revision 1.13 2012/02/08 14:09:20EST lwalling 
+** Remove unused variable
+** Revision 1.12 2012/01/13 12:11:28EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.11 2012/01/10 18:37:46EST aschoeni 
+** CFE return codes set directly; FS_gz_huft_build return code is now properly redefined
+** Revision 1.10 2011/09/02 14:59:15EDT jmdagost 
+** Added new-line characters where missing in syslog calls.
+** Revision 1.9 2011/07/13 18:24:32EDT lwalling 
+** Initialized local variables r.b, r.e, r.v.n and r.v.t
+** Revision 1.8 2011/07/13 17:42:22EDT lwalling 
+** Initialized local variable huft_index_t
+** Revision 1.7 2011/01/19 18:00:59EST lwalling 
+** Restore use of heritage error codes
+** Revision 1.6 2011/01/19 15:09:17EST lwalling 
+** Change calls from memset() to CFE_PSP_MemSet()
 ** Revision 1.5 2010/10/25 18:26:06EDT jmdagost 
 ** Added test to while-loop to make sure array index does not go negative.
 **
@@ -98,57 +116,58 @@ int32 CFE_FS_Decompress( char * srcFileName, char * dstFileName )
    srcFile_fd = OS_open( srcFileName, OS_READ_ONLY, 0 );
 
    /*
-   ** if file could not be opened, return error code 
+   ** if input file could not be opened, return cFE error code 
    */
    if ( srcFile_fd < 0 ) 
    {
-      CFE_ES_WriteToSysLog("CFE_FS_Decompress: Cannot open source file: %s",
+      CFE_ES_WriteToSysLog("CFE_FS_Decompress: Cannot open source file: %s\n",
                             srcFileName);
       CFE_FS_UnlockSharedData(__func__);
       return (CFE_FS_GZIP_OPEN_INPUT);
    }
+
    /*
    ** open output file 
    */
    dstFile_fd = OS_creat( dstFileName, OS_WRITE_ONLY);
 
    /*
-   ** if file could not be opened 
+   ** if output file could not be opened, return cFE error code
    */ 
    if ( dstFile_fd < 0 ) 
    {
-      CFE_ES_WriteToSysLog("CFE_FS_Decompress: Cannot open destination file: %s",
+      CFE_ES_WriteToSysLog("CFE_FS_Decompress: Cannot open destination file: %s\n",
                             dstFileName);
-
-      CFE_FS_UnlockSharedData(__func__);
 
       /* close the source file before bailing out */
       OS_close( srcFile_fd );
 
+      CFE_FS_UnlockSharedData(__func__);
       return (CFE_FS_GZIP_OPEN_OUTPUT);
    }
-   else 
-   {
-      memset( hufTable,  0, MAX_HUF_TABLES * sizeof(HufTable) ); 
-      memset( gz_window, 0, WSIZE_X2 ); 
-      memset( trace,     0, 3 * sizeof(uint32) ); 
-		
-      /* 
-      ** uncompress the file 
-      */
-      guzerror = FS_gz_unzip();
-		
-      /* 
-      ** close output file 
-      */
-      OS_close( dstFile_fd );
-   }
 
-   /*
-   ** close input file 
+   CFE_PSP_MemSet( hufTable,  0, MAX_HUF_TABLES * sizeof(HufTable) ); 
+   CFE_PSP_MemSet( gz_window, 0, WSIZE_X2 ); 
+   CFE_PSP_MemSet( trace,     0, 3 * sizeof(uint32) ); 
+		
+   /* 
+   ** uncompress the file 
    */
+   guzerror = FS_gz_unzip();
+
+   /* 
+   ** close input and output files 
+   */
+   OS_close( dstFile_fd );
    OS_close( srcFile_fd );
 
+   /* 
+   ** delete output file after error
+   */
+   if (guzerror != CFE_SUCCESS)
+   {
+      OS_remove(dstFileName);
+   }
 
    /*
    ** Unlock FS Shared data mutex
@@ -156,10 +175,9 @@ int32 CFE_FS_Decompress( char * srcFileName, char * dstFileName )
    CFE_FS_UnlockSharedData(__func__);
 
    /* 
-   ** return error code 
+   ** return cFE error code
    */
    return(guzerror);
-
 }
 
 
@@ -213,10 +231,9 @@ int32 FS_gz_eat_header( void )
 		if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		
 		if ( (flags & CONTINUATION) != 0 ) {
-			uint32 part;
-			part  = NEXTBYTE();
+			NEXTBYTE();
 			if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER; 
-			part |= NEXTBYTE() << 8;               /* <-- why is part used? -glw */
+			NEXTBYTE();
 			if( gGuzError != CFE_SUCCESS ) return CFE_FS_GZIP_READ_ERROR_HEADER;
 		}
 		
@@ -379,11 +396,16 @@ int32 FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, 
 	int32 y;                /* number of dummy codes added          */
 	uint32 z;               /* number of entries in current table   */
 
-	uint32 huft_index_t, huft_index_q;
+	uint32 huft_index_q;
+	uint32 huft_index_t = 0;
 	boolean   not_first_table = FALSE;
 
 	/*  Generate counts for each bit length  */
-	memset( (void*)(c), 0, sizeof(c) );
+	CFE_PSP_MemSet( (void*)(c), 0, sizeof(c) );
+	r.b=0;
+	r.e=0;
+	r.v.n=0;
+	r.v.t=0;
 	p = b;
 	i = n;
 	do 
@@ -547,7 +569,13 @@ int32 FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, 
 	}
 
 	/*  Return true (1) if we were given an incomplete table  */
-	return (int32)( y != 0 && g != 1 ) ;
+	if((y != 0 && g != 1))
+	{
+		return CFE_FS_GZIP_BAD_DATA;
+	}
+
+	return CFE_SUCCESS;
+
 }
 
 

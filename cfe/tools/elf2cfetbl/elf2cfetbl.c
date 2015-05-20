@@ -1,15 +1,13 @@
 /*
-** $Id: elf2cfetbl.c 1.5 2010/11/16 00:17:08EST dkobe Exp  $
+** $Id: elf2cfetbl.c 1.9 2014/05/22 17:46:02GMT-05:00 sstrege Exp  $
 **
-**      Copyright (c) 2004-2007, United States government as represented by the 
+**      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
 **
-**      This is governed by the NASA Open Source Agreement and may be used,
-**      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement. 
 **
 **  Purpose:  
 **    This file implements the ELF file to Standard cFE Table file format tool
@@ -19,6 +17,14 @@
 **  Modification History:
 **
 ** $Log: elf2cfetbl.c  $
+** Revision 1.9 2014/05/22 17:46:02GMT-05:00 sstrege 
+** Replaced MAX_FILENAME_SIZE with OS_MAX_FILE_NAME
+** Revision 1.8 2012/01/13 13:06:12EST acudmore 
+** Updated license text to reflect open source
+** Revision 1.7 2011/12/15 17:32:57EST lwalling 
+** Add cmd line option for processor ID as 4 ASCII characters
+** Revision 1.6 2011/12/15 17:20:59EST lwalling 
+** Add cmd line option for spacecraft ID as 4 ASCII characters
 ** Revision 1.5 2010/11/16 00:17:08EST dkobe 
 ** Added command line option '-T' to enable insertion of source file creation 
 ** time into standard cFE File Header.
@@ -48,12 +54,19 @@
 #include "ELF_Structures.h"
 #include "cfe_tbl_internal.h"
 #include "cfe_tbl_filedef.h"
+#include "osconfig.h"
 
-#define MAX_FILENAME_SIZE         (127)
 #define MAX_SECTION_HDR_NAME_LEN   (128)
 #define TBL_DEF_SYMBOL_NAME "CFE_TBL_FileDef"
 #define SUCCESS (0)
 #define FAILED  (1)
+
+/* macro to construct 32 bit value from 4 chars */
+#define U32FROM4CHARS( _C1, _C2, _C3, _C4 ) \
+ ( (uint32)(_C1) << 24 | \
+   (uint32)(_C2) << 16 | \
+   (uint32)(_C3) << 8 | \
+   (uint32)(_C4) )
 
 typedef struct
 {
@@ -92,8 +105,8 @@ int32 LocateAndReadUserObject(void);
 /**
 *    Global Variables
 */
-char SrcFilename[MAX_FILENAME_SIZE+3]={""};
-char DstFilename[MAX_FILENAME_SIZE+3]={""};
+char SrcFilename[OS_MAX_FILE_NAME+3]={""};
+char DstFilename[OS_MAX_FILE_NAME+3]={""};
 char TableName[38]={""};
 char Description[32]={""};
 char LineOfText[300]={""};
@@ -567,6 +580,20 @@ int32 ProcessCmdLineOptions(int ArgumentCount, char *Arguments[])
                 Status = FALSE;
             }
         }
+        else if ((Arguments[i][0] == '-') && (Arguments[i][1] == 'S'))
+        {
+            if (strlen(&Arguments[i][2]) == 4)
+            {
+                SpacecraftID = U32FROM4CHARS(Arguments[i][2],Arguments[i][3],
+                                             Arguments[i][4],Arguments[i][5]); 
+                ScIDSpecified = TRUE;
+            }
+            else
+            {
+                printf("Error!, Spacecraft ID of '%s' does not have exactly 4 characters.\n", &Arguments[i][2]);
+                Status = FALSE;
+            }
+        }
         else if ((Arguments[i][0] == '-') && (Arguments[i][1] == 'a'))
         {
             ApplicationID = strtoul(&Arguments[i][2], &EndPtr, 0);
@@ -591,6 +618,20 @@ int32 ProcessCmdLineOptions(int ArgumentCount, char *Arguments[])
             else
             {
                 printf("Error!, Processor ID of '%s' cannot be interpreted as an integer.\n", &Arguments[i][2]);
+                Status = FALSE;
+            }
+        }
+        else if ((Arguments[i][0] == '-') && (Arguments[i][1] == 'P'))
+        {
+            if (strlen(&Arguments[i][2]) == 4)
+            {
+                ProcessorID = U32FROM4CHARS(Arguments[i][2],Arguments[i][3],
+                                            Arguments[i][4],Arguments[i][5]); 
+                ProcIDSpecified = TRUE;
+            }
+            else
+            {
+                printf("Error!, Processor ID of '%s' does not have exactly 4 characters.\n", &Arguments[i][2]);
                 Status = FALSE;
             }
         }
@@ -793,12 +834,12 @@ int32 ProcessCmdLineOptions(int ArgumentCount, char *Arguments[])
         }
         else if (!InputFileSpecified)
         {
-            strncpy(SrcFilename, Arguments[i], MAX_FILENAME_SIZE);
+            strncpy(SrcFilename, Arguments[i], OS_MAX_FILE_NAME);
             InputFileSpecified = TRUE;
         }
         else if (!OutputFileSpecified)
         {
-            strncpy(DstFilename, Arguments[i], MAX_FILENAME_SIZE);
+            strncpy(DstFilename, Arguments[i], OS_MAX_FILE_NAME);
             OutputFileSpecified = TRUE;
         }
         else
@@ -858,8 +899,14 @@ void OutputHelpInfo(void)
     printf("   -V                    shows the version of this utility\n");
     printf("   -s#                   specifies a Spacecraft ID to be put into file header.\n");
     printf("                         # can be specified as decimal, octal (starting with a zero), or hex (starting with '0x')\n");
+    printf("   -Scccc                specifies a Spacecraft ID as a 4 byte string to be put into the table file file header.\n");
+    printf("                         cccc represents the 4 ASCII characters that will be encoded into the 32 bit Spacecaft ID field.\n");
+    printf("                              examples: -SMMS1 or -SQQ#2\n");
     printf("   -p#                   specifies a Processor ID to be put into file header.\n");
     printf("                         # can be specified as decimal, octal (starting with a zero), or hex (starting with '0x')\n");
+    printf("   -Pcccc                specifies a Processor ID as a 4 byte string to be put into the table file header.\n");
+    printf("                         cccc represents the 4 ASCII characters that will be encoded into the 32 bit Processor ID field.\n");
+    printf("                              examples: -PMMS1 or -PQQ#2\n");
     printf("   -a#                   specifies an Application ID to be put into file header.\n");
     printf("                         # can be specified as decimal, octal (starting with a zero), or hex (starting with '0x')\n");
     printf("   -n                    specifies that output should NOT byte align FS header and secondary table header to nearest\n");

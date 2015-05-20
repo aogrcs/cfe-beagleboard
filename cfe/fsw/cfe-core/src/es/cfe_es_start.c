@@ -11,8 +11,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  This file contains the Main entrypoint and startup code for the cFE core.
@@ -24,6 +22,20 @@
 **     cFE Flight Software Application Developers Guide
 **
 **  $Log: cfe_es_start.c  $
+**  Revision 1.16 2014/09/05 11:39:05GMT-05:00 acudmore 
+**  Updated CFE_ES_SetupResetVariables to correctly log the Boot Source ( bank ) and clarify ERLog and Syslog text for restarts.
+**  Revision 1.15 2014/08/22 15:50:11GMT-05:00 lwalling 
+**  Changed signed loop counters to unsigned
+**  Revision 1.14 2014/07/23 15:39:42EDT acudmore 
+**  Changed where processor reset count is incremented to make it more consistent.
+**  Removed 2nd ERLog entry when a processor reset reverts to a power on reset.
+**  Clarified ERlog entry text.
+**  Revision 1.13 2012/10/01 16:29:46GMT-05:00 aschoeni 
+**  Fixed missing parenthesis issue
+**  Revision 1.12 2012/07/16 16:18:21EDT lwalling 
+**  Added code to release stuck startup sync semaphore
+**  Revision 1.11 2012/01/13 08:50:04PST acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.10 2010/11/08 12:33:04EST acudmore 
 **  Updated logic that checks for max processor reset count during a non-cfe caused reset ( watchdog ).
 **  Revision 1.9 2010/11/05 15:54:34EDT aschoeni 
@@ -153,7 +165,7 @@ CFE_ES_ResetData_t  *CFE_ES_ResetDataPtr;
 */
 void CFE_ES_Main(uint32 StartType, uint32 StartSubtype, uint32 ModeId, uint8 *StartFilePath )
 {
-   int   i;
+   uint32 i;
    int32 ReturnCode;
 
    /*
@@ -284,7 +296,18 @@ void CFE_ES_Main(uint32 StartType, uint32 StartSubtype, uint32 ModeId, uint8 *St
    ** certain race conditions.
    */
    CFE_ES_Global.StartupFileComplete = TRUE;
-   
+
+   /*
+   ** Check for "stuck" startup sync semaphore
+   */
+   CFE_ES_LockSharedData(__func__,__LINE__);
+   if (( CFE_ES_Global.StartupSemaphoreReleased == FALSE) && ( CFE_ES_Global.AppStartupCounter <= 0 ))
+   {
+      CFE_ES_Global.AppStartupCounter = 0;
+      CFE_ES_Global.StartupSemaphoreReleased = TRUE;
+      OS_BinSemFlush(CFE_ES_Global.StartupSyncSemaphore);  
+   }
+   CFE_ES_UnlockSharedData(__func__,__LINE__);
 
    /*
    ** Startup is complete
@@ -353,11 +376,19 @@ void CFE_ES_SetupResetVariables(uint32 StartType, uint32 StartSubtype, uint32 Bo
    }
 
    /*
+   ** Record the BootSource (bank) so it will be valid in the ER log entries.
+   */
+   CFE_ES_ResetDataPtr->ResetVars.BootSource   = BootSource;
+
+   /*
    ** Determine how the system was started. The choices are:
    **   CFE_ES_POWER_ON_RESET, or CFE_ES_PROCESSOR_RESET
    ** The subtypes include:
    **   CFE_ES_POWER_CYCLE, CFE_ES_PUSH_BUTTON, CFE_ES_HW_SPECIAL_COMMAND,
    **   CFE_ES_HW_WATCHDOG, CFE_ES_RESET_COMMAND, or CFE_ES_EXCEPTION.
+   ** Some of these reset types are logged before the system is restarted.
+   **  ( CFE_ES_RESET_COMMAND, CFE_ES_EXCEPTION ) while others occur
+   **  without the knowledge of the software and must be logged here.
    */
    if ( StartType == CFE_ES_POWERON_RESET )
    {
@@ -368,10 +399,26 @@ void CFE_ES_SetupResetVariables(uint32 StartType, uint32 StartSubtype, uint32 Bo
       CFE_ES_ResetDataPtr->ResetVars.ResetType = CFE_ES_POWERON_RESET;
 
       /*
-      ** Always log the power-on reset. 
+      ** Log the power-on reset. 
       */
-      status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
-                                    "ES Startup: POWER ON Reset", NULL,0 );
+      if ( StartSubtype == CFE_ES_POWER_CYCLE )
+      {
+         CFE_ES_WriteToSysLog("POWER ON RESET due to Power Cycle (Power Cycle).\n");
+         status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
+                                    "POWER ON RESET due to Power Cycle (Power Cycle)", NULL,0 );
+      }
+      else if ( StartSubtype == CFE_ES_HW_SPECIAL_COMMAND )
+      {
+         CFE_ES_WriteToSysLog("POWER ON RESET due to HW Special Cmd (Hw Spec Cmd).\n");
+         status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
+                                    "POWER ON RESET due to HW Special Cmd (Hw Spec Cmd)", NULL,0 );
+      }
+      else
+      {
+         CFE_ES_WriteToSysLog("POWER ON RESET due to other cause (See Subtype).\n");
+         status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
+                                    "POWER ON RESET due to other cause (See Subtype)", NULL,0 );
+      }
 
       /*
       ** Initialize all reset counters.
@@ -384,38 +431,46 @@ void CFE_ES_SetupResetVariables(uint32 StartType, uint32 StartSubtype, uint32 Bo
    else if ( StartType == CFE_ES_PROCESSOR_RESET )
    {
       /*
-      ** If a Processor reset was not commanded, it must be a watchdog reset.
+      ** If a Processor reset was not commanded, it must be a watchdog or other non-commanded reset
       ** Log the reset before updating any reset variables.
       */
       if ( CFE_ES_ResetDataPtr->ResetVars.ES_CausedReset != TRUE )
       {
-
          CFE_ES_ResetDataPtr->ResetVars.ResetType = CFE_ES_PROCESSOR_RESET;
-         CFE_ES_ResetDataPtr->ResetVars.ResetSubtype = CFE_ES_HW_WATCHDOG;
+         CFE_ES_ResetDataPtr->ResetVars.ResetSubtype = StartSubtype; 
+         CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount++;
          
-         /*
-         ** Log the watchdog reset 
-         */
-         status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET, StartSubtype,
-                                       "ES Startup: PROCESSOR RESET due to Watchdog.", NULL,0 );
-
          /*
          ** When coming up from a Processor reset that was not caused by ES, check to see 
          ** if the maximum number has been exceeded
          */
-         if ( CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount >= 
+         if ( CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount > 
               CFE_ES_ResetDataPtr->ResetVars.MaxProcessorResetCount )
          {
-         
-             CFE_ES_WriteToSysLog("ES Startup: CFE ES Power On Reset Due to Max Processor Resets.\n");
+             if ( StartSubtype == CFE_ES_HW_SPECIAL_COMMAND )
+             {
+                 CFE_ES_ResetDataPtr->ResetVars.ResetSubtype = CFE_ES_HW_SPECIAL_COMMAND;
+                 CFE_ES_WriteToSysLog("POWER ON RESET due to max proc resets (HW Spec Cmd).\n");
 
-             /*
-             ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
-             ** the entry just in case something fails.
-             */
-             status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
-                                       "ES Startup: POWER ON RESET due to Maximum Processor Resets in ES Startup.", NULL,0 );
-        
+                 /*
+                 ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
+                 ** the entry just in case something fails.
+                 */
+                 status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
+                                       "POWER ON RESET due to max proc resets (HW Spec Cmd).", NULL,0 );
+             }
+             else
+             {
+                 CFE_ES_ResetDataPtr->ResetVars.ResetSubtype = CFE_ES_HW_WATCHDOG;
+                 CFE_ES_WriteToSysLog("POWER ON RESET due to max proc resets (Watchdog).\n");
+
+                 /*
+                 ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
+                 ** the entry just in case something fails.
+                 */
+                 status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, StartSubtype,
+                                       "POWER ON RESET due to max proc resets (Watchdog).", NULL,0 );
+             } 
              /*
              ** Call the BSP reset routine 
              */
@@ -427,23 +482,41 @@ void CFE_ES_SetupResetVariables(uint32 StartType, uint32 StartSubtype, uint32 Bo
              CFE_ES_WriteToSysLog("ES Startup: Error: CFE_PSP_Restart returned.\n");
            
          }
-         else
+         else /* Maximum processor reset not exceeded */
          {
-            /* 
-            ** Increment the Processor Reset Count after the check to see
-            ** if there are too many processor resets. This keeps the logic consistent with
-            ** the resets that are caused by the cFE ( command or exception )
-            */
-            CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount++;
-  
+             if ( StartSubtype == CFE_ES_HW_SPECIAL_COMMAND )
+             {
+                CFE_ES_ResetDataPtr->ResetVars.ResetSubtype = CFE_ES_HW_SPECIAL_COMMAND;
+                CFE_ES_WriteToSysLog("PROCESSOR RESET due to Hardware Special Command (HW Spec Cmd).\n");
+
+                /*
+                ** Log the watchdog reset 
+                */
+                status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET, StartSubtype,
+                                       "PROCESSOR RESET due to Hardware Special Command (Hw Spec Cmd).", NULL,0 );
+ 
+             }
+             else
+             {
+                CFE_ES_ResetDataPtr->ResetVars.ResetSubtype = CFE_ES_HW_WATCHDOG;
+                CFE_ES_WriteToSysLog("PROCESSOR RESET due to Watchdog (Watchdog).\n");
+
+                /*
+                ** Log the watchdog reset 
+                */
+                status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET, StartSubtype,
+                                       "PROCESSOR RESET due to Watchdog (Watchdog).", NULL,0 );
+
+             }
+ 
          } /* end if */
          
       }
       /*
-      ** If a processor reset was commanded, the reset has already been logged.
+      ** If a processor reset is due to a command or exception, the reset has already been logged.
       ** Update the reset variables only.
-      ** The logic for detecting maximum resets is done on the command side
-      ** on the "way down", or when the command is executed.
+      ** The logic for detecting maximum resets is done on the command/exception side
+      ** on the "way down" when the command or exception handler is executed.
       */
       else
       {
@@ -461,7 +534,6 @@ void CFE_ES_SetupResetVariables(uint32 StartType, uint32 StartSubtype, uint32 Bo
    ** Clear the commanded reset flag, in case a watchdog happens.
    */
    CFE_ES_ResetDataPtr->ResetVars.ES_CausedReset = FALSE;
-   CFE_ES_ResetDataPtr->ResetVars.BootSource   = BootSource;
       
 }
 
@@ -732,8 +804,8 @@ void  CFE_ES_CreateObjects(void)
 {
     int32     ReturnCode;
     boolean   AppSlotFound;
-    int16     i;
-    int16     j;
+    uint16    i;
+    uint16    j;
 
     CFE_ES_WriteToSysLog("ES Startup: Starting Object Creation calls.\n");
 

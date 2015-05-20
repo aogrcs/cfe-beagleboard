@@ -2,7 +2,7 @@
 **
 **  Filename: cfe_evs_msg.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASAs Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -11,7 +11,7 @@
 **      distributed and modified only pursuant to the terms of that agreement. 
 **
 *
-**  $Id: cfe_evs_msg.h 1.4 2010/10/04 15:25:19EDT jmdagost Exp  $
+**  $Id: cfe_evs_msg.h 1.6 2012/01/10 15:26:15GMT-05:00 jmdagost Exp  $
 **
 **  Title:    Event Services Message definition header file Header File
 **
@@ -23,9 +23,13 @@
 **  References:
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
-**  $Date: 2010/10/04 15:25:19EDT $
-**  $Revision: 1.4 $
+**  $Date: 2012/01/10 15:26:15GMT-05:00 $
+**  $Revision: 1.6 $
 **  $Log: cfe_evs_msg.h  $
+**  Revision 1.6 2012/01/10 15:26:15GMT-05:00 jmdagost 
+**  Changed command codes to start at zero for no-op (consistent with other apps).
+**  Revision 1.5 2011/05/23 15:42:27EDT lwalling 
+**  Change unused 32 bit MemPoolHandle to 8 bit LogEnabled and three 8 bit spares
 **  Revision 1.4 2010/10/04 15:25:19EDT jmdagost 
 **  Cleaned up copyright symbol.
 **  Revision 1.3 2009/07/31 19:52:03EDT aschoeni 
@@ -103,7 +107,7 @@
 **
 **  \sa 
 */
-#define CFE_EVS_NO_OPERATION_CC            1
+#define CFE_EVS_NO_OPERATION_CC            0
 
 /** \cfeevscmd Event Services Reset Counters
 **
@@ -140,7 +144,7 @@
 **
 **  \sa  #CFE_EVS_RESET_APP_COUNTER_CC
 */
-#define CFE_EVS_RESET_COUNTERS_CC          2
+#define CFE_EVS_RESET_COUNTERS_CC          1
 
 /** \cfeevscmd Enable Event Type
 **
@@ -189,7 +193,7 @@
 **  \sa #CFE_EVS_DISABLE_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENT_TYPE_CC, 
 **      #CFE_EVS_DISABLE_APP_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENTS_CC, #CFE_EVS_DISABLE_APP_EVENTS_CC
 */
-#define CFE_EVS_ENABLE_EVENT_TYPE_CC       3
+#define CFE_EVS_ENABLE_EVENT_TYPE_CC       2
 
 /** \cfeevscmd Disable Event Type
 **
@@ -239,7 +243,7 @@
 **  \sa #CFE_EVS_ENABLE_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENT_TYPE_CC, 
 **      #CFE_EVS_DISABLE_APP_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENTS_CC, #CFE_EVS_DISABLE_APP_EVENTS_CC
 */
-#define CFE_EVS_DISABLE_EVENT_TYPE_CC      4
+#define CFE_EVS_DISABLE_EVENT_TYPE_CC      3
 
 /** \cfeevscmd Set Event Format Mode
 **
@@ -288,7 +292,7 @@
 **      and missed behavior for the ground system
 **  \sa 
 */
-#define CFE_EVS_SET_EVENT_FORMAT_MODE_CC   5
+#define CFE_EVS_SET_EVENT_FORMAT_MODE_CC   4
 
 /** \cfeevscmd Enable Application Event Type
 **
@@ -341,7 +345,7 @@
 **  \sa #CFE_EVS_ENABLE_EVENT_TYPE_CC, #CFE_EVS_DISABLE_EVENT_TYPE_CC, 
 **      #CFE_EVS_DISABLE_APP_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENTS_CC, #CFE_EVS_DISABLE_APP_EVENTS_CC
 */
-#define CFE_EVS_ENABLE_APP_EVENT_TYPE_CC   6
+#define CFE_EVS_ENABLE_APP_EVENT_TYPE_CC   5
 
 /** \cfeevscmd Disable Application Event Type
 **
@@ -393,7 +397,7 @@
 **  \sa #CFE_EVS_ENABLE_EVENT_TYPE_CC, #CFE_EVS_DISABLE_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENT_TYPE_CC, 
 **       #CFE_EVS_ENABLE_APP_EVENTS_CC, #CFE_EVS_DISABLE_APP_EVENTS_CC
 */
-#define CFE_EVS_DISABLE_APP_EVENT_TYPE_CC  7
+#define CFE_EVS_DISABLE_APP_EVENT_TYPE_CC  6
 
 /** \cfeevscmd Enable Event Services for an Application
 **
@@ -434,7 +438,7 @@
 **  \sa #CFE_EVS_ENABLE_EVENT_TYPE_CC, #CFE_EVS_DISABLE_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENT_TYPE_CC, 
 **      #CFE_EVS_DISABLE_APP_EVENT_TYPE_CC, #CFE_EVS_DISABLE_APP_EVENTS_CC
 */
-#define CFE_EVS_ENABLE_APP_EVENTS_CC       8
+#define CFE_EVS_ENABLE_APP_EVENTS_CC       7
 
 /** \cfeevscmd Disable Event Services for an Application
 **
@@ -475,7 +479,7 @@
 **  \sa #CFE_EVS_ENABLE_EVENT_TYPE_CC, #CFE_EVS_DISABLE_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENT_TYPE_CC, 
 **      #CFE_EVS_DISABLE_APP_EVENT_TYPE_CC, #CFE_EVS_ENABLE_APP_EVENTS_CC
 */
-#define CFE_EVS_DISABLE_APP_EVENTS_CC      9
+#define CFE_EVS_DISABLE_APP_EVENTS_CC      8
 
 /** \cfeevscmd Reset Application Event Counters
 **
@@ -513,7 +517,7 @@
 **
 **  \sa #CFE_EVS_RESET_COUNTERS_CC
 */
-#define CFE_EVS_RESET_APP_COUNTER_CC       10
+#define CFE_EVS_RESET_APP_COUNTER_CC       9
 
 /** \cfeevscmd Set Application Event Filter
 **
@@ -555,7 +559,7 @@
 **
 **  \sa #CFE_EVS_RESET_FILTER_CC, #CFE_EVS_RESET_ALL_FILTERS_CC, #CFE_EVS_ADD_EVENT_FILTER_CC, #CFE_EVS_DELETE_EVENT_FILTER_CC
 */
-#define CFE_EVS_SET_FILTER_CC              11
+#define CFE_EVS_SET_FILTER_CC              10
 
 /** \cfeevscmd Enable Event Services Output Ports
 **
@@ -595,7 +599,7 @@
 **
 **  \sa #CFE_EVS_DISABLE_PORTS_CC
 */
-#define CFE_EVS_ENABLE_PORTS_CC            12
+#define CFE_EVS_ENABLE_PORTS_CC            11
 
 /** \cfeevscmd Disable Event Services Output Ports
 **
@@ -635,7 +639,7 @@
 **
 **  \sa #CFE_EVS_ENABLE_PORTS_CC
 */
-#define CFE_EVS_DISABLE_PORTS_CC           13
+#define CFE_EVS_DISABLE_PORTS_CC           12
 
 /** \cfeevscmd Reset an Event Filter for an Application
 **
@@ -671,7 +675,7 @@
 **
 **  \sa #CFE_EVS_SET_FILTER_CC, #CFE_EVS_RESET_ALL_FILTERS_CC, #CFE_EVS_ADD_EVENT_FILTER_CC, #CFE_EVS_DELETE_EVENT_FILTER_CC
 */
-#define CFE_EVS_RESET_FILTER_CC            14 
+#define CFE_EVS_RESET_FILTER_CC            13 
 
 /** \cfeevscmd Reset All Event Filters for an Application
 **
@@ -707,7 +711,7 @@
 **
 **  \sa #CFE_EVS_SET_FILTER_CC, #CFE_EVS_RESET_FILTER_CC, #CFE_EVS_ADD_EVENT_FILTER_CC, #CFE_EVS_DELETE_EVENT_FILTER_CC
 */
-#define CFE_EVS_RESET_ALL_FILTERS_CC       15
+#define CFE_EVS_RESET_ALL_FILTERS_CC       14
 
 /** \cfeevscmd Add Application Event Filter
 **
@@ -743,7 +747,7 @@
 **
 **  \sa #CFE_EVS_SET_FILTER_CC, #CFE_EVS_RESET_FILTER_CC, #CFE_EVS_RESET_ALL_FILTERS_CC, #CFE_EVS_DELETE_EVENT_FILTER_CC
 */
-#define CFE_EVS_ADD_EVENT_FILTER_CC        16
+#define CFE_EVS_ADD_EVENT_FILTER_CC        15
 
 /** \cfeevscmd Delete Application Event Filter
 **
@@ -779,7 +783,7 @@
 **
 **  \sa #CFE_EVS_SET_FILTER_CC, #CFE_EVS_RESET_FILTER_CC, #CFE_EVS_RESET_ALL_FILTERS_CC, #CFE_EVS_ADD_EVENT_FILTER_CC
 */
-#define CFE_EVS_DELETE_EVENT_FILTER_CC     17
+#define CFE_EVS_DELETE_EVENT_FILTER_CC     16
 
 /** \cfeevscmd Write Event Services Application Information to File
 **
@@ -815,7 +819,7 @@
 **
 **  \sa #CFE_EVS_FILE_WRITE_LOG_DATA_CC, #CFE_EVS_SET_LOG_MODE_CC
 */
-#define CFE_EVS_FILE_WRITE_APP_DATA_CC     18
+#define CFE_EVS_FILE_WRITE_APP_DATA_CC     17
 
 /** \cfeevscmd Write Event Log to File
 **
@@ -849,7 +853,7 @@
 **
 **  \sa #CFE_EVS_FILE_WRITE_APP_DATA_CC, #CFE_EVS_SET_LOG_MODE_CC, #CFE_EVS_CLEAR_LOG_CC
 */
-#define CFE_EVS_FILE_WRITE_LOG_DATA_CC     19
+#define CFE_EVS_FILE_WRITE_LOG_DATA_CC     18
 
 /** \cfeevscmd Set Logging Mode
 **
@@ -885,7 +889,7 @@
 **
 **  \sa #CFE_EVS_FILE_WRITE_LOG_DATA_CC, #CFE_EVS_CLEAR_LOG_CC
 */
-#define CFE_EVS_SET_LOG_MODE_CC            20
+#define CFE_EVS_SET_LOG_MODE_CC            19
 
 /** \cfeevscmd Clear Event Log
 **
@@ -920,7 +924,7 @@
 **
 **  \sa #CFE_EVS_FILE_WRITE_LOG_DATA_CC, #CFE_EVS_SET_LOG_MODE_CC
 */
-#define CFE_EVS_CLEAR_LOG_CC               21
+#define CFE_EVS_CLEAR_LOG_CC               20
 /** \} */
 
 
@@ -1098,8 +1102,15 @@ typedef struct {
    uint16                LogOverflowCounter;                /**< \cfetlmmnemonic \EVS_LOGOVERFLOWC
                                                                  \brief Local event log overflow counter */
    
-   uint32                MemPoolHandle;                     /**< \cfetlmmnemonic \EVS_MEMPOOLHDL
-                                                                 \brief Handle to EVS's internal memory pool */
+   uint8                 LogEnabled;                        /**< \cfetlmmnemonic \EVS_LOGENABLED
+                                                                 \brief Current event log enable/disable state */
+   uint8                 Spare1;                            /**< \cfetlmmnemonic \EVS_HK_SPARE1
+                                                                 \brief Padding for 32 bit boundary */
+   uint8                 Spare2;                            /**< \cfetlmmnemonic \EVS_HK_SPARE2
+                                                                 \brief Padding for 32 bit boundary */
+   uint8                 Spare3;                            /**< \cfetlmmnemonic \EVS_HK_SPARE3
+                                                                 \brief Padding for 32 bit boundary */
+   
    CFE_EVS_AppTlmData_t  AppData[CFE_ES_MAX_APPLICATIONS];  /**< \cfetlmmnemonic \EVS_APP
                                                                  \brief Array of registered application table data */
 

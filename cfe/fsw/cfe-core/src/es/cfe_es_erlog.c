@@ -9,7 +9,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
 **
 **  Purpose:  
 **    This file implements the cFE Executive Services Exception and Reset Log functions.
@@ -23,6 +22,8 @@
 **  Modification History:
 **
 ** $Log: cfe_es_erlog.c  $
+** Revision 1.3 2012/01/13 11:50:02GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.2 2009/06/10 09:08:56EDT acudmore 
 ** Converted OS_Mem* and OS_BSP* API to CFE_PSP_* API
 ** Revision 1.1 2008/04/17 08:05:05EDT ruperera 

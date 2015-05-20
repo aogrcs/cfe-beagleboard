@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_task_cmds.h 1.3 2010/10/25 15:00:34EDT jmdagost Exp  $
+** $Id: cfe_tbl_task_cmds.h 1.4 2012/01/13 12:17:40GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,8 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_task_cmds.h  $
+** Revision 1.4 2012/01/13 12:17:40GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.3 2010/10/25 15:00:34EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 15:18:55EDT jmdagost 

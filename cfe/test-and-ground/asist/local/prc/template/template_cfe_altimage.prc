@@ -23,33 +23,30 @@ PROC $sc_$cpu_cfe_altimage
 ;	      conditions that are not contained in the "delivered" cFE Core fsw.
 ;
 ;  Requirements Tested
-;  	Based on Core Flight Executive Software Requirements 
-;
-;	cES1517:	Upon Processor Reset, the cFE shall check and mount the
-;			volatile file system.
-;	cES1517.1:	If the volatile file system check fails, the cFE shall
-;			format the volatile file system and create a system log
-;			entry.
-;	cES1702:	The cFE shall detect all unmasked CPU exceptions.
-;	cES1702.3:	If the CPU exception was caused by the Operating System
-;			or the cFE Core then the cFE shall initiate a Processor
-;			Reset of the cFE.
-;	cES1703:	The cFE shall detect all unmasked processor Floating
-;			Point Exceptions.
-;	cES1702.3:	If the Floating Point exception was caused by the OS or
-;			cFE Core then the cFE shall initiate a Processor Reset 
-;			of the cFE.
-;	cTIME2502:	Upon a Processor Reset the cFE shall verify the Critical
-;			Data Store used to store time values.
-;	cTIME2502.1:	If the critical data store is not valid, all of the time
-;			elements shall be initialized in the same fashion as
-;			following a power-on reset.
+;    cES1517	Upon Processor Reset, the cFE shall check and mount the volatile
+;		file system.
+;    cES1517.1	If the volatile file system check fails, the cFE shall format
+;		the volatile file system and create a system log entry.
+;    cES1702	The cFE shall detect all unmasked CPU exceptions.
+;    cES1702.3	If the CPU exception was caused by the Operating System or the
+;		cFE Core then the cFE shall initiate a <PLATFORM_DEFINED>
+;		response.
+;    cES1703	The cFE shall detect all unmasked processor Floating Point
+;		Exceptions.
+;    cES1702.3	If the Floating Point exception was caused by the OS or cFE Core
+;		then the cFE shall initiate a <PLATFORM_DEFINED> response.
+;    cTIME2502	Upon a Processor Reset the cFE shall verify the Critical Data
+;		Store used to store time values.
+;   cTIME2502.1	If the critical data store is not valid, all of the timei
+;		elements shall be initialized in the same fashion as following a
+;		power-on reset.
 ;
 ;  Assumptions and Constraints
 ;
 ;  Change History
-;	Date		Name			Description
+;	Date		Name		Description
 ;	09/04/07	W. Moleski	Initial development.
+;	02/08/12	W. Moleski	Replaced ut_setupevt with ut_setupevents
 ;
 ;  Arguments
 ;	None 
@@ -58,7 +55,7 @@ PROC $sc_$cpu_cfe_altimage
 ;	Name					Description
 ;  	ut_pfindicate		Directive to print the pass fail status
 ;				of a particular requirement number.
-;  	ut_setupevt		Directive to look for a particular event
+;  	ut_setupevents		Directive to look for a particular event
 ;				and increment a value in the CVT to
 ;				indicate receipt.
 ;  	ut_setrequirements	Directive to status cfe requirements.
@@ -67,6 +64,8 @@ PROC $sc_$cpu_cfe_altimage
 ;
 ;  Expected Test Results and Analysis
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
 #include "cfe_mission_cfg.h"
@@ -75,6 +74,8 @@ PROC $sc_$cpu_cfe_altimage
 #include "cfe_es_resetTypes.h"
 #include "cfe_evs_events.h"
 #include "cfe_time_events.h"
+
+%liv (log_procedure) = logging
 
 ;**********************************************************************
 ; Setup requirements checking
@@ -125,12 +126,28 @@ wait 75
 cfe_startup $CPU
 wait 5
 
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+local metSecsDef = $SC_$CPU_TIME_METSECS
+local metSubSecsDef = $SC_$CPU_TIME_METSUBSECS
+local stcfSecsDef = $SC_$CPU_TIME_STCFSECS
+local stcfSubSecsDef = $SC_$CPU_TIME_STCFSUBSECS
+local leapSecsDef = $SC_$CPU_TIME_LEAPSECS
+local clkSigDef = $SC_$CPU_TIME_FLAGPRI
+
+write "Time variables after Power-On:"
+write "    MET Secs   = ", metSecsDef
+write "    MET SSecs  = ", metSubSecsDef
+write "    STCF Secs  = ", stcfSecsDef
+write "    STCF SSecs = ", stcfSubSecsDef 
+write "    LeapSecs   = ", leapSecsDef 
+write "    Clock Sig  = ", clkSigDef 
+
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  wait 5
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -153,13 +170,13 @@ wait 5
 write ";*********************************************************************"
 write "; Step 2.2: Send a command to adjust the STCF time."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_TIME", CFE_TIME_1HZ_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_TIME", CFE_TIME_1HZ_EID, "INFO", 1
 
 /$SC_$CPU_TIME_ADD1HZSTCF SECONDS=10 SUBSECS=5
 wait 10
 
 ;; Look for expected event
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_TIME_1HZ_EID, " not received."
@@ -188,7 +205,7 @@ write "    Clock Sig  = ", clkSigOld
 write ";*********************************************************************"
 write "; Step 2.4: Send the ES_NOOP Command to initiate an exception."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_NOOP_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_NOOP_INF_EID, "INFO", 1
 
 /$SC_$CPU_ES_NOOP
 wait 10
@@ -250,9 +267,17 @@ write "; Step 4.0: Time Element Initialization Test"
 write ";***********************************************************************"
 write "; Step 4.1: Verify that the time elements are set to the default values."
 write ";*********************************************************************"
-;; Check if the saved Time variables = the defaults
-
-ut_setrequirements TIME25021, "A"
+;; Check if the saved Time variables <= previous values 
+;; NOTE: The metSubSecs will not be equal. Every other one should be
+if ((metSecs <= metSecsOld) AND ;;
+    (stcfSecs <= stcfSecsOld) AND (stcfSubSecs <= stcfSubSecsOld) AND ;;
+    (leapSecs <= leapSecsOld) AND (clkSig <= clkSigOld)) then
+  write "<*> Passed (2502.1) - Time variable set to defaults as expected."
+  ut_setrequirements TIME25021, "P"
+else
+  write "<!> Failed (2502.1) - Time variables not set correctly."
+  ut_setrequirements TIME25021, "F"
+endif
 
 write "**** Requirements Status Reporting"
 

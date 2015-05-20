@@ -18,53 +18,63 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb_priv.h  $
-** Revision 1.16 2010/11/08 14:55:21EST aschoeni 
+** Revision 1.21 2014/04/24 09:57:06GMT-05:00 rmcgraw 
+** DCR19487:1 - Remove size argument in CFE_SB_GetBufferFromCaller
+** Revision 1.20 2012/01/13 12:15:13EST acudmore
+** Changed license text to reflect open source
+** Revision 1.19 2011/12/20 10:26:54EST rmcgraw
+** DCR15187:1 Removed error return code CFE_SB_MSGCNT_ERR
+** Revision 1.18 2011/12/07 19:19:48EST aschoeni
+** Removed returns for TIME and SB for cleaning up apps
+** Revision 1.17 2011/04/28 10:10:15EDT rmcgraw
+** DCR14592:1 Fix for the SB Send semaphore problem
+** Revision 1.16 2010/11/08 14:55:21EST aschoeni
 ** Moved CFE_SB_DEFAULT_MSG_LIMIT from cfe_sb_priv to cfe_platform_cfg
-** Revision 1.15 2010/11/04 16:41:51EDT aschoeni 
+** Revision 1.15 2010/11/04 16:41:51EDT aschoeni
 ** Added optional sender information storage
-** Revision 1.14 2010/11/04 14:43:59EDT jmdagost 
+** Revision 1.14 2010/11/04 14:43:59EDT jmdagost
 ** Added cfe.h to include list.
-** Revision 1.13 2010/11/04 14:24:13EDT aschoeni 
+** Revision 1.13 2010/11/04 14:24:13EDT aschoeni
 ** Optimized usage of locking
-** Revision 1.12 2009/07/29 19:22:41EDT aschoeni 
+** Revision 1.12 2009/07/29 19:22:41EDT aschoeni
 ** Updated for ZeroCopyHandle_t
-** Revision 1.11 2009/07/24 18:26:22EDT aschoeni 
+** Revision 1.11 2009/07/24 18:26:22EDT aschoeni
 ** Added Zero Copy Mode
-** Revision 1.10 2009/07/20 14:10:24EDT aschoeni 
+** Revision 1.10 2009/07/20 14:10:24EDT aschoeni
 ** Made GetAppTskName reentrant
-** Revision 1.9 2009/07/17 19:42:30EDT aschoeni 
+** Revision 1.9 2009/07/17 19:42:30EDT aschoeni
 ** Added PassMsg API to sb to support sequence count preservation
-** Revision 1.8 2009/07/17 18:01:30EDT aschoeni 
+** Revision 1.8 2009/07/17 18:01:30EDT aschoeni
 ** Updated MsgMap and associated variables to be CFE_SB_MsgId_t
-** Revision 1.7 2009/06/26 17:02:05EDT aschoeni 
+** Revision 1.7 2009/06/26 17:02:05EDT aschoeni
 ** Updated SB to use __func__ instead of __FILE__ for lock and unlock errors
-** Revision 1.6 2009/05/06 09:34:35EDT rmcgraw 
+** Revision 1.6 2009/05/06 09:34:35EDT rmcgraw
 ** DCR5801:12 Removed unused function prototype GetRoutingPtr
-** Revision 1.5 2009/02/11 14:23:04EST rmcgraw 
+** Revision 1.5 2009/02/11 14:23:04EST rmcgraw
 ** DCR6269:1 Removed 'Buf' in mem pool names.
-** Revision 1.4 2009/02/06 11:29:06EST rmcgraw 
+** Revision 1.4 2009/02/06 11:29:06EST rmcgraw
 ** DCR5801:2 General Cleanup
-** Revision 1.3 2009/02/03 11:07:00EST rmcgraw 
+** Revision 1.3 2009/02/03 11:07:00EST rmcgraw
 ** DCR5801:2 Changed destination desciptors from array based to linked list
-** Revision 1.2 2009/01/30 10:37:57EST rmcgraw 
-** DCR5801:1 Removed function prototype CFE_SB_GetNumberOfSubscribers and added 
+** Revision 1.2 2009/01/30 10:37:57EST rmcgraw
+** DCR5801:1 Removed function prototype CFE_SB_GetNumberOfSubscribers and added
 ** destinations to CFE_SB_RouteEntry_t
-** Revision 1.1 2008/04/17 08:05:32EDT ruperera 
+** Revision 1.1 2008/04/17 08:05:32EDT ruperera
 ** Initial revision
 ** Member added to cfe project on tlserver3
-** Revision 1.63 2007/09/13 09:36:44EDT rjmcgraw 
+** Revision 1.63 2007/09/13 09:36:44EDT rjmcgraw
 ** DCR4861 New prototype for RequestToSendEvent, new array in sb_t
-** Revision 1.62 2007/09/04 16:22:01EDT rjmcgraw 
+** Revision 1.62 2007/09/04 16:22:01EDT rjmcgraw
 ** Renamed #define to CFE_SB_MAX_CFG_FILE_EVENTS_TO_FILTER
-** Revision 1.61 2007/07/12 16:48:28EDT rjmcgraw 
+** Revision 1.61 2007/07/12 16:48:28EDT rjmcgraw
 ** DCR4680:1 Added AppId to cfe_sb_t struct, removed sb event log related items
-** Revision 1.60 2007/07/06 15:59:24EDT rjmcgraw 
+** Revision 1.60 2007/07/06 15:59:24EDT rjmcgraw
 ** DCR469:1 Added member 'Sender' to buffer descriptor struct
-** Revision 1.59 2007/05/03 11:44:07EDT rjmcgraw 
+** Revision 1.59 2007/05/03 11:44:07EDT rjmcgraw
 ** Added prototype for CFE_SB_CleanUpApp
-** Revision 1.58 2007/05/01 09:43:35EDT rjmcgraw 
+** Revision 1.58 2007/05/01 09:43:35EDT rjmcgraw
 ** DCR3052:7 Removed function proto for SendNetworkInfo
-** Revision 1.57 2007/04/27 14:55:19EDT rjmcgraw 
+** Revision 1.57 2007/04/27 14:55:19EDT rjmcgraw
 ** DCR2987:4 Standardize app init error code
 **
 ******************************************************************************/
@@ -133,7 +143,6 @@
 #define CFE_SB_PIPE_OVERFLOW            (-1)
 #define CFE_SB_PIPE_WR_ERR              (-2)
 #define CFE_SB_USECNT_ERR               (-3)
-#define CFE_SB_MSGCNT_ERR               (-4)
 #define CFE_SB_FILE_IO_ERR              (-5)
 
 /* bit map for stopping recursive event problem */
@@ -154,14 +163,14 @@
 **     This structure defines a BUFFER DESCRIPTOR used to specify the MsgId
 **     and address of each packet buffer.
 **
-**     Note: Changing the size of this structure may require the memory pool 
+**     Note: Changing the size of this structure may require the memory pool
 **     block sizes to change.
 */
 
 typedef struct {
      CFE_SB_MsgId_t    MsgId;
      uint16            UseCount;
-     uint32            Size;     
+     uint32            Size;
      void              *Buffer;
      CFE_SB_SenderId_t Sender;
 } CFE_SB_BufferD_t;
@@ -174,7 +183,7 @@ typedef struct {
 **     This structure defines a DESTINATION DESCRIPTOR used to specify
 **     each destination pipe for a message.
 **
-**     Note: Changing the size of this structure may require the memory pool 
+**     Note: Changing the size of this structure may require the memory pool
 **     block sizes to change.
 */
 
@@ -187,7 +196,7 @@ typedef struct {
      uint8           Scope;
      uint8           Spare[3];
      void            *Prev;
-     void            *Next;     
+     void            *Next;
 } CFE_SB_DestinationD_t;
 
 
@@ -195,16 +204,16 @@ typedef struct {
 **  Typedef:  CFE_SB_ZeroCopyD_t
 **
 **  Purpose:
-**     This structure defines a ZERO COPY BUFFER DESCRIPTOR used to specify 
+**     This structure defines a ZERO COPY BUFFER DESCRIPTOR used to specify
 **     the buffer provided to a requestor.
 **
-**     Note: Changing the size of this structure may require the memory pool 
+**     Note: Changing the size of this structure may require the memory pool
 **     block sizes to change.
 */
 
 typedef struct {
      uint32            AppID;
-     uint32            Size;     
+     uint32            Size;
      void              *Buffer;
      void              *Next;
      void              *Prev;
@@ -292,6 +301,31 @@ typedef struct {
 }cfe_sb_t;
 
 
+/******************************************************************************
+**  Typedef:  CFE_SB_SendErrEventBuf_t
+**
+**  Purpose:
+**     This structure is used to store event information during a send.
+*/
+typedef struct{
+  uint32            EventId;
+  int32             ErrStat;
+  CFE_SB_PipeId_t   PipeId;
+}CFE_SB_SendErrEventBuf_t;
+
+
+/******************************************************************************
+**  Typedef:  CFE_SB_EventBuf_t
+**
+**  Purpose:
+**     This structure is used to store event information during a send.
+*/
+typedef struct{
+  uint32    EvtsToSnd;
+  CFE_SB_SendErrEventBuf_t  EvtBuf[CFE_SB_MAX_DEST_PER_PKT];
+}CFE_SB_EventBuf_t;
+
+
 /*
 ** Software Bus Function Prototypes
 */
@@ -326,7 +360,7 @@ void   CFE_SB_EnableRoute(CFE_SB_MsgPtr_t MsgPtr);
 void   CFE_SB_DisableRoute(CFE_SB_MsgPtr_t MsgPtr);
 char   *CFE_SB_GetAppTskName(uint32 TaskId, char* FullName);
 CFE_SB_BufferD_t *CFE_SB_GetBufferFromPool(CFE_SB_MsgId_t MsgId, uint16 size);
-CFE_SB_BufferD_t *CFE_SB_GetBufferFromCaller(CFE_SB_MsgId_t MsgId, uint16 size, void *Address);
+CFE_SB_BufferD_t *CFE_SB_GetBufferFromCaller(CFE_SB_MsgId_t MsgId, void *Address);
 CFE_SB_PipeD_t   *CFE_SB_GetPipePtr(CFE_SB_PipeId_t PipeId);
 CFE_SB_PipeId_t  CFE_SB_GetAvailPipeIdx(void);
 CFE_SB_DestinationD_t *CFE_SB_GetDestPtr (CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId);
@@ -338,26 +372,20 @@ int32 CFE_SB_SubscribeFull(CFE_SB_MsgId_t   MsgId,
                            uint16           MsgLim,
                            uint8            Scope);
 
-int32 CFE_SB_UnsubscribeWithAppId(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId, 
+int32 CFE_SB_UnsubscribeWithAppId(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId,
                                    uint32 AppId);
 
-int32 CFE_SB_UnsubscribeFull(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId, 
+int32 CFE_SB_UnsubscribeFull(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId,
                               uint8 Scope, uint32 AppId);
 int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t   *MsgPtr, uint32 TlmCntIncrements, uint32 CopyMode);
-
 int32 CFE_SB_SendRtgInfo(char *Filename);
 int32 CFE_SB_SendPipeInfo(char *Filename);
 int32 CFE_SB_SendMapInfo(char *Filename);
-
 int32 CFE_SB_ZeroCopyReleaseDesc(CFE_SB_Msg_t *Ptr2Release, CFE_SB_ZeroCopyHandle_t BufferHandle);
 int32 CFE_SB_ZeroCopyReleaseAppId(uint32         AppId);
-
 int32 CFE_SB_DecrBufUseCnt(CFE_SB_BufferD_t *bd);
-int32 CFE_SB_DecrMsgLimCnt(CFE_SB_DestinationD_t *dest);
-
 int32 CFE_SB_ValidateMsgId(CFE_SB_MsgId_t MsgId);
 int32 CFE_SB_ValidatePipeId(CFE_SB_PipeId_t PipeId);
-
 int32 CFE_SB_GetPktType(CFE_SB_MsgId_t MsgId);
 void CFE_SB_ProcessSendRtgInfoCmd(void);
 void CFE_SB_ProcessSendPipeInfoCmd(void);
@@ -372,7 +400,7 @@ CFE_SB_DestinationD_t *CFE_SB_GetDestinationBlk(void);
 int32 CFE_SB_PutDestinationBlk(CFE_SB_DestinationD_t *Dest);
 int32 CFE_SB_AddDest(uint16 RtgTblIdx, CFE_SB_DestinationD_t *Dest);
 int32 CFE_SB_RemoveDest(uint16 RtgTblIdx, CFE_SB_DestinationD_t *Dest);
-int32 CFE_SB_CleanUpApp(uint32 AppId);
+void CFE_SB_CleanUpApp(uint32 AppId);
 
 #endif /* _cfe_sb_priv_ */
 /*****************************************************************************/

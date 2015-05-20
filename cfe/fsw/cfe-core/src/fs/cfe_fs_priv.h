@@ -18,6 +18,8 @@
 ** Author:  A. Cudmore/NASA GSFC 
 **
 ** $Log: cfe_fs_priv.h  $
+** Revision 1.4 2012/01/13 12:11:29GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.3 2010/10/04 17:07:14EDT jmdagost 
 ** Cleaned up copyright symbol.
 ** Revision 1.2 2008/07/08 15:40:41EDT apcudmore 

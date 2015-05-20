@@ -10,22 +10,29 @@
 !
 !       Change History:
 !
-!  1  APR05  MOB          ; Initial release 
-!  11 APR05  MOB          ; Modified SC_TAI time to include SUB_SIZE =2 (WAS 4)
-!  18 JUN09  WFM          ; Added the FM_FileName and FM_AppName types
-!  22 APR10  WFM          ; Removed the FM_FileName and FM_AppName types since
-!			  ; a cfs_types.rdl file was created to contain them
-!  5  OCT10  WFM          ; Removed CORRELATED from the SC_TAI_W_LEAP type and
-!			  ; changed hard-coded app name size to #define in
-!			  ; EVS_PacketID and EVS_APP_Data_Type
-!
-!=============================================================
+!  01APR05  MOB           : Initial release 
+!  11APR05  MOB           : Modified SC_TAI time to include SUB_SIZE =2 (WAS 4)
+!  18JUN09  WFM           : Added the FM_FileName and FM_AppName types
+!  22APR10  WFM           : Removed the FM_FileName and FM_AppName types since
+!			  : a cfs_types.rdl file was created to contain them
+!  05OCT10  WFM           : Removed CORRELATED from the SC_TAI_W_LEAP type and
+!			  : changed hard-coded app name size to #define in
+!			  : EVS_PacketID and EVS_APP_Data_Type
+!  27AUG14  WFM		  : Added TBL_NAME_LEN_SIZE and TBL_NAME_LEN #defines
+!===============================================================================
 
 #include "osconfig.h"
 #include "cfe_platform_cfg.h"
 #include "cfe_mission_cfg.h"
 
 #define CDS_NAME_LEN (OS_MAX_API_NAME + CFE_ES_CDS_MAX_NAME_LENGTH + 2)
+
+! The defines below determine the size of the Table Name field used for many
+! rdls. This size is used by the cFE fsw and duplicated here for use by the
+! ASIST database. The fsw defines these in cfe_tbl.h. Please refer to that
+! file for further comments.
+#define TBL_NAME_LEN_SIZE (OS_MAX_API_NAME + CFE_TBL_MAX_NAME_LENGTH + 2)
+#define TBL_NAME_LEN (((TBL_NAME_LEN_SIZE + 3)/4)*4)
 
 TYPES
    ! To be used for packet secondary header times

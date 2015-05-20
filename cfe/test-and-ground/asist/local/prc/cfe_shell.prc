@@ -16,14 +16,11 @@ PROC cfe_shell(which)
       which="CPU1"
    endif
    if which="CPU1" then
-      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU1_SHELL_MESSAGE ""/SCX_CPU1_ES_SHELL CMDSTRING=""'"
-;;;      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU1_SHELL_MESSAGE ""/SCX_" & which & "_ES_SHELL CMDSTRING=""'"
+      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU1_SHELL_MESSAGE ""/SCX_CPU1_ES_SHELL OUTPUTFILENAME=\""\"" CMDSTRING=""'"
    elseif which="CPU2" then
-      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU2_SHELL_MESSAGE ""/SCX_CPU2_ES_SHELL CMDSTRING=""'"
-;;;      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU2_SHELL_MESSAGE ""/SCX_" & which & "_ES_SHELL CMDSTRING=""'"
+      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU2_SHELL_MESSAGE ""/SCX_CPU2_ES_SHELL OUTPUTFILENAME=\""\"" CMDSTRING=""'"
    elseif which="CPU3" then
-      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU3_SHELL_MESSAGE ""/SCX_CPU3_ES_SHELL CMDSTRING=""'"
-;;;      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU3_SHELL_MESSAGE ""/SCX_" & which & "_ES_SHELL CMDSTRING=""'"
+      native "gnome-terminal -t 'CFE Shell' -e 'ashell CPU3_SHELL_MESSAGE ""/SCX_CPU3_ES_SHELL OUTPUTFILENAME=\""\"" CMDSTRING=""'"
    endif
 
 ENDPROC

@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_api.c 1.18 2010/11/24 06:53:39EST wmoleski Exp  $
+** $Id: cfe_tbl_api.c 1.21 2012/04/18 14:38:20GMT-05:00 lwalling Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,12 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_api.c  $
+** Revision 1.21 2012/04/18 14:38:20GMT-05:00 lwalling 
+** Test result from CFE_TBL_GetWorkingBuffer() to avoid null pointer
+** Revision 1.20 2012/01/13 12:17:39EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.19 2012/01/06 14:48:07EST lwalling 
+** Modify table load status before updating CDS
 ** Revision 1.18 2010/11/24 06:53:39EST wmoleski 
 ** Added fix to allow Critical Tables to be restored after a Processor Reset
 ** Revision 1.17 2010/11/03 15:03:50EDT jmdagost 
@@ -417,16 +423,35 @@ int32 CFE_TBL_Register( CFE_TBL_Handle_t *TblHandlePtr,
                 
                         if (Status == CFE_ES_CDS_ALREADY_EXISTS)
                         {
-                            CFE_TBL_GetWorkingBuffer(&WorkingBufferPtr, RegRecPtr, TRUE);
-                            Status = CFE_ES_RestoreFromCDS(WorkingBufferPtr->BufferPtr, RegRecPtr->CDSHandle);
-                        
+                            Status = CFE_TBL_GetWorkingBuffer(&WorkingBufferPtr, RegRecPtr, TRUE);
+
                             if (Status != CFE_SUCCESS)
                             {
-                                /* If an error occurred while trying to get the previous contents, */
-                                /* Log the error in the System Log and pretend like we created a new CDS */
+                                /* Unable to get a working buffer - this error is not really */
+                                /* possible at this point during table registration.  But we */
+                                /* do need to handle the error case because if the function */
+                                /* call did fail, WorkingBufferPtr would be a NULL pointer. */
                                 CFE_ES_GetAppName(AppName, ThisAppId, OS_MAX_API_NAME);
-                                CFE_ES_WriteToSysLog("CFE_TBL:Register-Failed to recover '%s.%s' from CDS (ErrCode=0x%08X)\n",
+                                CFE_ES_WriteToSysLog("CFE_TBL:Register-Failed to get work buffer for '%s.%s' (ErrCode=0x%08X)\n",
                                                      AppName, Name, Status);
+                            }
+                            else
+                            {
+                                /* CDS exists for this table - try to restore the data */
+                                Status = CFE_ES_RestoreFromCDS(WorkingBufferPtr->BufferPtr, RegRecPtr->CDSHandle);
+                        
+                                if (Status != CFE_SUCCESS)
+                                {
+                                    CFE_ES_GetAppName(AppName, ThisAppId, OS_MAX_API_NAME);
+                                    CFE_ES_WriteToSysLog("CFE_TBL:Register-Failed to recover '%s.%s' from CDS (ErrCode=0x%08X)\n",
+                                                     AppName, Name, Status);
+                                }
+                            }
+
+                            if (Status != CFE_SUCCESS)
+                            {
+                                /* Treat a restore from existing CDS error the same as */
+                                /* after a power-on reset (CDS was created but is empty) */
                                 Status = CFE_SUCCESS;     
                             }
                             else
@@ -876,6 +901,8 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                             strncpy(RegRecPtr->LastFileLoaded,
                                     WorkingBufferPtr->DataSource,
                                     OS_MAX_PATH_LEN);
+
+                            CFE_TBL_NotifyTblUsersOfUpdate(RegRecPtr);
                                     
                             /* If the table is a critical table, update the appropriate CDS with the new data */
                             if (RegRecPtr->CriticalTable == TRUE)
@@ -883,7 +910,6 @@ int32 CFE_TBL_Load( CFE_TBL_Handle_t TblHandle,
                                 CFE_TBL_UpdateCriticalTblCDS(RegRecPtr);
                             }
 
-                            CFE_TBL_NotifyTblUsersOfUpdate(RegRecPtr);
                             Status = CFE_SUCCESS;
                         }
 

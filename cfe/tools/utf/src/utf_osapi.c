@@ -1,6 +1,6 @@
 /*
 ** File: utf_osapi.c
-**  $Id: utf_osapi.c 1.7 2010/10/25 15:06:46EDT jmdagost Exp  $
+**  $Id: utf_osapi.c 1.10 2012/02/28 10:32:59GMT-05:00 wmoleski Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,9 +18,15 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:46EDT $
-** $Revision: 1.7 $
+** $Date: 2012/02/28 10:32:59GMT-05:00 $
+** $Revision: 1.10 $
 ** $Log: utf_osapi.c  $
+** Revision 1.10 2012/02/28 10:32:59GMT-05:00 wmoleski 
+** Added function hooks and Return Code handling and updated the examples to test these changes.
+** Revision 1.9 2012/01/13 12:52:01EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.8 2010/11/24 17:13:30EST jmdagost 
+** Updated argument list for OS_InitAttachHandler()
 ** Revision 1.7 2010/10/25 15:06:46EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.6 2010/10/04 14:57:48EDT jmdagost 
@@ -93,9 +99,11 @@ typedef struct
     int32 (*OS_QueuePut)(uint32, void *, uint32, uint32);
     int32 (*OS_TaskDelete)(uint32);
     int32 (*OS_BinSemGive) (uint32);
+    int32 (*OS_BinSemCreate) (uint32, const char *, uint32, uint32);
 } UTF_OSAPI_HookTable_t;
 
 UTF_OSAPI_HookTable_t UTF_OSAPI_HookTable = {
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -110,6 +118,7 @@ UTF_OSAPI_HookTable_t UTF_OSAPI_HookTable = {
 /* Return Code Stuff */
 int32 cfe_osapi_return_value[NUM_OF_CFE_OSAPI_PROCS]=
 {
+    UTF_CFE_USE_DEFAULT_RETURN_CODE,
     UTF_CFE_USE_DEFAULT_RETURN_CODE,
 };
 
@@ -134,8 +143,9 @@ void UTF_OSAPI_set_function_hook(int Index, void *FunPtr)
     else if (Index == OS_GETLOCALTIME_HOOK)    { UTF_OSAPI_HookTable.OS_GetLocalTime = FunPtr; }
     else if (Index == OS_QUEUEGET_HOOK)        { UTF_OSAPI_HookTable.OS_QueueGet = FunPtr; }
     else if (Index == OS_QUEUEPUT_HOOK)        { UTF_OSAPI_HookTable.OS_QueuePut = FunPtr; }
-    else if (Index == OS_TASKDELETE_HOOK)	   { UTF_OSAPI_HookTable.OS_TaskDelete = FunPtr; }
-    else if (Index == OS_BINSEMGIVE_HOOK)	   { UTF_OSAPI_HookTable.OS_BinSemGive = FunPtr; }
+    else if (Index == OS_TASKDELETE_HOOK)      { UTF_OSAPI_HookTable.OS_TaskDelete = FunPtr; }
+    else if (Index == OS_BINSEMGIVE_HOOK)      { UTF_OSAPI_HookTable.OS_BinSemGive = FunPtr; }
+    else if (Index == OS_BINSEMCREATE_HOOK)    { UTF_OSAPI_HookTable.OS_BinSemCreate = FunPtr; }
     else                                       { UTF_error("Invalid OSAPI Hook Index In Set Hook Call %d", Index); }
 }
 
@@ -219,7 +229,7 @@ void UTF_version(void)
 		UTF_REVISION);
 }
 
-int32 UTF_CFE_OSAPI_Set_Api_Return_Code(int32 ApiIndex, int32 ReturnCode)
+int32 UTF_CFE_OSAPI_Set_Api_Return_Code(int32 ApiIndex, uint32 ReturnCode)
 {
     /* Check that ApiIndex is in the valid range */
     if ( (ApiIndex >= NUM_OF_CFE_OSAPI_PROCS ) || (ApiIndex < 0 ) )
@@ -653,6 +663,15 @@ int32 OS_BinSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initial_
     (void) sem_name;           /* refer to function argument to avoid compiler warning */
     (void) sem_initial_value;  /* refer to function argument to avoid compiler warning */
     (void) options;            /* refer to function argument to avoid compiler warning */
+
+    if (UTF_OSAPI_HookTable.OS_BinSemCreate)
+        return(UTF_OSAPI_HookTable.OS_BinSemCreate(sem_id,sem_name,sem_initial_value,options));
+
+    /* Handle Preset Return Code */
+    if (cfe_osapi_return_value[CFE_OSAPI_BINSEMCREATE_PROC] !=  UTF_CFE_USE_DEFAULT_RETURN_CODE)
+    {
+        return cfe_osapi_return_value[CFE_OSAPI_BINSEMCREATE_PROC];
+    }
 
     if (*sem_id > OS_MAX_BIN_SEMAPHORES)
     {
@@ -1257,7 +1276,7 @@ int32 OS_FPUExcGetMask(uint32 *Mask)
                                   Interrupt API
 ****************************************************************************************/
 
-int32 OS_IntAttachHandler(uint32 InterruptNumber, void *InterruptHandler, int32 Parameter)
+int32 OS_IntAttachHandler(uint32 InterruptNumber, osal_task_entry InterruptHandler, int32 Parameter)
 {
     if (InterruptHandler == NULL) {
         return(OS_INVALID_POINTER);

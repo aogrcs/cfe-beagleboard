@@ -1,8 +1,8 @@
 /*
 **  Filename: utf_cfe.h
-**  $Id: utf_cfe.h 1.5 2010/10/25 15:09:24EDT jmdagost Exp  $
+**  $Id: utf_cfe.h 1.5 2010/10/25 14:09:24GMT-05:00 jmdagost Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -19,10 +19,10 @@
 **
 **	Notes:
 **
-**  $Date: 2010/10/25 15:09:24EDT $
+**  $Date: 2010/10/25 14:09:24GMT-05:00 $
 **  $Revision: 1.5 $
 **  $Log: utf_cfe.h  $
-**  Revision 1.5 2010/10/25 15:09:24EDT jmdagost 
+**  Revision 1.5 2010/10/25 14:09:24GMT-05:00 jmdagost 
 **  Corrected bad apostrophe in prologue.
 **  Revision 1.4 2010/10/04 15:04:53EDT jmdagost 
 **  Cleaned up copyright symbol.

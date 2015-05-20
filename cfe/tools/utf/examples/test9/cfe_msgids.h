@@ -1,6 +1,6 @@
 /******************************************************************************
 ** File: cfe_msgids.h
-** $Id: cfe_msgids.h 1.1 2008/04/17 08:09:27EDT ruperera Exp  $
+** $Id: cfe_msgids.h 1.1 2008/04/17 07:09:27GMT-05:00 ruperera Exp  $
 **
 * THIS NEEDS TO BE PRESENT JUST SO SYSTEM WILL LINK.
 ** Purpose:
@@ -13,10 +13,10 @@
 **   This file should not contain messages defined by cFE external
 **   applications.
 **
-** $Date: 2008/04/17 08:09:27EDT $
+** $Date: 2008/04/17 07:09:27GMT-05:00 $
 ** $Revision: 1.1 $
 ** $Log: cfe_msgids.h  $
-** Revision 1.1 2008/04/17 08:09:27EDT ruperera 
+** Revision 1.1 2008/04/17 07:09:27GMT-05:00 ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/examples/test9/project.pj
 ** Revision 1.1 2006/03/21 16:44:23EST sslegel 

@@ -1,4 +1,12 @@
 /*
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement.
+**
 ** File   : osloader.c
 ** Author : Alan Cudmore
 ** Purpose: This file contains the module loader and symbol lookup functions for the OSAL.
@@ -18,6 +26,7 @@
 #include "utf_osloader.h"
 
 static UTF_SymbolTable_t symbolTbl[UTF_MAX_SYMBOLS];
+static int32 symbolTableDumpStatus = OS_SUCCESS;
 
 /****************************************************************************************
                                     UTF Symbol table API
@@ -116,6 +125,21 @@ int i;
   } 	
 } /* end UTF_DumpSymbolTable */
 
+/*--------------------------------------------------------------------------------------
+    Name: UTF_SetOSSymbolTableDumpStatus
+    
+    Purpose: Set the return status for OS_SymbolTableDump()
+
+---------------------------------------------------------------------------------------*/
+void UTF_SetOSSymbolTableDumpStatus (int32 status)
+{
+
+  symbolTableDumpStatus = status;
+  
+  return;
+
+} /* end UTF_SetOSSymbolTableDumpStatus */
+
 /****************************************************************************************
                                     Symbol table API
 ****************************************************************************************/
@@ -181,9 +205,12 @@ int32 OS_SymbolTableDump ( char *filename, uint32 SizeLimit )
 	(void) filename;	/* refer to function argument to avoid compiler warning */
 	(void) SizeLimit;	/* refer to function argument to avoid compiler warning */
 
-	UTF_DumpSymbolTable();
+    if (symbolTableDumpStatus == OS_SUCCESS)
+    {
+	    UTF_DumpSymbolTable();
+    }
 
-	return(OS_SUCCESS);
+	return(symbolTableDumpStatus);
    
 }/* end OS_SymbolTableDump */
 

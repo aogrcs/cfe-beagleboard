@@ -1,9 +1,9 @@
 /*
 **  File: 
 **  cfe_es_events.h
-**  $Id: cfe_es_events.h 1.3 2010/11/04 17:17:43EDT jmdagost Exp  $
+**  $Id: cfe_es_events.h 1.6 2014/08/21 15:34:53GMT-05:00 sstrege Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -24,7 +24,13 @@
 **
 **
 ** $Log: cfe_es_events.h  $
-** Revision 1.3 2010/11/04 17:17:43EDT jmdagost 
+** Revision 1.6 2014/08/21 15:34:53GMT-05:00 sstrege 
+** Updated CFE_ES_ERREXIT_APP_ERR_EID from 31 to 33
+** Revision 1.5 2014/08/19 14:40:27EDT sstrege 
+** Fixed doxygen warnings
+** Revision 1.4 2014/05/05 15:56:42EDT acudmore 
+** Fixed misleading event message text.
+** Revision 1.3 2010/11/04 16:17:43GMT-05:00 jmdagost 
 ** Updated Perf Analyzer start message, inserted perf analyzer error msg, updated subsequent event IDs.
 ** Revision 1.2 2008/12/08 12:07:19EST dkobe 
 ** Updates to correct doxygen errors
@@ -579,6 +585,23 @@
 **/
 #define CFE_ES_START_EXC_ACTION_ERR_EID     32
 
+/** \brief <tt> 'Exit Application \%s on Error Failed: CleanUpApp Error 0x\%08X.' </tt>
+**  \event <tt> 'Exit Application \%s on Error Failed: CleanUpApp Error 0x\%08X.' </tt> 
+**
+**  \par Type: ERROR
+**
+**  \par Cause:
+**
+**  This event message is generated when ES is completing the processing of the 
+**  CFE_ES_ExitApp API call with the CFE_ES_APP_ERROR parameter and the call to CFE_ES_CleanUpApp fails. 
+**  At this point the Application will likely be stopped or deleted, but it may be in an unknown state.
+**
+**  The \c 's' field identifies the name of the Application which was attempted to be
+**  reloaded and the \c RC field identifies the error code, in hex, that will identify
+**  the precise reason for the failure.
+**/
+#define CFE_ES_ERREXIT_APP_ERR_EID 33
+
 /** \brief <tt> 'Stop Application \%s Failed, RC = 0x\%08X' </tt>
 **  \event <tt> 'Stop Application \%s Failed, RC = 0x\%08X' </tt> 
 **
@@ -802,26 +825,9 @@
 **/
 #define CFE_ES_EXIT_APP_ERR_EID 46
 
-/** \brief <tt> 'Exit Application \%s on Error Failed: CleanUpApp Error 0x\%08X.' </tt>
-**  \event <tt> 'Exit Application \%s on Error Failed: CleanUpApp Error 0x\%08X.' </tt> 
-**
-**  \par Type: ERROR
-**
-**  \par Cause:
-**
-**  This event message is generated when ES is completing the processing of the 
-**  CFE_ES_ExitApp API call with the CFE_ES_APP_ERROR parameter and the call to CFE_ES_CleanUpApp fails. 
-**  At this point the Application will likely be stopped or deleted, but it may be in an unknown state.
-**
-**  The \c 's' field identifies the name of the Application which was attempted to be
-**  reloaded and the \c RC field identifies the error code, in hex, that will identify
-**  the precise reason for the failure.
-**/
-#define CFE_ES_ERREXIT_APP_ERR_EID 31
 
-
-/** \brief <tt> 'CFE_ES_CleanUpApp: Invalid State (EXCEPTION) Application \%s.' </tt>
-**  \event <tt> 'CFE_ES_CleanUpApp: Invalid State (EXCEPTION) Application \%s.' </tt> 
+/** \brief <tt> 'ES_ProcControlReq: Invalid State (EXCEPTION) Application \%s.' </tt>
+**  \event <tt> 'ES_ProcControlReq: Invalid State (EXCEPTION) Application \%s.' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -837,8 +843,8 @@
 /*
 ** "CFE_ES_CleanUpApp: Unknown State ( \%d ) Application \%s."
 */
-/** \brief <tt> 'CFE_ES_CleanUpApp: Unknown State ( \%d ) Application \%s.' </tt>
-**  \event <tt> 'CFE_ES_CleanUpApp: Unknown State ( \%d ) Application \%s.' </tt> 
+/** \brief <tt> 'ES_ProcControlReq: Unknown State ( \%d ) Application \%s.' </tt>
+**  \event <tt> 'ES_ProcControlReq: Unknown State ( \%d ) Application \%s.' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -969,8 +975,8 @@
 **  This event message is generated in response to receiving an Executive Services
 **  \link #CFE_ES_PERF_STARTDATA_CC Start Performance Analyzer Data Collection Command \endlink
 **
-**  The \c 'd' field identifies the requested trigger mode.  Valid values are #CFE_ES_PERF_TRIGGER_START (0),
-**  #CFE_ES_PERF_TRIGGER_CENTER (1), and #CFE_ES_PERF_TRIGGER_END (2)
+**  The \c 'd' field identifies the requested trigger mode.  Valid values are #CFE_ES_PerfMode_t CFE_ES_PERF_TRIGGER_START (0),
+**  #CFE_ES_PerfMode_t CFE_ES_PERF_TRIGGER_CENTER (1), and #CFE_ES_PerfMode_t CFE_ES_PERF_TRIGGER_END (2)
 **/
 #define CFE_ES_PERF_STARTCMD_EID      57
 
@@ -1000,7 +1006,8 @@
 **
 **  The first \c 'd' field identifies the received trigger mode value.
 **  The second and third \c 'd' fields specify the valid range of values for the trigger mode.  Valid values 
-**  are #CFE_ES_PERF_TRIGGER_START (0), #CFE_ES_PERF_TRIGGER_CENTER (1), and #CFE_ES_PERF_TRIGGER_END (2).
+**  are #CFE_ES_PerfMode_t CFE_ES_PERF_TRIGGER_START (0), #CFE_ES_PerfMode_t CFE_ES_PERF_TRIGGER_CENTER (1), and 
+**  #CFE_ES_PerfMode_t CFE_ES_PERF_TRIGGER_END (2).
 **/
 #define CFE_ES_PERF_STARTCMD_TRIG_ERR_EID      59
 
@@ -1254,7 +1261,7 @@
 **  an error obtaining the contents of the ER Log.
 **
 **  The \c 's' field identifies the filename of the file to which the data failed to write,
-**  the \c Stat field specifies, in hex, the error status returned from #OS_BSPGetResetArea.
+**  the \c Stat field specifies, in hex, the error status returned from #CFE_PSP_GetResetArea.
 **/
 #define CFE_ES_RST_ACCESS_EID           75
 

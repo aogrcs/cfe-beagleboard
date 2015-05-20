@@ -27,9 +27,11 @@ PROC $sc_$cpu_print_sb_pipes(stepnum, totalpipes)
 ;**********************************************************************
 
 local logging = %liv (log_procedure)
-;;%liv (log_procedure) = FALSE
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
+
+%liv (log_procedure) = logging
 
 local outputfilename
 local numpipes[0..totalpipes]

@@ -1,5 +1,5 @@
 $Log: readme.txt  $
-Revision 1.2 2009/07/30 12:06:42EDT acudmore 
+Revision 1.2 2009/07/30 11:06:42GMT-05:00 acudmore 
 Updated cmdUtil submitted by NASA ARC
 Revision 1.1 2008/04/17 08:08:42EDT ruperera 
 Initial revision

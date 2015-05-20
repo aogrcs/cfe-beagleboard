@@ -14,6 +14,7 @@ local logging = %liv(log_procedure)
 ; 21OCT09                 Added include statement and modified   WFM
 ;                         code to generically set values based
 ;                         upon definitions in the include file
+; 14FEB12                 Added new version items and settings   WFM
 ;
 ;
 
@@ -40,9 +41,12 @@ endif
 local cksumItem = cpu_prefix & "_ES_CKSUM"
 local cfeMajorVerItem = cpu_prefix & "_ES_CFEMAJORVER"
 local cfeMinorVerItem = cpu_prefix & "_ES_CFEMINORVER"
-local cfeSubMinorVerItem = cpu_prefix & "_ES_CFESUBMINORVER"
+local cfeRevisionItem = cpu_prefix & "_ES_CFEREVISION"
+local cfeMissionRevItem = cpu_prefix & "_ES_CFEMSNREV"
 local osMajorVerItem = cpu_prefix & "_ES_OSMAJORVER"
 local osMinorVerItem = cpu_prefix & "_ES_OSMINORVER"
+local osRevisionItem = cpu_prefix & "_ES_OSREVISION"
+local osMissionRevItem = cpu_prefix & "_ES_OSMISSIONREV"
 
 gsescstatval11 = ""
 gsescstatval21 = ""
@@ -51,14 +55,12 @@ gsescstatval31 = ""
 {cksumItem} = ""
 {cfeMajorVerItem} = ""
 {cfeMinorVerItem} = ""
-{cfeSubMinorVerItem} = ""
+{cfeRevisionItem} = ""
+{cfeMissionRevItem} = ""
 {osMajorVerItem} = ""
 {osMinorVerItem} = ""
-;;  SCX_CPU1_ES_CKSUM = ""
-;;  SCX_CPU1_ES_CFEMAJORVER = ""
-;;  SCX_CPU1_ES_CFEMINORVER = ""
-;;  SCX_CPU1_ES_OSMAJORVER = ""
-;;  SCX_CPU1_ES_OSMINORVER = ""
+{osRevisionItem} = ""
+{osMissionRevItem} = ""
 
 ; If there are multiple CPUs, then clear the appropriate values
 if (numCPUs >= 2) then
@@ -69,9 +71,12 @@ if (numCPUs >= 2) then
   cksumItem = cpu_prefix & "_ES_CKSUM"
   cfeMajorVerItem = cpu_prefix & "_ES_CFEMAJORVER"
   cfeMinorVerItem = cpu_prefix & "_ES_CFEMINORVER"
-  cfeSubMinorVerItem = cpu_prefix & "_ES_CFESUBMINORVER"
+  cfeRevisionItem = cpu_prefix & "_ES_CFEREVISION"
+  cfeMissionRevItem = cpu_prefix & "_ES_CFEMSNREV"
   osMajorVerItem = cpu_prefix & "_ES_OSMAJORVER"
   osMinorVerItem = cpu_prefix & "_ES_OSMINORVER"
+  osRevisionItem = cpu_prefix & "_ES_OSREVISION"
+  osMissionRevItem = cpu_prefix & "_ES_OSMISSIONREV"
 
   ; Clear Checksum, cFE Version, and OS Version Values for CPU2
   gsescstatval12 = ""
@@ -81,14 +86,12 @@ if (numCPUs >= 2) then
   {cksumItem} = ""
   {cfeMajorVerItem} = ""
   {cfeMinorVerItem} = ""
-  {cfeSubMinorVerItem} = ""
+  {cfeRevisionItem} = ""
+  {cfeMissionRevItem} = ""
   {osMajorVerItem} = ""
   {osMinorVerItem} = ""
-;;  SCX_CPU2_ES_CKSUM = ""
-;;  SCX_CPU2_ES_CFEMAJORVER = ""
-;;  SCX_CPU2_ES_CFEMINORVER = ""
-;;  SCX_CPU2_ES_OSMAJORVER = ""
-;;  SCX_CPU2_ES_OSMINORVER = ""
+  {osRevisionItem} = ""
+  {osMissionRevItem} = ""
 endif
 
 ; This proc only supports up to 3 CPUs.
@@ -101,9 +104,12 @@ if (numCPUs = 3) then
   cksumItem = cpu_prefix & "_ES_CKSUM"
   cfeMajorVerItem = cpu_prefix & "_ES_CFEMAJORVER"
   cfeMinorVerItem = cpu_prefix & "_ES_CFEMINORVER"
-  cfeSubMinorVerItem = cpu_prefix & "_ES_CFESUBMINORVER"
+  cfeRevisionItem = cpu_prefix & "_ES_CFEREVISION"
+  cfeMissionRevItem = cpu_prefix & "_ES_CFEMSNREV"
   osMajorVerItem = cpu_prefix & "_ES_OSMAJORVER"
   osMinorVerItem = cpu_prefix & "_ES_OSMINORVER"
+  osRevisionItem = cpu_prefix & "_ES_OSREVISION"
+  osMissionRevItem = cpu_prefix & "_ES_OSMISSIONREV"
 
   ; Clear Checksum, cFE Version, and OS Version Values for CPU3
   gsescstatval13 = ""
@@ -113,14 +119,12 @@ if (numCPUs = 3) then
   {cksumItem} = ""
   {cfeMajorVerItem} = ""
   {cfeMinorVerItem} = ""
-  {cfeSubMinorVerItem} = ""
+  {cfeRevisionItem} = ""
+  {cfeMissionRevItem} = ""
   {osMajorVerItem} = ""
   {osMinorVerItem} = ""
-;;  SCX_CPU3_ES_CKSUM = ""
-;;  SCX_CPU3_ES_CFEMAJORVER = ""
-;;  SCX_CPU3_ES_CFEMINORVER = ""
-;;  SCX_CPU3_ES_OSMAJORVER = ""
-;;  SCX_CPU3_ES_OSMINORVER = ""
+  {osRevisionItem} = ""
+  {osMissionRevItem} = ""
 endif
 
 ; Set up Commanding CPU label

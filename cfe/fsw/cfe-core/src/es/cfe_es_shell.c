@@ -11,8 +11,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 **  Purpose:
 **  cFE Executive Services (ES) Shell Commanding System
 **
@@ -21,6 +19,16 @@
 **     cFE Flight Software Application Developers Guide
 **
 **  $Log: cfe_es_shell.c  $
+**  Revision 1.10 2014/08/22 15:50:03GMT-05:00 lwalling 
+**  Changed signed loop counters to unsigned
+**  Revision 1.9 2014/04/23 16:29:04EDT acudmore 
+**  Fixed Return code processing to allow CFE_ES_ListTasks to work correctly
+**  Revision 1.8 2012/01/13 11:50:04GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.7 2012/01/10 13:36:13EST lwalling 
+**  Add output filename to shell command packet structure
+**  Revision 1.6 2012/01/06 16:43:35EST lwalling 
+**  Use CFE_ES_DEFAULT_SHELL_FILENAME for shell command output filename
 **  Revision 1.5 2010/11/04 14:05:40EDT acudmore 
 **  Added ram disk mount path configuration option.
 **  Revision 1.4 2010/10/26 16:27:42EDT jmdagost 
@@ -70,24 +78,37 @@ extern CFE_ES_TaskData_t CFE_ES_TaskData;
 /* CFE_ES_ShellOutputCommand() -- Pass thru string to O/S shell or to ES */
 /*                                                                       */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 CFE_ES_ShellOutputCommand(char * CmdString)
+int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename)
 {
-    
     int32 Result;
     int32 ReturnCode = CFE_SUCCESS;
     int32 fd;
     int32 FileSize;
     int32 CurrFilePtr;
-    int32 i;
+    uint32 i;
     
     /* the extra 1 added for the \0 char */
     char CheckCmd [CFE_ES_CHECKSIZE + 1];
     char Cmd [CFE_ES_MAX_SHELL_CMD];
-   
-    /* remove the file if it is still present */
-    OS_remove(CFE_ES_RAM_DISK_MOUNT_STRING"/CFE_ES_ShellCmd.out"); 
+    char OutputFilename [OS_MAX_PATH_LEN];
 
-    fd = OS_creat( CFE_ES_RAM_DISK_MOUNT_STRING"/CFE_ES_ShellCmd.out",OS_READ_WRITE);
+    /* Use default filename if not provided */
+    if (Filename[0] == '\0')
+    {
+        strncpy(OutputFilename, CFE_ES_DEFAULT_SHELL_FILENAME, OS_MAX_PATH_LEN);
+    }
+    else
+    {
+        strncpy(OutputFilename, Filename, OS_MAX_PATH_LEN);
+    }
+
+    /* Make sure string is null terminated */
+    OutputFilename[OS_MAX_PATH_LEN - 1] = '\0';
+
+    /* Remove previous version of output file */
+    OS_remove(OutputFilename); 
+
+    fd = OS_creat(OutputFilename, OS_READ_WRITE);
 
     if (fd < OS_FS_SUCCESS)
     {
@@ -262,7 +283,7 @@ int32 CFE_ES_ShellOutputCommand(char * CmdString)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 CFE_ES_ListApplications(int32 fd)
 {
-    int32 i;
+    uint32 i;
     char Line [OS_MAX_API_NAME +2];
     int32 Result = CFE_SUCCESS;
     
@@ -297,44 +318,51 @@ int32 CFE_ES_ListApplications(int32 fd)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 CFE_ES_ListTasks(int32 fd)
 {
-    int32                i;
+    uint32                i;
     char                 Line [128];
     int32                Result = CFE_SUCCESS;
     CFE_ES_TaskInfo_t    TaskInfo;
     
     /* Make sure we start at the beginning of the file */
-    OS_lseek(fd,0, OS_SEEK_SET);
-
-    sprintf(Line,"---- ES Task List ----\n");
-    Result = OS_write(fd, Line, strlen(Line));
-    
-    for ( i = 0; i < OS_MAX_TASKS; i++ )
+    Result = OS_lseek(fd, 0, OS_SEEK_SET);
+    if ( Result == 0 ) 
     {
-        if ((CFE_ES_Global.TaskTable[i].RecordUsed == TRUE) && (Result == CFE_SUCCESS))
-        {      
-            /* 
-            ** zero out the local entry 
-            */
-            CFE_PSP_MemSet(&TaskInfo,0,sizeof(CFE_ES_TaskInfo_t));
+       sprintf(Line,"---- ES Task List ----\n");
+       Result = OS_write(fd, Line, strlen(Line));
+       if (Result == strlen(Line))
+       {
+          Result = CFE_SUCCESS;
+          for ( i = 0; i < OS_MAX_TASKS; i++ )
+          {
+             if ((CFE_ES_Global.TaskTable[i].RecordUsed == TRUE) && (Result == CFE_SUCCESS))
+             {      
+                /* 
+                ** zero out the local entry 
+                */
+                CFE_PSP_MemSet(&TaskInfo,0,sizeof(CFE_ES_TaskInfo_t));
 
-            /*
-            ** Populate the AppInfo entry 
-            */
-            CFE_ES_GetTaskInfo(&TaskInfo,i);
+                /*
+                ** Populate the AppInfo entry 
+                */
+                Result = CFE_ES_GetTaskInfo(&TaskInfo,i);
 
-            sprintf(Line,"Task ID: %08d, Task Name: %20s, Prnt App ID: %08d, Prnt App Name: %20s\n",
-                          (int) TaskInfo.TaskId, TaskInfo.TaskName, 
-                          (int)TaskInfo.AppId, TaskInfo.AppName);
-            Result = OS_write(fd, Line, strlen(Line));
+                if ( Result == CFE_SUCCESS )
+                {
+                   sprintf(Line,"Task ID: %08d, Task Name: %20s, Prnt App ID: %08d, Prnt App Name: %20s\n",
+                         (int) TaskInfo.TaskId, TaskInfo.TaskName, 
+                         (int)TaskInfo.AppId, TaskInfo.AppName);
+                   Result = OS_write(fd, Line, strlen(Line));
             
-            if (Result == strlen(Line))
-            {
-                Result = CFE_SUCCESS;
-            }
-            /* if not success, returns whatever OS_write failire was */
-        }
-    } /* end for */
-
+                   if (Result == strlen(Line))
+                   {
+                      Result = CFE_SUCCESS;
+                   }
+                   /* if not success, returns whatever OS_write failire was */
+                }
+             }
+          } /* end for */
+       } /* End if OS_write */
+    } /* End if OS_lseek */ 
     return Result;
 } /* end ES_ListTasks */
 
@@ -359,7 +387,7 @@ int32 CFE_ES_ListResources(int32 fd)
     int32 NumQueues = 0;
     int32 NumTasks = 0;
     int32 NumFiles = 0;
-    int32 i;
+    uint32 i;
     char Line[35];
 
 

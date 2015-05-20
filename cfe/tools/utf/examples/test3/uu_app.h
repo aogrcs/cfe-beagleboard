@@ -8,7 +8,7 @@
 ** Notes:
 **
 ** $Log: uu_app.h  $
-** Revision 1.1 2008/04/17 08:09:14EDT ruperera 
+** Revision 1.1 2008/04/17 07:09:14GMT-05:00 ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/examples/test3/project.pj
 ** Revision 1.2 2006/08/01 08:46:51EDT wfmoleski 

@@ -12,8 +12,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 **  Purpose:
 **  Set of services for management of discrete sized memory pools.
 **
@@ -22,6 +20,12 @@
 **     cFE Flight Software Application Developers Guide
 **
 **  $Log: cfe_esmempool.c  $
+**  Revision 1.12 2014/07/07 10:57:32GMT-05:00 acudmore 
+**  Modified CFE_ES_ValidateHandle to conditionally compile alignment check.
+**  Revision 1.11 2012/01/13 11:50:17GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.10 2011/03/18 11:41:54EDT lwalling 
+**  Add memory range test to pool handle verification function
 **  Revision 1.9 2010/11/23 13:22:43EST jmdagost 
 **  Corrected getPoolBuf and putPoolBuf error messages.
 **  Revision 1.8 2010/11/04 14:17:32EDT acudmore 
@@ -656,36 +660,49 @@ boolean CFE_ES_ValidateHandle(CFE_ES_MemHandle_t  Handle)
     
     PoolPtr = (Pool_t *)Handle;
 
-    /* There are various ways to make sure the memory pool handle is valid */
+    /* There are several tests to make sure the memory pool handle is valid */
    
-    /* Step #1) Make sure the handle holds an address that is on a 32-bit boundary */
-    if ((Handle & 0x03) != 0)
+    if ( PoolPtr == NULL )
+    /* Test #1) Handle must not be a NULL pointer */
     {
         HandleValid = FALSE;
     }
-    else 
+#ifdef CFE_ES_MEMPOOL_ALIGNED
+    /* Test #2) Handle must be an address on a 32-bit boundary */
+    else if ((Handle & 0x03) != 0)
     {
-        /* Step #2) TODO!!!  INSERT CHECK TO MAKE SURE HANDLE CONTAINS A VALID MEMORY ADDRESS */
-        /* Step #2a) Make sure Handle isn't a null pointer */
-        if (PoolPtr == NULL)
-        {
-            HandleValid = FALSE;
-        }
-        /* Step #3) The first field of the pool structure should contain the start address of the pool */
-        else if (Handle != (CFE_ES_MemHandle_t)PoolPtr->Start)
-        {
-            HandleValid = FALSE;
-        }
-        /* Step #4) The size of the memory pool must be a multiple of 4 bytes */
-        else if ((PoolPtr->Size & 0x03) != 0)
-        {
-            HandleValid = FALSE;
-        }
-        /* Step #5) The pool structure should have an End pointer that is equal to the start plus the size */
-        else if ((*PoolPtr->Start + PoolPtr->Size) != PoolPtr->End)
-        {
-            HandleValid = FALSE;
-        }
+        HandleValid = FALSE;
+    }
+#endif
+    /* Test #3) Handle must be a valid memory address (allows both RAM and EEPROM) */
+    else if (CFE_PSP_MemValidateRange(Handle, sizeof(Pool_t), CFE_PSP_MEM_ANY) != CFE_PSP_SUCCESS)
+    {
+        HandleValid = FALSE;
+    }
+    /* Test #4) First field of pool structure must be start address of Pool */
+    else if (Handle != (CFE_ES_MemHandle_t)PoolPtr->Start)
+    {
+        HandleValid = FALSE;
+    }
+    /* Test #5) Size of memory pool must be a multiple of 4 bytes */
+    else if ((PoolPtr->Size & 0x03) != 0)
+    {
+        HandleValid = FALSE;
+    }
+    /* Test #6) Pool structure must have End ptr equal to Start plus Size */
+    else if ((*PoolPtr->Start + PoolPtr->Size) != PoolPtr->End)
+    {
+        /*
+        ** The test above deserves some explanation (it fooled me - LSW)
+        **
+        ** The first field in a Pool_t structure is "uint32 *Start;"
+        ** The Start field is set to point to the beginning of the Pool structure.
+        ** Therefore, the Start field actually points to itself.
+        ** So, (PoolPtr->Start) is the Start address in the form of a pointer to a uint32.
+        ** And, (*PoolPtr->Start) is the Start address in the form of a uint32.
+        ** Thus, (*PoolPtr->Start) has same result as ((uint32) PoolPtr->Start).
+        */
+        HandleValid = FALSE;
     }
     
     return(HandleValid);

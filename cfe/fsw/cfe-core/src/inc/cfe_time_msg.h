@@ -1,8 +1,8 @@
 /*
-** $Id: cfe_time_msg.h 1.5 2010/10/25 15:01:13EDT jmdagost Exp  $
+** $Id: cfe_time_msg.h 1.6 2011/11/30 15:10:45GMT-05:00 jmdagost Exp  $
 **
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -18,6 +18,8 @@
 ** Notes:
 **
 ** $Log: cfe_time_msg.h  $
+** Revision 1.6 2011/11/30 15:10:45GMT-05:00 jmdagost 
+** Replaced ifdef/ifndef preprocessor tests with if...==TRUE/if...!=TRUE tests
 ** Revision 1.5 2010/10/25 15:01:13EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 15:25:01EDT jmdagost 
@@ -194,7 +196,7 @@
 **         to clock source, but rather an element of the clock state.  See below 
 **         for a description of the #CFE_TIME_SET_STATE_CC command.
 **       - This command is only valid when the #CFE_TIME_CFG_SOURCE configuration
-**         parameter in the cfe_platform_cfg.h file has been defined.
+**         parameter in the cfe_platform_cfg.h file has been set to TRUE.
 **
 **  \cfecmdmnemonic \TIME_SETSOURCE
 **
@@ -687,7 +689,7 @@
 **       hardware configuration.<BR><BR>
 **       Notes: 
 **       - This command is only valid when the #CFE_TIME_CFG_SIGNAL configuration
-**         parameter in the cfe_platform_cfg.h file has been defined.
+**         parameter in the cfe_platform_cfg.h file has been set to TRUE.
 **
 **  \cfecmdmnemonic \TIME_SETSIGNAL
 **
@@ -968,7 +970,7 @@ typedef struct
   /*
   ** 1Hz STCF adjustment values (server only)...
   */
-  #ifdef CFE_TIME_CFG_SERVER
+  #if (CFE_TIME_CFG_SERVER == TRUE)
   uint32                Seconds1HzAdj;    /**< \cfetlmmnemonic \TIME_1HZADJSECS
                                                \brief Current 1 Hz SCTF adjustment (seconds) */
   uint32                Subsecs1HzAdj;    /**< \cfetlmmnemonic \TIME_1HZADJSSECS
@@ -978,7 +980,7 @@ typedef struct
   /*
   ** Time at tone delay values (client only)...
   */
-  #ifdef CFE_TIME_CFG_CLIENT
+  #if (CFE_TIME_CFG_CLIENT == TRUE)
   uint32                SecondsDelay;     /**< \cfetlmmnemonic \TIME_1HZDLYSECS
                                                \brief Current 1 Hz SCTF Delay (seconds) */
   uint32                SubsecsDelay;     /**< \cfetlmmnemonic \TIME_1HZDLYSSECS

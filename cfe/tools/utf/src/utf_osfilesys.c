@@ -1,6 +1,6 @@
 /*
 ** File: utf_osfilesys.c
-** $Id: utf_osfilesys.c 1.5 2010/10/25 15:06:37EDT jmdagost Exp  $
+** $Id: utf_osfilesys.c 1.7 2014/04/17 08:14:46GMT-05:00 wmoleski Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,9 +18,13 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:37EDT $
-** $Revision: 1.5 $
+** $Date: 2014/04/17 08:14:46GMT-05:00 $
+** $Revision: 1.7 $
 ** $Log: utf_osfilesys.c  $
+** Revision 1.7 2014/04/17 08:14:46GMT-05:00 wmoleski 
+** Added the OS_rewidDir and OS_fsBytesFree functions to the UTF source
+** Revision 1.6 2012/01/13 12:52:02EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.5 2010/10/25 15:06:37EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 14:57:54EDT jmdagost 
@@ -397,6 +401,53 @@ int32 OS_fsBlocksFree (const char *name)
    return OS_FS_ERROR;
 
 }/* end OS_fsBlocksFree */
+
+/*--------------------------------------------------------------------------------------
+    Name: OS_fsBytesFree
+        
+    Purpose: Returns the number of free bytes in a volume
+
+    Returns: OS_FS_ERR_INVALID_POINTER if name is NULL
+             OS_FS_ERROR if the OS call failed
+             OS_SUCCESS if success
+---------------------------------------------------------------------------------------*/
+       
+int32 OS_fsBytesFree (const char *name, uint64 *bytes_free)
+{
+   int             status;
+   int32           NameStatus;
+   struct statfs  stat_buf;
+   uint64          bytes_free_local;
+   char            tmpFileName[OS_MAX_LOCAL_PATH_LEN +1];
+
+   if ( name == NULL || bytes_free == NULL )
+   {
+      return(OS_FS_ERR_INVALID_POINTER);
+   }
+
+   /*
+   ** Check the length of the volume name
+   */
+   if ( strlen(name) >= OS_MAX_PATH_LEN )
+   {
+      return(OS_FS_ERR_PATH_TOO_LONG);
+   }
+
+   /*
+   ** Translate the path
+   */
+   NameStatus = OS_TranslatePath(name, tmpFileName);
+
+   status = statvfs(tmpFileName, &stat_buf);
+   if ( status == 0 )
+   {
+      bytes_free_local = stat_buf.f_bfree * stat_buf.f_bsize;
+      *bytes_free = bytes_free_local;
+      return(OS_FS_SUCCESS);
+   }
+   return(OS_FS_ERROR);
+
+}/* end OS_fsBytesFree */
 
 /*--------------------------------------------------------------------------------------
     Name: OS_chkfs

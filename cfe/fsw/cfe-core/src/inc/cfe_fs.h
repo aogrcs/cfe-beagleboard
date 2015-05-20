@@ -1,12 +1,12 @@
 /*
-** $Id: cfe_fs.h 1.4 2010/10/25 17:50:16EDT jmdagost Exp  $
+** $Id: cfe_fs.h 1.4 2010/10/25 16:50:16GMT-05:00 jmdagost Exp  $
 **
 ** Purpose:  cFE File Services (FS) library API header file
 **
 ** Author:   S.Walling/Microtel
 **
 ** $Log: cfe_fs.h  $
-** Revision 1.4 2010/10/25 17:50:16EDT jmdagost 
+** Revision 1.4 2010/10/25 16:50:16GMT-05:00 jmdagost 
 ** Added assumption to CFE_FS_ExtractFilenameFromPath()
 ** Revision 1.3 2008/08/28 08:41:10EDT apcudmore 
 ** Fixed CFS name ( CFS-->CFE )

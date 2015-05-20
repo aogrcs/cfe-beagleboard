@@ -10,8 +10,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  cFE core startup module defines, data types and prototypes.
@@ -22,6 +20,8 @@
 **
 **  Notes:
 **  $Log: cfe_es_start.h  $
+**  Revision 1.2 2012/01/13 11:50:05GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.1 2008/04/17 08:05:09EDT ruperera 
 **  Initial revision
 **  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/es/project.pj

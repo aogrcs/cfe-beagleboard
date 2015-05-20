@@ -4,138 +4,128 @@ PROC $sc_$cpu_evs_log
 ;  Test Level: Build Verification 
 ;  Test Type:  Functional 
 ;  Test Description
-;     The purpose of this test is to verify the EVS log requirements
-;  for the Event Service (EVS) function of the Core Flight Executive
-; (cFE) software.
-;     The operation of EVS Log will be verified in both the Overwrite
-;  and Discard modes. The Local Event Log Full flag, Local Event Log
-;  Overflow Counter, Event Logging Mode flag, and Event Format flag
-;  will be examined for proper value(s) during the execution of the
-;  test scenario.  The contents of the Event Log will be periodically
-;  dumped from the FSW to the ASIST box for examination using telemetry
-;  pages and off-line analysis.
-;    The TST_EVS test application will be used to send multiple event 
-; messages. The supplied event text / event time will serve to uniquely 
-; identify each event message.
+;	The purpose of this test is to verify the EVS log requirements for the
+;	Event Service (EVS) function of the Core Flight Executive (cFE)
+;	software.  The operation of EVS Log will be verified in both the
+;	Overwrite and Discard modes. The Local Event Log Full flag, Local Event
+;	Log Overflow Counter, Event Logging Mode flag, and Event Format flag
+;	will be examined for proper value(s) during the execution of the test
+;	scenario. The contents of the Event Log will be periodically dumped
+;	from the FSW to the ASIST box for examination using telemetry pages and
+;	off-line analysis.
+;
+;	The TST_EVS test application will be used to send multiple event 
+;	messages. The supplied event text / event time will serve to uniquely 
+;	identify each event message.
 ;
 ;  Requirements Tested
-;
-; cEVS3001     Upon receipt of Command, the cFE shall set the SB Event 
-;              Format Mode to the command specified value, either Long 
-;              or Short.
-; cEVS3013    <OPTIONAL> Upon receipt of Command, the cFE shall clear
-;             the Local Event Log. 
-; cEVS3014   <OPTIONAL> Upon receipt of Command, the cFE shall set the
-;             Event Logging Mode to the Command-specified mode, either
-;             overwrite or discard.
-; cEVS3015    <OPTIONAL> Upon receipt of Command, the cFE shall write
-;             the contents of the Local Event Log to the Command specified  file. 
-;     *** Requirement cEVS3015 requires ANALYSIS.
-;     *** Compare Local Event Log file cfe_evs_3_431.log to Event Telemetry to verify that ***
-;     *** the event messages logged agree with the telemetry.       *** 
-; cEVS3015_1  If a file is not specified, the cFE shall use the 
-;             <PLATFORM_DEFINED> filename. 
-;     *** Requirement cEVS3015_1 requires ANALYSIS.
-;     *** Compare Local Event Log file cfe_evs_3_432.log to Event Telemetry to verify that ***
-;     *** the event messages logged agree with the telemetry.       *** 
-; cEVS3016    <OPTIONAL> The cFE shall write each Event Message from
-;             the earliest logged message to the most recently logged
-;             message. 
-; cEVS3018    The cFE shall provide the following Event Service data 
-;             items in telemetry (SB Messages):
-;             c) SB Event Format Mode
-;             h) <OPTIONAL> Local Event Log Full Flag
-;             i) <OPTIONAL> Local Event Log Overflow Counter
-;             j) <OPTIONAL> Logging Mode
-; cEVS3108    <OPTIONAL> For each created Event Message, the cFE shall
-;             store the Event Message in the Local Event Log in the 
-;             Long Event Message Format. 
-; cEVS3108.1  <OPTIONAL> If the Local Event Log becomes full, the cFE
-;             shall set the Local Event Log Full Flag to true. 
-; cEVS3108.2  <OPTIONAL> If the Local Event Log is full, the cFE shall 
-;             increment the Local Event Log Overflow counter. 
-; cEVS3108.3  <OPTIONAL> If the Local Event Log is full, the cFE shall
-;             either (1) overwrite the oldest Event Message if the
-;             Event Logging Mode is overwrite, or (2) discard the Event
-;             Message if the Event Logging Mode is discard. 
-;     *** Requirement cEVS3108_31 requires ANALYSIS.
-; See Steps 2.3.1 and 2.4 for verification checks.
-; cEVS3301    <OPTIONAL> The cFE shall define a Local Event Log with a 
-;             capacity of <PLATFORM_DEFINED, 20> Event Messages. 
+;   cEVS3001	Upon receipt of Command, the cFE shall set the SB Event Format
+;		Mode to the command specified value, either Long or Short.
+;   cEVS3013    <OPTIONAL> Upon receipt of Command, the cFE shall clear the
+;		Local Event Log. 
+;   cEVS3014	<OPTIONAL> Upon receipt of Command, the cFE shall set the Event
+;		Logging Mode to the Command-specified mode, either overwrite or
+;		discard.
+;   cEVS3015    <OPTIONAL> Upon receipt of Command, the cFE shall write the
+;		contents of the Local Event Log to the Command specified file.
+;   cEVS3015.1	If a file is not specified, the cFE shall use the
+;		<PLATFORM_DEFINED> filename. 
+;   cEVS3016	<OPTIONAL> The cFE shall write each Event Message from the
+;		earliest logged message to the most recently logged message. 
+;   cEVS3018	The cFE shall provide the following Event Service data items in
+;		telemetry (SB Messages):
+;		  c) SB Event Format Mode
+;		  h) <OPTIONAL> Local Event Log Full Flag
+;		  i) <OPTIONAL> Local Event Log Overflow Counter
+;		  j) <OPTIONAL> Logging Mode
+;   cEVS3103.4	If the SB Format Mode is set to Long, the cFE shall generate an
+;		SB Event Message formatted as specified inthe cFE User'd Guide
+;		containing the Spacecraft Time, Processor ID, Application ID,
+;		Event ID, Event Type, and Request-specified Event Data.
+;   cEVS3103.5	If the SB Format Mode is set to Short, the cFE shall generate an
+;		SB Event Message formatted as specified in the cFE User's Guide
+;		containing the Spacecraft Time, Processor ID, Application ID,
+;		Event ID, and Event Type.
+;   cEVS3108	<OPTIONAL> For each created Event Message, the cFE shall store
+;		the Event Message in the Local Event Log in the Long Event
+;		Message Format. 
+;   cEVS3108.1	<OPTIONAL> If the Local Event Log becomes full, the cFE shall
+;		set the Local Event Log Full Flag to true. 
+;   cEVS3108.2	<OPTIONAL> If the Local Event Log is full, the cFE shall
+;		increment the Local Event Log Overflow counter. 
+;   cEVS3108.3	<OPTIONAL> If the Local Event Log is full, the cFE shall either
+;		(1) overwrite the oldest Event Message if the Event Logging Mode
+;		is overwrite, or (2) discard the Event Message if the Event
+;		Logging Mode is discard. 
+;   cEVS3301	<OPTIONAL> The cFE shall define a Local Event Log with a
+;		capacity of <PLATFORM_DEFINED, 20> Event Messages.
 ;
 ;  Prerequisite Conditions
-;  Availability of the TST_EVS test application to send repeated event
-;  messages according to the following specifications:
+;    Availability of the TST_EVS test application to send repeated event
+;    messages according to the following specifications:
 ;
-; 1a. Command, /$SC_$CPU_TST_EVS_SendEvtMsg, to the Test Application
-;     with the following parameters:
-;     Event Id
-;     Event Type (Debug | Information | Error | Critical)
-;     Number of Iterations 
+;    1a. Command, /$SC_$CPU_TST_EVS_SendEvtMsg, to the Test Application with the
+;	 following parameters:
+;		Event Id
+;		Event Type (Debug | Information | Error | Critical)
+;		Number of Iterations 
 ;
-; 1b. In response to the command, the application requests the
-;     generation of the command-specified Event Message with the
-;     command-specified Event Type.  The request will be made the
-;     number of times specified in the iterations parameter. In most
-;     cases the test string is:
-;
-;    "Iteration No. = " %d, "Msg ID = "  %d , Where n is the current
-;     number within the iteration.
+;    1b. In response to the command, the application requests the generation of
+;	 the command-specified Event Message with the command-specified Event
+;	 Type.  The request will be made the number of times specified in the
+;	 iterations parameter. In most cases the test string is:
+;		"Iteration No. = " %d, "Msg ID = "  %d" , Where n is the current
+;		number within the iteration.
 ;
 ;  Assumptions and Constraints
-;  Flight software has been configured for the generation of a local 
-;    event log.
+;    Flight software has been configured to generate a local event log.
 ;
 ;  Change History
-;
-;	Date		   Name		Description
-;     ----           ----           -----------
-;     06/14/05       S. Applebee    Original Procedure
-;     06/20/05       S. Applebee    Add changes from informal-walkthrough
-;     07/20/05       S. Applebee    Add new requirements
-;     07/21/05       S. Applebee    Scenario Cleanup 
-;     08/12/05       S. Applebee    Update to standards
-;     09/13/05       S. Applebee    Post Formal-walkthrough changes
-;     01/06/06       E. Stattel     Build 3.1 
-;     09/06          W. Moleski     Adapted to template procedure.
-;     12/08/06       N. Schweiss    Changed "RAM:" to "RAM:0" for cFE 4.0.
-;
-;  Arguments
-;
-;      Name           Description
-;      ----           -----------
-;      TST_EVS        Test application to send event messages 
-;                     repeatedly
+;	Date	Name		Description
+;	----    -----------     -----------
+;     06/14/05  S. Applebee	Original Procedure
+;     06/20/05  S. Applebee	Add changes from informal-walkthrough
+;     07/20/05  S. Applebee	Add new requirements
+;     07/21/05  S. Applebee	Scenario Cleanup 
+;     08/12/05  S. Applebee	Update to standards
+;     09/13/05  S. Applebee	Post Formal-walkthrough changes
+;     01/06/06  E. Stattel	Build 3.1 
+;     09/2006	W. Moleski	Adapted to template procedure.
+;     12/08/06  N. Schweiss	Changed "RAM:" to "RAM:0" for cFE 4.0.
+;     09/30/11	W. Moleski	Created variables for ram disk and clean up.
+;     01/30/12	W. Moleski	Updated the write statements for Pass & Fail.
 ;
 ;  Procedures/Utilities Called
 ;         
-;      Name                Description
-;      ----                -----------
-;      ut_runproc          Directive to formally run the procedure and capture the 
-;                          log file.
-;      ut_pfindicate       Directive to print the pass fail status of a particular 
-;                          requirement number.
-;      ut_setupevt         Directive to look for a particular event and increment a value
-;                          in the CVT to indicate receipt. 
-;      ut_tlmupdate        Procedure to wait for a specified telemetry point to update.
-;      ut_tlmwait          Procedure to wait for a specified telemetry point to update to 
-;                          a specified value.
-;      get_file_to_cvt     Procedure to write some specified FSW data to a file and 
-;                          then ftp the file from the FSW hardware to ASIST hardware 
-;                          and load file to the CVT.
-;      load_start_app      Procedure to load and start a user application from the
-;                          /s/opr/accounts/cfebx/apps/cpux  directory.
-;      ut_setrequirements  Directive to status cfe requirements.
+;      Name             Description
+;      ----             -----------
+;      ut_runproc	Directive to formally run the procedure and capture the 
+;                       log file.
+;      ut_pfindicate    Directive to print the pass fail status of a particular 
+;                       requirement number.
+;      ut_setupevents   Directive to look for a particular event and increment a
+;			value in the CVT to indicate receipt. 
+;      ut_tlmupdate     Procedure to wait for a specified tlm point to update.
+;      ut_tlmwait       Procedure to wait for a specified telemetry point to
+;			update to a specified value.
+;      get_file_to_cvt  Procedure to write some specified FSW data to a file and
+;                       then ftp the file from the FSW hardware to ASIST
+;			hardware and load file to the CVT.
+;      load_start_app   Procedure to load and start a user application from the
+;                       /s/opr/accounts/cfebx/apps/cpux  directory.
+;      ut_setrequirements Directive to status cfe requirements.
 ;
 ;  Expected Test Results and Analysis
-;
-;  Saved event log files will be loaded to the CVT and examined to
-;  verify expected results. Verify that correct event messages are
-;  received on the ground.
+;    Saved event log files will be loaded to the CVT and examined to verify
+;    expected results. Verify that correct event messages are received on the
+;    ground.
 ;
 ;**********************************************************************
 ;  Define variables
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
+
 #include "ut_statusdefs.h"
 #include "cfe_platform_cfg.h"
 #include "ut_cfe_info.h"
@@ -144,6 +134,8 @@ PROC $sc_$cpu_evs_log
 #include "cfe_evs_events.h"
 #include "cfe_es_events.h"
 #include "tst_evs_events.h"
+
+%liv (log_procedure) = logging
 
 global ut_req_array_size = 17
 global ut_requirement[0 .. ut_req_array_size]
@@ -191,13 +183,16 @@ FOR i = 0 to ut_req_array_size DO
    ut_requirement[i] = "U"
 ENDDO
          
-local step_241_log_file_time
-local step_321_log_file_time
-local step_3421_log_file_time
-local step_351_log_file_time
-local step_352_log_file_time
-local step_431_log_file_time
-local step_432_log_file_time
+local step_341_log_file_time
+local step_421_log_file_time
+local step_4421_log_file_time
+local step_451_log_file_time
+local step_452_log_file_time
+local step_531_log_file_time
+local step_532_log_file_time
+
+local ramDir = "RAM:0"
+local logicalRamDir = "/ram/"
 
 write"*****************************************************************"
 write " Step 1.0: EVS Reset Test"
@@ -206,26 +201,24 @@ write " Step 1.1: Command a Power-On Reset on $CPU"
 write"*****************************************************************"
 /$SC_$CPU_ES_POWERONRESET
 wait 10
-                                                                                
+
 close_data_center
 wait 75
-                                                                                
+
 cfe_startup $CPU
-wait 5                                                                                 
+wait 5
+
 write ";**********************************************************************"
 write ";  Step 2.0:  Verify Platform Startup Settings & Initialize Log"
 write ";             Verify FSW configured for Local Event Log"
 write ";             Requirement: cEVS3301"
 write ";**********************************************************************"
-write
-write "*** FSW configured for Local Event Log generation."
-write
-if CFE_EVS_LOG_MAX > 0 then
+if (CFE_EVS_LOG_MAX > 0) then
    ut_setrequirements cEVS3301, "P"
-   write "     *** Requirement cEVS3301 PASSED."
+   write "<*> Passed (3301) - Max log entries is set to ",CFE_EVS_LOG_MAX
 else
    ut_setrequirements cEVS3301, "F"
-   write "     *** Requirement cEVS3301 FAILED."
+   write "<!> Failed (3301) - Max log entries set to 0"
 endif
 write
 
@@ -244,7 +237,7 @@ write ";**********************************************************************"
 ;             cEVS3018c, cEVS3018j
 
 local work = %env("WORK") 
-local file = work & "/image/$sc_$cpu_cfe_evs_1_01.log"
+local file = work & "/image/$sc_$cpu_cfe_evs_21.log"
 
 write
 write "        Message Format Mode: ",  p@$SC_$CPU_EVS_MSGFMTMODE
@@ -253,47 +246,39 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-start get_file_to_cvt ("RAM:0","cfe_evs.log","$sc_$cpu_cfe_evs_2_01.log","$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_21.log","$cpu")
+wait 5
 
 ut_tlmupdate $SC_$CPU_EVS_MSGFMTMODE
 
 IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) THEN
   ut_setrequirements cEVS3018c, "P"
-  write "     *** Requirement cEVS3018c PASSED." 
+  write "<*> Passed (3018c) - Message Log format set to LONG as expected." 
 ELSE
   ut_setrequirements cEVS3018c, "F"
-  write "     *** Requirement cEVS3018c FAILED."
+  write "<!> Failed (3018c) - Message Log format not set correctly."
 ENDIF
-write
 
 IF (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) THEN
   ut_setrequirements cEVS3018j, "P"
-  write "     *** Requirement cEVS3018j PASSED."  
+  write "<*> Passed (3018j) - Log mode set to Discard as expected."  
 ELSE      
   ut_setrequirements cEVS3018j, "F"
-  write "     *** Requirement cEVS3018j FAILED."
+  write "<!> Failed (3018j) - Log mode not set correctly."
 ENDIF
-write
 
 start $sc_$cpu_print_evs_log_file
 write 
-
-;drop work
-drop file
-write
 
 write ";**********************************************************************"
 write ";  Step 2.2:  Load EVS Test App"
 write ";             Event message indicates test app has started."
 write ";**********************************************************************"
 ;  Dump the properties of all running apps
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+wait 5
                                                                                 
 local found_app = FALSE
-
-ut_setupevt $SC, $CPU, TST_EVS, 16, INFO
 
 ;; Check if the TST_EVS app is in the info tlm
 for app_index = 1 to CFE_ES_MAX_APPLICATIONS do
@@ -311,7 +296,7 @@ if (found_app = FALSE) then
    wait 20
 
   ;; Look for expected event #1 & #2
-  if (($SC_$CPU_num_found_messages = 1) AND ;;
+  if (($SC_$CPU_find_event[1].num_found_messages = 1) AND ;;
       ($SC_$CPU_find_event[2].num_found_messages = 1)) then
     write "TST_EVS started successfully."
   else
@@ -323,8 +308,6 @@ ELSE
    wait 4
 ENDIF
 
-write
-;
 write
 write "        Message Format Mode: ",  p@$SC_$CPU_EVS_MSGFMTMODE
 write "        Event Log Full: ", p@$SC_$CPU_EVS_LOGFULL
@@ -353,10 +336,13 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+    write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
 write 
 
@@ -371,30 +357,29 @@ write ";**********************************************************************"
 
 local empty_log = TRUE
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_1_4.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_24.log","$cpu")
+wait 5
 
 FOR i = 1 to CFE_EVS_LOG_MAX DO
-   IF (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.SCID <> "UNK" ) AND (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.PRCID <> "UNK") AND (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.EVTTYPE <> "UNK") THEN 
+  IF (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.SCID <> "UNK" ) AND ;;
+     (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.PRCID <> "UNK") AND ;;
+     (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.EVTTYPE <> "UNK") THEN 
     empty_log = FALSE
     ut_setrequirements cEVS3013, "F"
-    write "     *** Requirement cEVS3013 FAILED."
-    write
-ENDIF
-continue if empty_log = TRUE
+    write "<!> Failed (3013) - EVS Log is not empty after a Clear command"
+  ENDIF
+  continue if empty_log = TRUE
 ENDDO
 
-IF empty_log = TRUE THEN
+IF (empty_log = TRUE) THEN
   ut_setrequirements cEVS3013, "P"
-  write "     *** Requirement cEVS3013 PASSED."
+  write "<*> Passed (3013) - EVS Log is empty after a Clear command"
   write
 ENDIF
     
 start $sc_$cpu_print_evs_log_file 
-write
 
 drop empty_log
-write
 
 write ";**********************************************************************"
 write "; Step 3.0: Test Event Logging Mode - Overwrite"
@@ -428,23 +413,25 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
-
 
 write ";**********************************************************************"
 write ";  Step 3.1.1: Get Local Event Log. "
 write ";**********************************************************************"
 
-start get_file_to_cvt ("RAM:0","cfe_evs.log","$sc_$cpu_cfe_evs_2_11.log","$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_311.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
 write 
+
 write ";**********************************************************************"
 write "; Step 3.2: Send more event messages until a total of CFE_EVS_LOG_MAX "
 write ";	   have been sent. "
@@ -458,7 +445,7 @@ write ";**********************************************************************"
 ;              cEVS3108.1
 ;              cEVS3018h
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = CFE_EVS_LOG_MAX-evs_msg_sent_counter Milliseconds = 15
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="6" Iters=CFE_EVS_LOG_MAX-evs_msg_sent_counter Milliseconds = 15
 wait CFE_EVS_LOG_MAX-evs_msg_sent_counter+1
 
 ut_tlmwait $SC_$CPU_EVS_LOGFULL 1
@@ -470,27 +457,24 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
 IF (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
   ut_setrequirements cEVS3108_1, "P"
-  write "     *** Requirement cEVS3108_1 PASSED."
-  write
   ut_setrequirements cEVS3018h, "P"
-  write "     *** Requirement cEVS3018h PASSED."
+  write "<*> Passed (3018h;3108.1) - EVS Event Log is full."
 ELSE
   ut_setrequirements cEVS3108_1, "F"
-  write "     *** Requirement cEVS3108_1 FAILED."
-  write
   ut_setrequirements cEVS3018h, "F"
-  write "     *** Requirement cEVS3018h FAILED."
+  write "<!> Failed (3018h;3108.1) - EVS Event Log does not indicate that it is full."
 ENDIF
-write
 
 write ";**********************************************************************"
 write ";  Step 3.3: Generate an event after the log is full and verify the log "
@@ -510,8 +494,8 @@ write ";***********************************************************************"
 ;             Log file dumped containing the number and type of entries 
 ;             sent in previous steps.
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_2_31.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_331.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
 write 
@@ -520,6 +504,7 @@ write ";**********************************************************************"
 write "; Step 3.3.2: Add 1 more event message to the log."
 write ";	     Requirements: cEVS3108.1, cEVS3108.2, cEVS3018h, cEVS3018i"
 write ";**********************************************************************"
+evs_logoflctr_0 = 1
 
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "7" Iters = "1" Milliseconds = 15
 wait 10
@@ -531,42 +516,34 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+1) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
 IF (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
   ut_setrequirements cEVS3108_1, "P"
-  write "     *** Requirement cEVS3108_1 PASSED."
-  write
   ut_setrequirements cEVS3018h, "P"
-  write "     *** Requirement cEVS3018h PASSED."
+  write "<*> Passed (3018h;3108.1) - EVS Log indicates it is full."
 ELSE
   ut_setrequirements cEVS3108_1, "F"
-  write "     *** Requirement cEVS3108_1 FAILED."
-  write
   ut_setrequirements cEVS3018h, "F"
-  write "     *** Requirement cEVS3018h FAILED."
+  write "<!> Failed (3018h;3108.1) - EVS Log does not indicate full."
 ENDIF
-write
 
-IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+1) THEN
-  ut_setrequirements cEVS3108_2, "P"
-  write "     *** Requirement cEVS3108_2 PASSED."
-  write
+IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) THEN
   ut_setrequirements cEVS3018i, "P"
-  write "     *** Requirement cEVS3018i PASSED."
+  ut_setrequirements cEVS3108_2, "P"
+  write "<*> Passed (3018i;3108.2) - Overflow count incremented properly."
 ELSE
   ut_setrequirements cEVS3108_2, "F"
-  write "     *** Requirement cEVS3108_2 FAILED."
-  write
   ut_setrequirements cEVS3018i, "F"
-  write "     *** Requirement cEVS3018i FAILED."
+  write "<!> Failed (3018i;3108.2) - Overflow count not correct. Expected ",evs_logoflctr_0,"; Got ",$SC_$CPU_EVS_LOGOVERFLOWC
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 3.3.3: Get Local Event Log. "
@@ -579,11 +556,11 @@ write ";***********************************************************************"
 ;             cEVS3108.3
 
 ut_setrequirements cEVS3108_31, "A"
-write "     *** Requirement cEVS3108_31 requires ANALYSIS."
+write "*** Requirement cEVS3108_31 requires ANALYSIS."
 write
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_2_33.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_333.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
 write 
@@ -599,6 +576,7 @@ write ";***********************************************************************"
 ;            cEVS3108.1
 ;            cEVS3108.2
 
+evs_logoflctr_0 = evs_logoflctr_0 + 14
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "14" Milliseconds = 15
 wait 15
  
@@ -609,39 +587,38 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+15) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
 IF (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
   ut_setrequirements cEVS3108_1, "P"
-  write "     *** Requirement cEVS3108_1 PASSED."
+  write "<*> Passed (3108.1) - Log is marked Full."
 ELSE
   ut_setrequirements cEVS3108_1, "F"
-  write "     *** Requirement cEVS3108_1 FAILED."
+  write "<!> Failed (3108.1) - Log does not indicate Full."
 ENDIF
-write
 
-IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+15) THEN
+IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) THEN
   ut_setrequirements cEVS3108_2, "P"
-  write "     *** Requirement cEVS3108_2 PASSED."
+  write "<*> Passed (3108.2) - Overflow counter is correct."
 ELSE
   ut_setrequirements cEVS3108_2, "F"
-  write "     *** Requirement cEVS3108_2 FAILED."
+  write "<!> Failed (3108.2) - Overflow counter is not correct. Expected ",evs_logoflctr_0,"; Got ",$SC_$CPU_EVS_LOGOVERFLOWC
 ENDIF
-write
 
 IF (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) THEN
   ut_setrequirements cEVS3108j, "P"
-  write "     *** Requirement cEVS3108j PASSED."
+  write "<*> Passed (3108j) - Log mode is set to Overwrite."
 ELSE
   ut_setrequirements cEVS3108j, "F"
-  write "     *** Requirement cEVS3108j FAILED."
+  write "<!> Failed (3108j) - Log mode is not Overwrite as expected."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 3.4.1: Get Local Event Log."
@@ -653,13 +630,13 @@ write ";***********************************************************************"
 ;             cEVS3108.3
 
 ut_setrequirements cEVS3108_31, "A"
-write "     *** Requirement cEVS3108_31 requires ANALYSIS."
+write "*** Requirement cEVS3108_31 requires ANALYSIS."
 write
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_2_41.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_341.log","$cpu")
+wait 5
 
-step_241_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_341_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 
 start $sc_$cpu_print_evs_log_file
 write 
@@ -688,21 +665,23 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+15) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
 write
 
 if (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) then
-   ut_setrequirements cEVS3014 , "P"
-   write "     *** Requirement cEVS3014 PASSED."
+   ut_setrequirements cEVS3014, "P"
+   write "<*> Passed (3014) - EVS Log Mode set to Discard."
 else
-   ut_setrequirements cEVS3014 , "F"
-   write "     *** Requirement cEVS3014 FAILED."
+   ut_setrequirements cEVS3014, "F"
+   write "<!> Failed (3014) - EVS Log Mode expected to be Discard. Is set to ",p@$SC_$CPU_EVS_LogMode
 endif
-write
 
 write ";***********************************************************************"
 write "; Step 4.2: Send 12 more event messages"
@@ -716,6 +695,8 @@ write ";***********************************************************************"
 ;               cEVS3108.1
 ;               cEVS3108.2
 
+evs_logoflctr_0 = evs_logoflctr_0  + 12
+
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "7" Iters = "12" Milliseconds = 15
 wait 13
  
@@ -726,30 +707,30 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+27) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
 IF (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
   ut_setrequirements cEVS3108_1, "P"
-  write "     *** Requirement cEVS3108_1 PASSED."
+  write "<*> Passed (3108.1) - Telemetry indicates the log is Full."
 ELSE
   ut_setrequirements cEVS3108_1, "F"
-  write "     *** Requirement cEVS3108_1 FAILED."
+  write "<!> Failed (3108.1) - EVS Log expected to be full. Telemetry indicates ",p@$SC_$CPU_EVS_LOGFULL
 ENDIF
-write
 
-IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0+27) THEN
-    ut_setrequirements cEVS3108_2, "P"
-  write "     *** Requirement cEVS3108_2 PASSED."
+IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) THEN
+  ut_setrequirements cEVS3108_2, "P"
+  write "<*> Passed (3108.2) - Overflow counter is as expected."
 ELSE
-    ut_setrequirements cEVS3108_2, "F"
-  write "     *** Requirement cEVS3108_2 FAILED."
+  ut_setrequirements cEVS3108_2, "F"
+  write "<!> Failed (3108.2) - Overflow counter is not correct. Expected ",evs_logoflctr_0,"; Got ",$SC_$CPU_EVS_LOGOVERFLOWC
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 4.2.1: Get Local Event Log and compare time with previous"
@@ -760,32 +741,29 @@ write ";***********************************************************************"
 ;              Event Log.
 ;              Files should only differ in time captured in file header.
 ;              cEVS3108.3
-write
 
 ut_setrequirements cEVS3108_32, "A"
-write "     *** Requirement cEVS3108_32 requires ANALYSIS."
+write "*** Requirement cEVS3108_32 requires ANALYSIS."
 write
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_3_21.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_421.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file 
 write
 
-step_321_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_421_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 
-if (step_241_log_file_time <> step_321_log_file_time) then
-   write "*** Log file times are different:"
+if (step_341_log_file_time <> step_421_log_file_time) then
+  write "<*> Passed - Log file times are different:"
 else
-   write "*** Log file times are the same:"
-   ut_setrequirements cEVS3108_32, "F"
-   write "     *** Requirement cEVS3108_32 FAILED."
+  ut_setrequirements cEVS3108_32, "F"
+  write "<!> Failed (3108_32) - Log file times are the same."
 endif
-write
 
 write
-write "        *** Step 3.4.1 Log File Time: ", step_241_log_file_time
-write "        *** Step 4.2.1 Log File Time: ", step_321_log_file_time
+write "*** Step 3.4.1 Log File Time: ", step_341_log_file_time
+write "*** Step 4.2.1 Log File Time: ", step_421_log_file_time
 write
 
 quickrun:
@@ -805,6 +783,8 @@ write ";***********************************************************************"
 ;               issued.
 ;               cEVS3013
 
+evs_logoflctr_0 = 0
+
 /$SC_$CPU_EVS_CLRLOG
 wait 5
 
@@ -815,22 +795,24 @@ write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+    write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+    write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
-if ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+if ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
   ut_setrequirements cEVS3013, "P"
-  write "     *** Requirement cEVS3013 PASSED."
+  write "<*> Passed (3013) - Log is Full."
   evs_logoflctr_old = 0
 ELSE
   ut_setrequirements cEVS3013, "F"
-  write "     *** Requirement cEVS3013 FAILED."
+  write "<!> Failed (3013) - Log does not indicate it is Full."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 4.3.2: Get Local Event Log."
@@ -842,31 +824,28 @@ write ";***********************************************************************"
 
 local empty_log = TRUE
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_3_32.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_432.log","$cpu")
+wait 5
 
 FOR i = 1 to CFE_EVS_LOG_MAX DO
-   IF (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.SCID <> "UNK" ) AND (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.PRCID <> "UNK") AND (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.EVTTYPE <> "UNK") THEN 
+  IF (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.SCID <> "UNK" ) AND ;;
+     (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.PRCID <> "UNK") AND ;;
+     (p@$SC_$CPU_EVS_LOG[i].EVTLOGENTRY.EVTTYPE <> "UNK") THEN 
     empty_log = FALSE
     ut_setrequirements cEVS3013, "F"
-    write "     *** Requirement cEVS3013 FAILED."
-    write
-ENDIF
-continue if empty_log = TRUE
+    write "<!> Failed (3013) - Log entry #",i," was not cleared."
+  ENDIF
+  continue if empty_log = TRUE
 ENDDO
 
 IF empty_log = TRUE THEN
   ut_setrequirements cEVS3013, "P"
-  write "     *** Requirement cEVS3013 PASSED."
-  write
+  write "<*> Passed (3013) - Log was empty"
 ENDIF
 
 drop empty_log
-write
 
 start $sc_$cpu_print_evs_log_file
-write
-
 
 write ";***********************************************************************"
 write "; Step 4.4: Fill Event Log while in Discard mode"
@@ -892,12 +871,14 @@ write "        Local Event Log Mode: ",p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
 write ";***********************************************************************"
 write "*** Step 4.4.1.1: Get Local Event Log."
@@ -905,11 +886,10 @@ write ";***********************************************************************"
 ;                Log file dumped 'n' entries. Page should show 'n' entries in 
 ;                order sent from top - down.
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_3_411.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_4411.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
-write
 
 write ";***********************************************************************"
 write "; Step 4.4.2: Send 5 or more Event Message(s) for a total of "
@@ -932,37 +912,34 @@ write "        Local Event Log Mode: ",p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write 
 
 IF (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-  ut_setrequirements cEVS3108_1, "P"
-  write "     *** Requirement cEVS3108_1 PASSED."
-  write
   ut_setrequirements cEVS3018h, "P"
-  write "     *** Requirement cEVS3018h PASSED."
+  ut_setrequirements cEVS3108_1, "P"
+  write "<*> Passed (3018h;3108_1) - Log indicates it is Full"
 ELSE
-  ut_setrequirements cEVS3108_1, "F"
-  write "     *** Requirement cEVS3108_1 FAILED."
-  write
   ut_setrequirements cEVS3018h, "F"
-  write "     *** Requirement cEVS3018h FAILED."
+  ut_setrequirements cEVS3108_1, "F"
+  write "<!> Failed (3018h;3108_1) - Log was expected to be full. Telemetry indicates it is NOT"
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 4.4.2.1:  Get Local Event Log."
 write ";***********************************************************************"
 ;                 Log file dumped CFE_EVS_LOG_MAX entries
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_3_421.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_4421.log","$cpu")
+wait 5
 
-step_3421_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_4421_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 
 start $sc_$cpu_print_evs_log_file
 write
@@ -978,6 +955,7 @@ write ";***********************************************************************"
 
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "1" Milliseconds = 15
 wait 10
+
 write
 write "        Event Log Full: ", p@$SC_$CPU_EVS_LOGFULL
 write "        Local Log Overflow Counter: ",$SC_$CPU_EVS_LOGOVERFLOWC
@@ -985,12 +963,15 @@ write "        Local Event Log Mode: ",p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+1) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+1) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_d) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
+
 evs_logoflctr_old=$SC_$CPU_EVS_LOGOVERFLOWC
 
 write ";***********************************************************************"
@@ -1003,19 +984,18 @@ write ";***********************************************************************"
 ;                  specified filename.
 
 ut_setrequirements cEVS3015, "A"
-write "     *** Requirement cEVS3015 requires ANALYSIS."
+write "*** Requirement cEVS3015 requires ANALYSIS."
 write
-write "     *****************************************************************"
-write "     *** Compare Local Event Log to Event Telemetry to verify that ***"
-write "     *** the event messages logged agree with the telemetry.       ***" 
-write "     *****************************************************************" 
+write "*****************************************************************"
+write "*** Compare Local Event Log to Event Telemetry to verify that ***"
+write "*** the event messages logged agree with the telemetry.       ***" 
+write "*****************************************************************" 
 write              
 
 ; Then ftp logfile to workstation file dest_filename.
-local remote_dir = "RAM:0"
-local src_filename = "cfe_evs_3_5_1.log"
+local remote_dir = ramDir
+local src_filename = "cfe_evs_451.log"
 local dest_filename = "$sc_$cpu_" & src_filename
-;start get_file_to_cvt (remote_dir, src_filename, dest_filename, "$cpu", "EVS_LOG")
 
 ; ====================================================================
 ; Issue command to write event log contents to command-specified file name.
@@ -1024,19 +1004,21 @@ evs_cmdcnt = $sc_$cpu_evs_cmdpc
 evs_errcnt = $sc_$cpu_evs_cmdec
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 write
-/$sc_$cpu_EVS_WRITELOG2FILE LOGFILENAME="/ram/cfe_evs_3_5_1.log"
+
+/$sc_$cpu_EVS_WRITELOG2FILE LOGFILENAME=logicalRamDir & src_filename
 wait until ($sc_$cpu_evs_cmdpc <> evs_cmdcnt) OR ($sc_$cpu_evs_cmdec <> evs_errcnt) timeout 20
+
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 
 if ($sc_$cpu_evs_cmdpc <> evs_cmdcnt + 1) OR ($sc_$cpu_evs_cmdec <> evs_errcnt)  then
    ut_setrequirements cEVS3015, "F"
-  write "     *** Requirement cEVS3015 FAILED."
+  write "<!> Failed (3015) - File was not written."
 endif
 
 ; ===================================
 ; Issue ftp transfer
 ; ===================================
-start ftp_file("RAM:0", "cfe_evs_3_5_1.log", "$sc_$cpu_cfe_evs_3_5_1.log", "$cpu", "g")
+s ftp_file(ramDir,src_filename,dest_filename,"$cpu","g")
 
 ; ===================================
 ; Test if file has arrived to workstation
@@ -1044,16 +1026,14 @@ start ftp_file("RAM:0", "cfe_evs_3_5_1.log", "$sc_$cpu_cfe_evs_3_5_1.log", "$cpu
 local dest_pathname = work & "/image/" & dest_filename
 IF NOT file_exists(dest_pathname) THEN
   ut_setrequirements cEVS3015, "F"
-  write "     *** Requirement cEVS3015 FAILED."
+  write "<!> Failed (3015) - File was not downloaded to destination."
 ENDIF
-write
 
 ; ================================================
 ; Generate 'appid' value for FILE_TO_CVT call
 ; ================================================
 local appid, appidkey
 local cpu = "$CPU"
-
 
 ; ===================================
 ; Translate from cpu'x' to 'x'
@@ -1081,28 +1061,24 @@ appid = "P0F" & appidkey & "0"
 ; ======================================
 ; Populate CVT with downloaded event log
 ; ======================================
-;;;;FILE_TO_CVT_BETA %name(dest_filename) %name(appid)
 FILE_TO_CVT %name(dest_filename) %name(appid)
 
 ; ===================================
 ; Verify that log write time has updated
 ; ===================================
-step_351_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_451_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 
 write
-write "        *** Step 4.4.2.1 Log File Time: ", step_3421_log_file_time
-write "        *** Step 4.5.1 Log File Time: ", step_351_log_file_time
+write "*** Step 4.4.2.1 Log File Time: ", step_4421_log_file_time
+write "*** Step 4.5.1 Log File Time: ", step_451_log_file_time
 write
 
-if (step_3421_log_file_time <> step_351_log_file_time) then
-   write "*** Log file times are different:"
+if (step_4421_log_file_time <> step_451_log_file_time) then
+  write "<*> Passed (3015) - Log file times are different:"
 else
-   write "*** Log file times are the same:"
-   ut_setrequirements cEVS3015, "F"
-   write "     *** Requirement cEVS3015 FAILED."
+  ut_setrequirements cEVS3015, "F"
+  write "<!> Failed (3015) - Log file times are the same. Expected them to be different."
 endif
-write
-
 
 ; ===================================
 ; Print the log contents
@@ -1119,20 +1095,18 @@ write ";***********************************************************************"
 ;                 Test cEVS3015_1: write event log to default file name.
 
 ut_setrequirements cEVS3015_1, "A"
-write "     *** Requirement cEVS3015_1 requires ANALYSIS."
+write "*** Requirement cEVS3015_1 requires ANALYSIS."
 write
-write "     *****************************************************************"
-write "     *** Compare Local Event Log to Event Telemetry to verify that ***"
-write "     *** the event messages logged agree with the telemetry.       ***" 
-write "     *****************************************************************" 
-write              
+write "*****************************************************************"
+write "*** Compare Local Event Log to Event Telemetry to verify that ***"
+write "*** the event messages logged agree with the telemetry.       ***" 
+write "*****************************************************************" 
 
 write "*** Send 2 more event messages"
-write
 
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "2" Milliseconds = 15
 wait 10
-write
+
 write "        Event Log Full: ", p@$SC_$CPU_EVS_LOGFULL
 write "        Local Log Overflow Counter: ",$SC_$CPU_EVS_LOGOVERFLOWC
 write "        Local Event Log Mode: ",p@$SC_$CPU_EVS_LOGMODE
@@ -1146,24 +1120,23 @@ evs_cmdcnt = $sc_$cpu_evs_cmdpc
 evs_errcnt = $sc_$cpu_evs_cmdec
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 write
+
 /$sc_$cpu_EVS_WRITELOG2FILE LOGFILENAME=""
 wait until ($sc_$cpu_evs_cmdpc <> evs_cmdcnt) OR ($sc_$cpu_evs_cmdec <> evs_errcnt) timeout 20
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 
-
 if ($sc_$cpu_evs_cmdpc <> evs_cmdcnt + 1) OR ($sc_$cpu_evs_cmdec <> evs_errcnt)  then
-   ut_setrequirements cEVS3015_1, "F"
+  ut_setrequirements cEVS3015_1, "F"
+  write "<!> Failed (3015.1) - File was not written."
 endif
-
-;src_filename = CFE_EVS_DEFAULT_LOG_FILE  this includes leading /ram/ and causes error.
 
 ; ===================================
 ; Issue ftp transfer
 ; ===================================
 src_filename = "cfe_evs.log"
-dest_filename =  "$sc_$cpu_" & "cfe_evs_3_5_2.log"
+dest_filename =  "$sc_$cpu_" & "cfe_evs_452.log"
 write "ftp ", src_filename, " to ", dest_filename
-start ftp_file("RAM:0", src_filename, dest_filename, "$cpu", "g")
+start ftp_file(ramDir, src_filename, dest_filename, "$cpu", "g")
 
 ; ===================================
 ; Test if file has arrived at workstation
@@ -1171,7 +1144,7 @@ start ftp_file("RAM:0", src_filename, dest_filename, "$cpu", "g")
 dest_pathname = work & "/image/" & dest_filename
 IF NOT file_exists(dest_pathname) THEN
   ut_setrequirements cEVS3015_1, "F"
-  write "     *** Requirement cEVS3015_1 FAILED."
+  write "<!> Failed (3015.1) - File was not downloaded to destination."
 ENDIF
 write
 
@@ -1183,20 +1156,18 @@ FILE_TO_CVT %name(dest_filename) %name(appid)
 ; ===================================
 ; Verify that log write time has updated
 ; ===================================
-step_352_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_452_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 write
-write "        *** Step 4.5.1 Log File Time: ", step_351_log_file_time
-write "        *** Step 4.5.2 Log File Time: ", step_352_log_file_time
+write "*** Step 4.5.1 Log File Time: ", step_451_log_file_time
+write "*** Step 4.5.2 Log File Time: ", step_452_log_file_time
 write
 
-if (step_351_log_file_time <> step_352_log_file_time) then
-   write "*** Log file times are different:"
+if (step_451_log_file_time <> step_452_log_file_time) then
+  write "<*> Passed (3015) - Log file times are different:"
 else
-   write "*** Log file times are the same:"
-   ut_setrequirements cEVS3015_1, "F"
-   write "     *** Requirement cEVS3015_1 FAILED."
+  ut_setrequirements cEVS3015_1, "F"
+  write "<!> Failed (3015) - Log file times are the same. Expected them to be different."
 endif
-write
 
 ; ===================================
 ; Get hardcopy and softcopy of log contents
@@ -1221,7 +1192,9 @@ write ";***********************************************************************"
 evs_cmdcnt = $sc_$cpu_evs_cmdpc
 evs_errcnt = $sc_$cpu_evs_cmdec
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
+
 /$SC_$CPU_EVS_SETLOGMODE OVERWRITE
+
 wait until ($sc_$cpu_evs_cmdpc <> evs_cmdcnt) OR ($sc_$cpu_evs_cmdec <> evs_errcnt) timeout 20
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 
@@ -1232,22 +1205,26 @@ write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+2) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+2) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
+
 evs_logoflctr_old=$SC_$CPU_EVS_LOGOVERFLOWC
 
-if (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ($sc_$cpu_evs_cmdpc = evs_cmdcnt + 1) AND ($sc_$cpu_evs_cmdec = evs_errcnt)  THEN
-   ut_setrequirements cEVS3014 , "P"
-   write "     *** Requirement cEVS3014 PASSED."
+if (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   ($sc_$cpu_evs_cmdpc = evs_cmdcnt + 1) AND ;;
+   ($sc_$cpu_evs_cmdec = evs_errcnt)  THEN
+  ut_setrequirements cEVS3014 , "P"
+  write "<*> Passed (3014) - Log mode is set to overwrite"
 else
    ut_setrequirements cEVS3014 , "F"
-   write "     *** Requirement cEVS3014 FAILED."
+  write "<!> Failed (3014) - Set Log mode = overwrite did not execute properly"
 endif
-write
 
 write ";***********************************************************************"
 write "; Step 5.2: Send 9 event messages"
@@ -1260,6 +1237,7 @@ write ";***********************************************************************"
 
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "1" Iters = "4" Milliseconds = 15
 wait 5
+
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "5" Milliseconds = 15
 wait 6
 
@@ -1270,32 +1248,32 @@ write "        Local Event Log Mode: ",p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+9) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+9) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
 
 IF (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_t) THEN
   ut_setrequirements cEVS3108_1, "P"
-  write "     *** Requirement cEVS3108_1 PASSED."
+  write "<*> Passed (3108.1) - Telemetry indicates the Log is Full."
 ELSE
   ut_setrequirements cEVS3108_1, "F"
-  write "     *** Requirement cEVS3108_1 FAILED."
+  write "<!> Failed (3108.1) - Telemetry does not indicate the Log is Full."
 ENDIF
-write
 
 IF ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_old+9) THEN
   ut_setrequirements cEVS3108_2, "P"
-  write "     *** Requirement cEVS3108_2 PASSED."
+  write "<*> Passed (3108_2) - Log overflow counter as expected."
 ELSE
   ut_setrequirements cEVS3108_2, "F"
-  write "     *** Requirement cEVS3108_2 FAILED."
+  write "<!> Failed (3108_2) - Log overflow counter is not correct. Expected ",evs_logoflctr_old+9,"; Got ",$SC_$CPU_EVS_LOGOVERFLOWC
 ENDIF
-write
-evs_logoflctr_old=$SC_$CPU_EVS_LOGOVERFLOWC
 
+evs_logoflctr_old=$SC_$CPU_EVS_LOGOVERFLOWC
 
 write ";***********************************************************************"
 write "; Step 5.3: Test WRITELOG command options in OVERWRITE mode."
@@ -1309,17 +1287,16 @@ write ";***********************************************************************"
 ;                  specified filename.
 
 write
-write "     *****************************************************************"
-write "     *** Compare Local Event Log to Event Telemetry to verify that ***"
-write "     *** the event messages logged agree with the telemetry.       ***" 
-write "     *****************************************************************" 
+write "*****************************************************************"
+write "*** Compare Local Event Log to Event Telemetry to verify that ***"
+write "*** the event messages logged agree with the telemetry.       ***" 
+write "*****************************************************************" 
 write              
 
 ; Then ftp logfile to workstation file dest_filename.
-local remote_dir = "RAM:0"
-local src_filename = "cfe_evs_4_3_1.log"
-local dest_filename = "$sc_$cpu_" & src_filename
-;start get_file_to_cvt (remote_dir, src_filename, dest_filename, "$cpu", "EVS_LOG")
+remote_dir = ramDir
+src_filename = "cfe_evs_531.log"
+dest_filename = "$sc_$cpu_" & src_filename
 
 ; ====================================================================
 ; Issue command to write event log contents to command-specified file name.
@@ -1327,21 +1304,22 @@ local dest_filename = "$sc_$cpu_" & src_filename
 local evs_cmdcnt = $sc_$cpu_evs_cmdpc
 local evs_errcnt = $sc_$cpu_evs_cmdec
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
-write
-/$sc_$cpu_EVS_WRITELOG2FILE LOGFILENAME="/ram/cfe_evs_4_3_1.log"
+
+/$sc_$cpu_EVS_WRITELOG2FILE LOGFILENAME=logicalRamDir & src_filename
+
 wait until ($sc_$cpu_evs_cmdpc <> evs_cmdcnt) OR ($sc_$cpu_evs_cmdec <> evs_errcnt) timeout 20
+
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 
 if ($sc_$cpu_evs_cmdpc <> evs_cmdcnt + 1) OR ($sc_$cpu_evs_cmdec <> evs_errcnt)  then
    ut_setrequirements cEVS3015, "F"
-  write "     *** Requirement cEVS3015 FAILED."
+  write "<!> Failed (3015) - File not written."
 endif
-
 
 ; ===================================
 ; Issue ftp transfer
 ; ===================================
-start ftp_file("RAM:0", "cfe_evs_4_3_1.log", "$sc_$cpu_cfe_evs_4_3_1.log", "$cpu", "g")
+s ftp_file(ramDir,src_filename,dest_filename,"$cpu","g")
 
 ; ===================================
 ; Test if file has arrived to workstation
@@ -1349,9 +1327,8 @@ start ftp_file("RAM:0", "cfe_evs_4_3_1.log", "$sc_$cpu_cfe_evs_4_3_1.log", "$cpu
 local dest_pathname = work & "/image/" & dest_filename
 IF NOT file_exists(dest_pathname) THEN
   ut_setrequirements cEVS3015, "F"
-  write "     *** Requirement cEVS3015 FAILED."
+  write "<!> Failed (3015) - File not downloaded."
 ENDIF
-write
 
 ; ======================================
 ; Populate CVT with downloaded event log
@@ -1361,22 +1338,19 @@ FILE_TO_CVT %name(dest_filename) %name(appid)
 ; ===================================
 ; Verify that log write time has updated
 ; ===================================
-step_431_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_531_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 
 write
-write "        *** Step 5.3.1 Log File Time: ", step_431_log_file_time
-write "        *** Step 4.5.2 Log File Time: ", step_352_log_file_time
+write "*** Step 5.3.1 Log File Time: ", step_531_log_file_time
+write "*** Step 4.5.2 Log File Time: ", step_452_log_file_time
 write
 
-if (step_431_log_file_time <> step_352_log_file_time) then
-   write "*** Log file times are different:"
+if (step_531_log_file_time <> step_452_log_file_time) then
+   write "<*> Passed - Log file times are different"
 else
-   write "*** Log file times are the same:"
    ut_setrequirements cEVS3015, "F"
-   write "     *** Requirement cEVS3015 FAILED."
+   write "<!> Failed (3015) - Log file times are the same when expected to be different."
 endif
-write
-
 
 ; ===================================
 ; Get hardcopy and softcopy of log contents
@@ -1393,19 +1367,18 @@ write ";***********************************************************************"
 ;                 Test cEVS3015_1: write event log to default file name.
 
 ut_setrequirements cEVS3015_1, "A"
-write "     *** Requirement cEVS3015_1 requires ANALYSIS."
+write "*** Requirement cEVS3015_1 requires ANALYSIS."
 write
-write "     *****************************************************************"
-write "     *** Compare Local Event Log to Event Telemetry to verify that ***"
-write "     *** the event messages logged agree with the telemetry.       ***" 
-write "     *****************************************************************" 
-write              
+write "*****************************************************************"
+write "*** Compare Local Event Log to Event Telemetry to verify that ***"
+write "*** the event messages logged agree with the telemetry.       ***" 
+write "*****************************************************************" 
 
 write "*** Send 2 more event messages"
-write
 
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "2" Milliseconds = 15
 wait 10
+
 write
 write "        Event Log Full: ", p@$SC_$CPU_EVS_LOGFULL
 write "        Local Log Overflow Counter: ",$SC_$CPU_EVS_LOGOVERFLOWC
@@ -1419,25 +1392,23 @@ write
 evs_cmdcnt = $sc_$cpu_evs_cmdpc
 evs_errcnt = $sc_$cpu_evs_cmdec
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
-write
+
 /$sc_$cpu_EVS_WRITELOG2FILE LOGFILENAME=""
 wait until ($sc_$cpu_evs_cmdpc <> evs_cmdcnt) OR ($sc_$cpu_evs_cmdec <> evs_errcnt) timeout 20
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 
 if ($sc_$cpu_evs_cmdpc <> evs_cmdcnt + 1) OR ($sc_$cpu_evs_cmdec <> evs_errcnt)  then
-   ut_setrequirements cEVS3015_1, "F"
+  ut_setrequirements cEVS3015_1, "F"
+  write "<!> Failed (3015.1) - File not written."
 endif
-
-;src_filename = CFE_EVS_DEFAULT_LOG_FILE  this includes leading /ram/ and causes error.
-
 
 ; ===================================
 ; Issue ftp transfer
 ; ===================================
 src_filename = "cfe_evs.log"
-dest_filename =  "$sc_$cpu_" & "cfe_evs_4_3_2.log"
+dest_filename =  "$sc_$cpu_" & "cfe_evs_532.log"
 write "ftp ", src_filename, " to ", dest_filename
-start ftp_file("RAM:0", src_filename, dest_filename, "$cpu", "g")
+start ftp_file(ramDir, src_filename, dest_filename, "$cpu", "g")
 
 ; ===================================
 ; Test if file has arrived at workstation
@@ -1445,9 +1416,8 @@ start ftp_file("RAM:0", src_filename, dest_filename, "$cpu", "g")
 dest_pathname = work & "/image/" & dest_filename
 IF NOT file_exists(dest_pathname) THEN
   ut_setrequirements cEVS3015_1, "F"
-  write "     *** Requirement cEVS3015_1 FAILED."
+  write "<!> Failed (3015.1) - File not downloaded."
 ENDIF
-write
 
 ; ======================================
 ; Populate CVT with downloaded event log
@@ -1457,20 +1427,18 @@ FILE_TO_CVT %name(dest_filename) %name(appid)
 ; ===================================
 ; Verify that log write time has updated
 ; ===================================
-step_432_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
+step_532_log_file_time = {"pf" & %hex($CPU_CMDAPID_BASE, 2) & "cFE_createtimeseconds"}
 write
-write "        *** Step 5.3.1 Log File Time: ", step_431_log_file_time
-write "        *** Step 5.3.2 Log File Time: ", step_432_log_file_time
+write "*** Step 5.3.1 Log File Time: ", step_531_log_file_time
+write "*** Step 5.3.2 Log File Time: ", step_532_log_file_time
 write
 
-if (step_431_log_file_time <> step_432_log_file_time) then
-   write "*** Log file times are different:"
+if (step_531_log_file_time <> step_532_log_file_time) then
+   write "<*> Passed - Log file times are different"
 else
-   write "*** Log file times are the same:"
    ut_setrequirements cEVS3015_1, "F"
-   write "     *** Requirement cEVS3015_1 FAILED."
+   write "<!> Failed (3015) - Log file times are the same when expected to be different."
 endif
-write
 
 ; ===================================
 ; Get hardcopy and softcopy of log contents
@@ -1499,7 +1467,7 @@ else
 endif
 
 ;; Look for expected event #1
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_EVS_ERR_CRLOGFILE_EID, " not received."
@@ -1526,21 +1494,22 @@ write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 6.1.1:  Get Local Event Log."
 write ";***********************************************************************"
 ;               Log file dumped containing no entries. File size is 288 bytes.
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_5_11.log", "$cpu")
-wait 10
-write
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_611.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
 write
@@ -1548,41 +1517,40 @@ write
 write ";***********************************************************************"
 write "; Step 6.2: Send 4 event messages"
 write ";***********************************************************************"
-
 ; Need to capture upcoming messages for cEVS3103.4 test
 ;;ASK "If there's is no UART window up, open one now"
 
 local eventFmt_Pass=FALSE
 
 FOR i = 1 to 4 DO
-  ut_setupevt $SC, $CPU, TST_EVS, 7, INFO
+  ut_setupevents $SC, $CPU, TST_EVS, 7, INFO, 1
   wait 2
-  /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "7" Iters = "1" Milliseconds = 15
+  /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="7" Iters="1" Milliseconds=15
   wait 2
-  IF ($SC_$CPU_num_found_messages = 1) THEN
+  IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
      IF ($SC_$CPU_find_event[1].event_txt <> "") THEN
         eventFmt_Pass=TRUE
         write
-        write "Event Message ",i," is in LONG format as expected."
+        write "<*> Passed - Event Message ",i," is in LONG format as expected."
         write
      ELSE
         write
-        write "*** ALERT *** Event Message ",i," not in LONG format."
+        write "<!> Failed - Event Message ",i," not in LONG format."
         write
      ENDIF
   ELSE
      write
-     write "*** ALERT *** No Event Message Received !!!"
+     write "<!> Failed - No Event Message Received !!!"
      write
   ENDIF
 ENDDO
 
 IF (eventFmt_Pass = FALSE) THEN
   ut_setrequirements cEVS31034, "F"
-  write "     *** Requirement cEVS3103.4 FAILED."
+  write "<!> Failed (3103.4) - Events not generated properly"
 ELSE
   ut_setrequirements cEVS31034, "P"
-  write "     *** Requirement cEVS3103.4 PASSED."
+  write "<*> Passed (3103.4) - All events generated as expected."
 ENDIF
 
 write ";***********************************************************************"
@@ -1601,7 +1569,6 @@ write ";***********************************************************************"
 /$SC_$CPU_EVS_SETEVTFMT SHORT
 wait 5
 
-
 write
 write "        Event Log Full: ", p@$SC_$CPU_EVS_LOGFULL
 write "        Local Log Overflow Counter: ", $SC_$CPU_EVS_LOGOVERFLOWC
@@ -1609,48 +1576,49 @@ write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_s) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_s) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
 
 IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_s) THEN
   ut_setrequirements cEVS3001, "P"
-  write "     *** Requirement cEVS3001 PASSED."
+  write "<*> Passed (3001) - Message Format mode set to Short."
 ELSE
   ut_setrequirements cEVS3001, "F"
-  write "     *** Requirement cEVS3001 FAILED."
+  write "<!> Failed (3001) - Message Format mode is set to ",p@$SC_$CPU_EVS_MSGFMTMODE,"; Expected Short."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 6.4: Send 7 event messages"
 write "; 	   Requirement(s): cEVS3001; cEVS3103.5"
 write ";***********************************************************************"
-;             Event messages are in 'SHORT' format
-
+; Event messages are in 'SHORT' format
 
 FOR i = 1 to 7 DO
-  ut_setupevt $SC, $CPU, TST_EVS, 6, INFO
+  ut_setupevents $SC, $CPU, TST_EVS, 6, INFO, 1
   wait 2
-  /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "1" Milliseconds = 15
+
+  /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="6" Iters="1" Milliseconds=15
   wait 2
-  IF ($SC_$CPU_num_found_messages = 1) THEN
-     IF ($SC_$CPU_find_event[1].event_txt <> "") THEN
-        write
-        write "*** ALERT *** Event Message ",i," not in SHORT format"
-        write
-     ELSE
-        eventFmt_Pass=TRUE
-        write
-        write "Event Message ",i," in SHORT format as expected."
-        write
-     ENDIF
+  IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+    IF ($SC_$CPU_find_event[1].event_txt <> "") THEN
+      write
+      write "<!> Failed - Event Message ",i," not in SHORT format"
+      write
+    ELSE
+      eventFmt_Pass=TRUE
+      write
+      write "<*> Passed - Event Message ",i," in SHORT format as expected."
+      write
+    ENDIF
   ELSE
      write
-     write "*** ALERT *** No Event Message Received !!!"
+     write "<!> Failed - No Event Message Received !!!"
      write
   ENDIF
 ENDDO
@@ -1658,25 +1626,23 @@ ENDDO
 IF (eventFmt_Pass = FALSE) THEN
   ut_setrequirements cEVS3001, "F"
   ut_setrequirements cEVS31035, "F"
-  write "     *** Requirement cEVS3001 & cEVS3103.5 FAILED."
+  write "<!> Failed (3001;3103.5) - Events were not generated properly."
 ELSE
   ut_setrequirements cEVS3001, "P"
   ut_setrequirements cEVS31035, "P"
-  write "     *** Requirement cEVS3001 & cEVS3103.5 PASSED."
+  write "<*> Passed (3001;3103.5) - All events generated as expected."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 6.4.1: Get Local Event Log."
 write "; 	     Requirement(s): cEVS3108, cEVS3001"
 write ";***********************************************************************"
-;               Log file dumped containing n entries. Entries are in 'long' 
-;               format.
+; Log file dumped containing n entries. Entries are in 'long' format.
 
 local event_text
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_5_41.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_641.log","$cpu")
+wait 5
 
 FOR i = 1 to 11 DO
    IF (p@$SC_$CPU_EVS_LOG[i].EVTMSG <> "") THEN
@@ -1688,47 +1654,36 @@ FOR i = 1 to 11 DO
 ENDDO
      
 IF event_text = TRUE THEN
-    ut_setrequirements cEVS3108, "P"
-    write "     *** Requirement cEVS3108 PASSED."
-    write
-    ut_setrequirements cEVS3001, "P"
-    write "     *** Requirement cEVS3001 PASSED."
+  ut_setrequirements cEVS3001, "P"
+  ut_setrequirements cEVS3108, "P"
+  write "<*> Passed (3001;3108) - Events in Log were in long format."
 ELSE
-    ut_setrequirements cEVS3108, "F"
-    write "     *** Requirement cEVS3108 FAILED."
-    write
-    ut_setrequirements cEVS3001, "F"
-    write "     *** Requirement cEVS3001 FAILED."
+  ut_setrequirements cEVS3001, "F"
+  ut_setrequirements cEVS3108, "F"
+  write "<!> Failed (3001;3108) - At least 1 event in Log was not in long format as expected."
 ENDIF
-write
 
 start $sc_$cpu_print_evs_log_file
 write
 
 drop event_text
-write
 
 write ";***********************************************************************"
 write "; Step 6.4.2: Analyze the UART Log."
 write "; 	     Requirement(s): cEVS3001"
 write ";***********************************************************************"
-;               Obtain copy of UART log. Verify that entries are in 'long' or
-;               'short' format as appropriate.
+; Obtain copy of UART log. Verify that entries are in 'long' or 'short' format
+; as appropriate.
 write
-write "     *****************************************************************"
-write "     *** Verify in the UART log file that the previous 7 Event     ***"
-write "     *** Messages are written in the short format and the 4 Event  ***"
-write "     *** above that 7 are written in long format.                  ***"
-write "     *****************************************************************" 
+write "*****************************************************************"
+write "*** Verify in the UART log file that the previous 7 Event     ***"
+write "*** Messages are written in the short format and the 4 Event  ***"
+write "*** above that 7 are written in long format.                  ***"
+write "*****************************************************************" 
 write              
-
-ut_setrequirements cEVS3001, "A"
-write "     *** Requirement cEVS3001 requires ANALYSIS."
-write
 
 start $sc_$cpu_print_evs_log_file
 write "Verify the last 11 Event Messages are in short format"
-;;ASK "Capture the last 11 Event Messages from the UART window"
 
 write ";***********************************************************************"
 write "; Step 7.0: Test Event Message Logging Progression"
@@ -1736,8 +1691,7 @@ write ";***********************************************************************"
 write "; Step 7.1: Set Event Logging Format value to 'LONG'"
 write "; 	   Requirement(s): cEVS3001"
 write ";***********************************************************************"
-;             All telemetry values except $SC_$CPU_EVS_MSGFMTMODE retain the 
-;             same values
+; All telemetry values except $SC_$CPU_EVS_MSGFMTMODE retain the same values
 ;             Verify that:
 ;               $SC_$CPU_EVS_MSGFMTMODE = LONG
 ;               p@$SC_$CPU_EVS_LOGFULL = FALSE
@@ -1754,20 +1708,22 @@ write "        Local Event Log Mode: ", p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
+
 IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) THEN
   ut_setrequirements cEVS3001, "P"
-  write "     *** Requirement cEVS3001 PASSED."
+  write "<*> Passed (3001) - Message format mode is set to Long."
 ELSE
   ut_setrequirements cEVS3001, "F"
-  write "     *** Requirement cEVS3001 FAILED."
+  write "<!> Passed (3001) - Message format mode is set to ",p@$SC_$CPU_EVS_MSGFMTMODE,"; Long was expected."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 7.2: Clear entries from local event log."
@@ -1786,20 +1742,22 @@ write "        Local Event Log Mode: ",p@$SC_$CPU_EVS_LOGMODE
 write "        Message Format Mode: ", p@$SC_$CPU_EVS_MSGFMTMODE
 write
 
-IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
-    write "     *** EVS Log telemetry values as expected."
+IF (p@$SC_$CPU_EVS_MSGFMTMODE = evs_msgfmtmde_l) AND ;;
+   ($SC_$CPU_EVS_LOGOVERFLOWC = evs_logoflctr_0) AND ;;
+   (p@$SC_$CPU_EVS_LOGMODE = evs_logmode_o) AND ;;
+   (p@$SC_$CPU_EVS_LOGFULL= evs_logfull_f) THEN
+  write "<*> Passed - EVS Log telemetry values as expected."
 ELSE
-    write "     *** EVS Log telemetry values NOT as expected."
+  write "<!> Failed - EVS Log telemetry values NOT as expected."
 ENDIF
-write
 
 write ";***********************************************************************"
 write "; Step 7.2.1: Get Local Event Log"
 write ";***********************************************************************"
-;              Log file dumped containing no entries. File size is 288 bytes.
+; Log file dumped containing no entries. File size is 288 bytes.
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_6_21.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_721.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
 write
@@ -1814,18 +1772,17 @@ wait 8
 write ";***********************************************************************"
 write "; Step 7.4: Set time back"
 write ";***********************************************************************"
-;            Verify new time earlier than previous time.
-;            Make note of set time value.
+; Verify new time earlier than previous time. Make note of set time value.
 
 /$SC_$CPU_TIME_SUBSTCFADJ SECONDS=X'fffffff' MICROSECS=X'0'
 wait 5
-write "        Time set to:", LAST_PKT_MET
+write "Time set to:", LAST_PKT_MET
 write
 
 write ";***********************************************************************"
 write "; Step 7.5: Send some more events"
 write ";***********************************************************************"
-;            Keep track of event order.
+; Keep track of event order.
 
 /$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "6" Iters = "3" Milliseconds = 15
 wait 4
@@ -1834,38 +1791,39 @@ write ";***********************************************************************"
 write "; Step 7.5.1: Get Local Event Log."
 write "; 	     Requirement(s): cEVS3016"
 write ";***********************************************************************"
-;          Log file dumped containing n+more events. Events are written to log 
-;          in the order sent. Time tag for events goes forward, then goes back 
-;          to approximately the value set in step 6.4 and then resumes moving 
-;          forward.
+; Log file dumped containing n+more events. Events are written to log in the 
+; order sent. Time tag for events goes forward, then goes back to approximately
+; the value set in step 7.4 and then resumes moving forward.
 
 ut_setrequirements cEVS3016, "A"
-write "     *** Requirement cEVS3016 requires ANALYSIS."
+write "*** Requirement cEVS3016 requires ANALYSIS."
 write
 
-start get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs_6_51.log", "$cpu")
-wait 10
+start get_file_to_cvt (ramDir,"cfe_evs.log","$sc_$cpu_cfe_evs_751.log","$cpu")
+wait 5
 
 start $sc_$cpu_print_evs_log_file
 write
+
 ;********************************************************************************
 #else
 ;
 ; _CFE_EVS_LOG_ON_ configuration parameter is NOT defined.
 ;
-    write
-    write "*** FSW NOT configured for Local Event Log generation."
-    write
-    FOR i = 0 to ut_req_array_size DO
-       ut_requirement[i] = "N/A"
-    ENDDO
+write
+write "*** FSW NOT configured for Local Event Log generation."
+write
+
+FOR i = 0 to ut_req_array_size DO
+  ut_requirement[i] = "N/A"
+ENDDO
 #endif
 
 TST_APP_FAILED:
 
-;********************************************************************************
+;*******************************************************************************
 ; Requirements Report
-;********************************************************************************
+;*******************************************************************************
 REQUIREMENTS:
 
 local cfe_requirements[0 .. ut_req_array_size] = ["cEVS3001", "cEVS3013", "cEVS3014", "cEVS3015", "cEVS3015.1", "cEVS3016", "cEVS3018c", "cEVS3018h", "cEVS3018i", "cEVS3018j", "cEVS3103.4", "cEVS3103.5", "cEVS3108", "cEVS3108.1", "cEVS3108.2", "cEVS3108.31", "cEVS3108.32", "cEVS3301"]
@@ -1885,6 +1843,6 @@ drop ut_requirement ; needed to clear global variables
 drop ut_req_array_size ; needed to clear global variables
 write
 
-;  End procedure $sc_$cpu_log
+;  End procedure $sc_$cpu_evs_log
 ;**********************************************************************
 endproc

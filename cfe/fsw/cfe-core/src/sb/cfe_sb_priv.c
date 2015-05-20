@@ -20,52 +20,62 @@
 ** Notes:
 **
 ** $Log: cfe_sb_priv.c  $
-** Revision 1.13 2010/11/03 15:08:24EDT jmdagost 
+** Revision 1.18 2014/06/17 12:42:34GMT-05:00 rmcgraw 
+** DCR18686:1 Initialized all AppId and CallerID's with 0xFFFFFFFF
+** Revision 1.17 2012/02/29 17:21:50EST lwalling
+** Check result of call to CFE_SB_GetAppTskName()
+** Revision 1.16 2012/01/13 12:15:13EST acudmore
+** Changed license text to reflect open source
+** Revision 1.15 2011/12/07 19:19:00EST aschoeni
+** Removed returns for TIME and SB for cleaning up apps
+** Revision 1.14 2011/09/08 12:17:12EDT aschoeni
+** Added newline to syslog calls on mutex failures
+** Revision 1.13 2010/11/03 15:08:24EDT jmdagost
 ** Added cfe.h include file.
-** Revision 1.12 2009/07/24 18:24:48EDT aschoeni 
+** Revision 1.12 2009/07/24 18:24:48EDT aschoeni
 ** Added Zero Copy Mode
-** Revision 1.11 2009/07/20 14:10:14EDT aschoeni 
+** Revision 1.11 2009/07/20 14:10:14EDT aschoeni
 ** Made GetAppTskName reentrant
-** Revision 1.10 2009/07/17 17:58:22EDT aschoeni 
+** Revision 1.10 2009/07/17 17:58:22EDT aschoeni
 ** Updated MsgMap (and associated variables) from a uint16 to an CFE_SB_MsgId_t
-** Revision 1.9 2009/06/26 17:02:05EDT aschoeni 
+** Revision 1.9 2009/06/26 17:02:05EDT aschoeni
 ** Updated SB to use __func__ instead of __FILE__ for lock and unlock errors
-** Revision 1.8 2009/05/08 11:28:07EDT rmcgraw 
+** Revision 1.8 2009/05/08 11:28:07EDT rmcgraw
 ** DCR7631:1 Removed commented out utility to print routing info
-** Revision 1.7 2009/05/06 09:34:09EDT rmcgraw 
+** Revision 1.7 2009/05/06 09:34:09EDT rmcgraw
 ** DCR5801:12 Removed unused function GetRoutingPtr
-** Revision 1.6 2009/04/06 10:21:09EDT rmcgraw 
+** Revision 1.6 2009/04/06 10:21:09EDT rmcgraw
 ** DCR5801:2 Fixed problem with list, unsubscribing to all, then subscribing again
-** Revision 1.5 2009/03/31 09:25:22EDT rmcgraw 
+** Revision 1.5 2009/03/31 09:25:22EDT rmcgraw
 ** DCR5801:2 Fixed problem with removing a node in linked list
-** Revision 1.4 2009/02/06 11:29:05EST rmcgraw 
+** Revision 1.4 2009/02/06 11:29:05EST rmcgraw
 ** DCR5801:2 General Cleanup
-** Revision 1.3 2009/02/03 11:06:59EST rmcgraw 
+** Revision 1.3 2009/02/03 11:06:59EST rmcgraw
 ** DCR5801:2 Changed destination descriptors from array based to linked list
-** Revision 1.2 2009/01/30 10:36:37EST rmcgraw 
+** Revision 1.2 2009/01/30 10:36:37EST rmcgraw
 ** DCR5801:1 Removed function CFE_SB_GetNumberOfSubscribers
-** Revision 1.1 2008/04/17 08:05:31EDT ruperera 
+** Revision 1.1 2008/04/17 08:05:31EDT ruperera
 ** Initial revision
 ** Member added to cfe project on tlserver3
-** Revision 1.40 2007/09/13 09:39:58EDT rjmcgraw 
+** Revision 1.40 2007/09/13 09:39:58EDT rjmcgraw
 ** DCR4861 New function def for CFE_SB_RequestToSendEvent
-** Revision 1.39 2007/07/12 16:59:38EDT rjmcgraw 
+** Revision 1.39 2007/07/12 16:59:38EDT rjmcgraw
 ** DCR4680:1 Removed SB event log related items
-** Revision 1.38 2007/05/21 14:34:40EDT rjmcgraw 
+** Revision 1.38 2007/05/21 14:34:40EDT rjmcgraw
 ** Fixed compiler warnings in CFE_SB_GetAppTskName
-** Revision 1.37 2007/03/28 14:22:02EST rjmcgraw 
+** Revision 1.37 2007/03/28 14:22:02EST rjmcgraw
 ** DCR2654:displaying app.tsk name in events
-** Revision 1.36 2007/03/19 14:38:03EST rjmcgraw 
+** Revision 1.36 2007/03/19 14:38:03EST rjmcgraw
 ** Removed duplicate pipename check, it exists in OS_QueueCreate
-** Revision 1.35 2007/03/16 15:29:29EST rjmcgraw 
+** Revision 1.35 2007/03/16 15:29:29EST rjmcgraw
 ** Added code for duplicate pipe name check
-** Revision 1.34 2007/03/16 10:06:18EST rjmcgraw 
+** Revision 1.34 2007/03/16 10:06:18EST rjmcgraw
 ** Changed DeletePipe call to DeletePipeWithAppId in cleanup function
-** Revision 1.33 2007/03/13 14:10:19EST rjmcgraw 
+** Revision 1.33 2007/03/13 14:10:19EST rjmcgraw
 ** Added CFE_SB_CleanUpApp
-** Revision 1.32 2006/10/16 14:30:56EDT rjmcgraw 
+** Revision 1.32 2006/10/16 14:30:56EDT rjmcgraw
 ** Minor changes to comply with MISRA standard
-** Revision 1.31 2006/09/01 11:09:51EDT kkaudra 
+** Revision 1.31 2006/09/01 11:09:51EDT kkaudra
 ** IV&V:Removed cfe_evs.h,cfe_fs.h,cfe_sbp.h
 **
 ******************************************************************************/
@@ -101,7 +111,7 @@ extern cfe_sb_t         CFE_SB;
 **  Return:
 **    None
 */
-int32 CFE_SB_CleanUpApp(uint32 AppId){
+void CFE_SB_CleanUpApp(uint32 AppId){
 
   uint32 i;
 
@@ -116,9 +126,9 @@ int32 CFE_SB_CleanUpApp(uint32 AppId){
 
   /* Release any zero copy buffers */
   CFE_SB_ZeroCopyReleaseAppId(AppId);
-  
-  return CFE_SUCCESS;
-       
+
+  return;
+
 }/* end CFE_SB_CleanUpApp */
 
 
@@ -236,14 +246,14 @@ uint8 CFE_SB_GetPipeIdx(CFE_SB_PipeId_t PipeId){
 void CFE_SB_LockSharedData(const char *FuncName, int32 LineNumber){
 
     int32   Status;
-    uint32  AppId = 0;
+    uint32  AppId = 0xFFFFFFFF;
 
     Status = OS_MutSemTake(CFE_SB.SharedDataMutexId);
     if (Status != OS_SUCCESS) {
 
         CFE_ES_GetAppID(&AppId);
 
-        CFE_ES_WriteToSysLog("SB SharedData Mutex Take Err Stat=0x%x,App=%d,Func=%s,Line=%d",
+        CFE_ES_WriteToSysLog("SB SharedData Mutex Take Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
                  Status,AppId,FuncName,LineNumber);
 
     }/* end if */
@@ -271,14 +281,14 @@ void CFE_SB_LockSharedData(const char *FuncName, int32 LineNumber){
 void CFE_SB_UnlockSharedData(const char *FuncName, int32 LineNumber){
 
    int32   Status;
-   uint32  AppId = 0;
+   uint32  AppId = 0xFFFFFFFF;
 
     Status = OS_MutSemGive(CFE_SB.SharedDataMutexId);
     if (Status != OS_SUCCESS) {
 
         CFE_ES_GetAppID(&AppId);
 
-        CFE_ES_WriteToSysLog("SB SharedData Mutex Give Err Stat=0x%x,App=%d,Func=%s,Line=%d",
+        CFE_ES_WriteToSysLog("SB SharedData Mutex Give Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
                                 Status,AppId,FuncName,LineNumber);
 
     }/* end if */
@@ -350,15 +360,15 @@ CFE_SB_DestinationD_t  *CFE_SB_GetDestPtr(CFE_SB_MsgId_t MsgId,
     DestPtr = CFE_SB.RoutingTbl[Idx].ListHeadPtr;
 
     while(DestPtr != NULL){
-    
+
         if(DestPtr -> PipeId == PipeId){
             return DestPtr;
         }/* end if */
-        
+
         DestPtr = DestPtr->Next;
-        
-    }/* end while */    
-            
+
+    }/* end while */
+
     return NULL;
 
 }/* end CFE_SB_GetDestPtr */
@@ -442,14 +452,14 @@ int32 CFE_SB_SetRoutingTblIdx(CFE_SB_MsgId_t MsgId, CFE_SB_MsgId_t Value){
 **
 **  Return:
 **    Will return a pointer to the PipeName array in the pipe table if the the pipeid
-**    is in range. Otherwise this function returns a pointer to the 
+**    is in range. Otherwise this function returns a pointer to the
 **    PipeName4ErrCase[0], which is initialized with a null terminator.
-** 
+**
 */
 char *CFE_SB_GetPipeName(CFE_SB_PipeId_t PipeId){
 
     static char PipeName4ErrCase[1] = {'\0'};
-        
+
     if(PipeId >= CFE_SB_MAX_PIPES){
         return &PipeName4ErrCase[0];
     }else{
@@ -489,15 +499,15 @@ int32 CFE_SB_DuplicateSubscribeCheck(CFE_SB_MsgId_t MsgId,
     DestPtr = CFE_SB.RoutingTbl[Idx].ListHeadPtr;
 
     while(DestPtr != NULL){
-    
+
         if(DestPtr -> PipeId == PipeId){
             return CFE_SB_DUPLICATE;
         }/* end if */
-        
+
         DestPtr = DestPtr->Next;
-        
-    }/* end while */    
-            
+
+    }/* end while */
+
     return CFE_SB_NO_DUPLICATE;
 
 }/* end CFE_SB_DuplicateSubscribeCheck */
@@ -556,7 +566,7 @@ int32 CFE_SB_ValidateMsgId(CFE_SB_MsgId_t MsgId){
 **  Function:  CFE_SB_ValidatePipeId()
 **
 **  Purpose:
-**    This function checks that the pipe id does not have an index larger than the 
+**    This function checks that the pipe id does not have an index larger than the
 **    array and that the pipe is in use.
 **
 **  Arguments:
@@ -598,26 +608,31 @@ char *CFE_SB_GetAppTskName(uint32 TaskId,char *FullName){
     CFE_ES_TaskInfo_t  TaskInfo;
     CFE_ES_TaskInfo_t  *ptr = &TaskInfo;
     char               AppName[OS_MAX_API_NAME];
-    char               TskName[OS_MAX_API_NAME];       
+    char               TskName[OS_MAX_API_NAME];
 
-    CFE_ES_GetTaskInfo(ptr, TaskId);
+    if(CFE_ES_GetTaskInfo(ptr, TaskId) != CFE_SUCCESS){
 
-    /* if app name and task name are the same... */
-    if(strncmp((char *)ptr->AppName,(char *)ptr->TaskName,OS_MAX_API_NAME)==0){
+      /* unlikely, but possible if TaskId is bogus */
+      strncpy(FullName,"Unknown",OS_MAX_API_NAME-1);
+      FullName[OS_MAX_API_NAME-1] = '\0';
 
-      strncpy(FullName,(char *)ptr->AppName,OS_MAX_API_NAME);
-      
+    }else if(strncmp((char *)ptr->AppName,(char *)ptr->TaskName,OS_MAX_API_NAME-1) == 0){
+
+      /* if app name and task name are the same */
+      strncpy(FullName,(char *)ptr->AppName,OS_MAX_API_NAME-1);
+      FullName[OS_MAX_API_NAME-1] = '\0';
+
     }else{
 
       /* AppName and TskName buffers and strncpy are needed to limit string sizes */
-      strncpy(AppName,(char *)ptr->AppName,OS_MAX_API_NAME - 2);
-      strncpy(TskName,(char *)ptr->TaskName,OS_MAX_API_NAME - 2);
-        
-      sprintf(FullName,"%s.%s",AppName,TskName);
-           
-    }/* end if */
+      strncpy(AppName,(char *)ptr->AppName,OS_MAX_API_NAME-1);
+      AppName[OS_MAX_API_NAME-1] = '\0';
+      strncpy(TskName,(char *)ptr->TaskName,OS_MAX_API_NAME-1);
+      TskName[OS_MAX_API_NAME-1] = '\0';
 
-    FullName[(OS_MAX_API_NAME * 2) - 1] = '\0';
+      sprintf(FullName,"%s.%s",AppName,TskName);
+
+    }/* end if */
 
     return FullName;
 
@@ -652,14 +667,14 @@ int32 CFE_SB_GetPktType(CFE_SB_MsgId_t MsgId){
 **
 **  Purpose:
 **    This function will test the given bit for the given task. If the bit is set
-**    this function will return CFE_SB_DENIED. If bit is not set, this function set 
-**    the bit and return CFE_SB_GRANTED. This will prevent recursive events from 
+**    this function will return CFE_SB_DENIED. If bit is not set, this function set
+**    the bit and return CFE_SB_GRANTED. This will prevent recursive events from
 **    occurring.
 **
 **  Arguments:
 **
 **  Return:
-**    If the bit is set this function will return CFE_SB_DENIED. 
+**    If the bit is set this function will return CFE_SB_DENIED.
 **    If bit is not set, this function set the bit and return CFE_SB_GRANTED.
 */
 uint32 CFE_SB_RequestToSendEvent(uint32 TaskId, uint32 Bit){
@@ -667,16 +682,16 @@ uint32 CFE_SB_RequestToSendEvent(uint32 TaskId, uint32 Bit){
     /* if bit is set... */
     if(CFE_TST(CFE_SB.StopRecurseFlags[TaskId],Bit)==TRUE)
     {
-      
+
       return CFE_SB_DENIED;
-    
+
     }else{
-      
+
       CFE_SET(CFE_SB.StopRecurseFlags[TaskId],Bit);
       return CFE_SB_GRANTED;
-    
+
     }/* end if */
-    
+
 }/* end CFE_SB_RequestToSendEvent */
 
 
@@ -695,32 +710,32 @@ uint32 CFE_SB_RequestToSendEvent(uint32 TaskId, uint32 Bit){
 */
 int32 CFE_SB_AddDest(uint16 RtgTblIdx, CFE_SB_DestinationD_t *NewNode){
 
-    CFE_SB_DestinationD_t *WBS;/* Will Be Second (WBS) node */  
-    
+    CFE_SB_DestinationD_t *WBS;/* Will Be Second (WBS) node */
+
     /* if first node in list */
     if(CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr == NULL){
-    
+
         /* initialize the new node */
-        NewNode->Next = NULL;   
-        NewNode->Prev = NULL; 
-        
-        /* insert the new node */
-        CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr = NewNode;
-        
-    }else{
-    
-        WBS = CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr;
-    
-        /* initialize the new node */
-        NewNode->Next = WBS;   
+        NewNode->Next = NULL;
         NewNode->Prev = NULL;
-        
+
         /* insert the new node */
-        WBS -> Prev = NewNode;    
         CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr = NewNode;
-        
+
+    }else{
+
+        WBS = CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr;
+
+        /* initialize the new node */
+        NewNode->Next = WBS;
+        NewNode->Prev = NULL;
+
+        /* insert the new node */
+        WBS -> Prev = NewNode;
+        CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr = NewNode;
+
     }/* end if */
-    
+
     return CFE_SUCCESS;
 
 }/* CFE_SB_AddDest */
@@ -745,44 +760,44 @@ int32 CFE_SB_RemoveDest(uint16 RtgTblIdx, CFE_SB_DestinationD_t *NodeToRemove){
 
     CFE_SB_DestinationD_t *PrevNode;
     CFE_SB_DestinationD_t *NextNode;
-    
+
     /* if this is the only node in the list */
     if((NodeToRemove->Prev == NULL) && (NodeToRemove->Next == NULL)){
-    
+
         CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr = NULL;
-        
+
     /* if first node in the list and list has more than one */
     }else if(NodeToRemove->Prev == NULL){
-        
+
         NextNode = NodeToRemove->Next;
-        
+
         NextNode -> Prev = NULL;
-        
+
         CFE_SB.RoutingTbl[RtgTblIdx].ListHeadPtr = NextNode;
-        
+
     /* if last node in the list and list has more than one */
     }else if(NodeToRemove->Next == NULL){
-    
+
         PrevNode = NodeToRemove->Prev;
-        
+
         PrevNode -> Next = NULL;
-        
+
     /* NodeToRemove has node(s) before and node(s) after */
     }else{
-    
+
         PrevNode = NodeToRemove->Prev;
         NextNode = NodeToRemove->Next;
-        
+
         PrevNode -> Next = NextNode;
         NextNode -> Prev = PrevNode;
-        
+
     }/* end if */
-        
-    
+
+
     /* initialize the node before returning it to the heap */
     NodeToRemove -> Next = NULL;
-    NodeToRemove -> Prev = NULL;        
-    
+    NodeToRemove -> Prev = NULL;
+
     return CFE_SUCCESS;
 
 }/* CFE_SB_RemoveDest */

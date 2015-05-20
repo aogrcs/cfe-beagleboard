@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_internal.c 1.9 2010/10/27 17:53:29EDT dkobe Exp  $
+** $Id: cfe_tbl_internal.c 1.15 2014/08/22 16:30:24GMT-05:00 lwalling Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,18 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_internal.c  $
+** Revision 1.15 2014/08/22 16:30:24GMT-05:00 lwalling 
+** Change signed loop counters to unsigned
+** Revision 1.14 2012/02/22 15:13:51EST lwalling 
+** Remove obsolete TODO comments
+** Revision 1.13 2012/01/13 12:17:39EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.12 2012/01/04 17:27:07EST sstrege 
+** Added LockFlag check when checking for inactive buffer use
+** Revision 1.11 2011/12/28 14:02:55EST lwalling 
+** Add validation tests for spacecraft ID and processor ID to CFE_TBL_ReadHeaders()
+** Revision 1.10 2011/09/02 14:58:26EDT jmdagost 
+** Added new-line characters where missing in syslog calls.
 ** Revision 1.9 2010/10/27 17:53:29EDT dkobe 
 ** Added TableLoadedOnce flag to Critical Table Registry
 ** Revision 1.8 2010/10/27 16:36:20EDT dkobe 
@@ -122,8 +134,8 @@ void CFE_TBL_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
 */
 int32 CFE_TBL_EarlyInit (void)
 {
-    int16 i;
-    int32 j;
+    uint16 i;
+    uint32 j;
     int32 Status;
 
 
@@ -181,7 +193,7 @@ int32 CFE_TBL_EarlyInit (void)
                               CFE_TBL_MUT_REG_VALUE);
     if(Status != OS_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("CFE_TBL:Registry mutex creation failed! RC=0x%08x",Status);
+      CFE_ES_WriteToSysLog("CFE_TBL:Registry mutex creation failed! RC=0x%08x\n",Status);
       return Status;
     }/* end if */                              
 
@@ -193,7 +205,7 @@ int32 CFE_TBL_EarlyInit (void)
                               CFE_TBL_MUT_WORK_VALUE);
     if(Status != OS_SUCCESS)
     {
-      CFE_ES_WriteToSysLog("CFE_TBL:Working buffer mutex creation failed! RC=0x%08x",Status);
+      CFE_ES_WriteToSysLog("CFE_TBL:Working buffer mutex creation failed! RC=0x%08x\n",Status);
       return Status;
     }/* end if */
     
@@ -908,7 +920,8 @@ int32 CFE_TBL_GetWorkingBuffer(CFE_TBL_LoadBuff_t **WorkingBufferPtr,
                 AccessIterator = RegRecPtr->HeadOfAccessList;
                 while ((AccessIterator != CFE_TBL_END_OF_LIST) && (Status == CFE_SUCCESS))
                 {
-                    if (CFE_TBL_TaskData.Handles[AccessIterator].BufferIndex == InactiveBufferIndex)
+                    if ((CFE_TBL_TaskData.Handles[AccessIterator].BufferIndex == InactiveBufferIndex) &&
+		                (CFE_TBL_TaskData.Handles[AccessIterator].LockFlag))
                     {
                         Status = CFE_TBL_ERR_NO_BUFFER_AVAIL;
 
@@ -1010,7 +1023,6 @@ int32 CFE_TBL_LoadFromFile(CFE_TBL_LoadBuff_t *WorkingBufferPtr,
     else
     {
         /* Try to open the specified table file */
-        /* TODO: Put in PATH search capability to locate file */
         FileDescriptor = OS_open(Filename, OS_READ_ONLY, 0);
 
         if (FileDescriptor >= 0)
@@ -1234,20 +1246,30 @@ int32 CFE_TBL_ReadHeaders( int32 FileDescriptor,
 {
     int32 Status;
     int32 EndianCheck = 0x01020304;
+
+    #if (CFE_TBL_VALID_SCID_COUNT > 0)
+    static uint32 ListSC[2] = { CFE_TBL_VALID_SCID_1, CFE_TBL_VALID_SCID_2};
+    uint32 IndexSC;
+    #endif
+    
+    #if (CFE_TBL_VALID_PRID_COUNT > 0)
+    static uint32 ListPR[4] = { CFE_TBL_VALID_PRID_1, CFE_TBL_VALID_PRID_2,
+                                CFE_TBL_VALID_PRID_3, CFE_TBL_VALID_PRID_4};
+    uint32 IndexPR;
+    #endif
     
     /* Once the file is open, read the headers to determine the target Table */
     Status = CFE_FS_ReadHeader(StdFileHeaderPtr, FileDescriptor);
 
+    /* Verify successful read of standard cFE File Header */
     if (Status != sizeof(CFE_FS_Header_t))
     {
-        /* Error reading the standard cFE File Header */
         CFE_EVS_SendEventWithAppID(CFE_TBL_FILE_STD_HDR_ERR_EID,
                                    CFE_EVS_ERROR,
                                    CFE_TBL_TaskData.TableTaskAppId,
                                    "Unable to read std header for '%s', Status = 0x%08X",
                                    LoadFilename, Status);
 
-        /* Make sure the Status is not equal to CFE_SUCCESS */
         Status = CFE_TBL_ERR_NO_STD_HEADER;
     }
     else
@@ -1280,6 +1302,7 @@ int32 CFE_TBL_ReadHeaders( int32 FileDescriptor,
             {
                 Status = OS_read(FileDescriptor, TblFileHeaderPtr, sizeof(CFE_TBL_File_Hdr_t));
 
+                /* Verify successful read of cFE Table File Header */
                 if (Status != sizeof(CFE_TBL_File_Hdr_t))
                 {
                     CFE_EVS_SendEventWithAppID(CFE_TBL_FILE_TBL_HDR_ERR_EID,
@@ -1288,21 +1311,67 @@ int32 CFE_TBL_ReadHeaders( int32 FileDescriptor,
                                                "Unable to read tbl header for '%s', Status = 0x%08X",
                                                LoadFilename, Status);
 
-                    /* Make sure the status is not equal to CFE_SUCCESS */
                     Status = CFE_TBL_ERR_NO_TBL_HEADER;
                 }
                 else
                 {
-                    /* All checks have passed and we are pointing at the data */
+                    /* All "required" checks have passed and we are pointing at the data */
                     Status = CFE_SUCCESS;
-                    
-                    /* Determine whether this processor is a little endian processor */
+
                     if ((*(char *)&EndianCheck) == 0x04)
                     {
                         /* If this is a little endian processor, then the standard cFE Table Header,   */
                         /* which is in big endian format, must be swapped so that the data is readable */
                         CFE_TBL_ByteSwapTblHeader(TblFileHeaderPtr);
                     }
+
+                    /* Verify Spacecraft ID contained in table file header [optional] */
+                    #if (CFE_TBL_VALID_SCID_COUNT > 0)
+                    if (Status == CFE_SUCCESS)
+                    {
+                        Status = CFE_TBL_ERR_BAD_SPACECRAFT_ID;
+                        for (IndexSC = 0; IndexSC < CFE_TBL_VALID_SCID_COUNT; IndexSC++)
+                        {
+                            if (StdFileHeaderPtr->SpacecraftID == ListSC[IndexSC])
+                            {
+                                Status = CFE_SUCCESS;
+                            }
+                        }
+
+                        if (Status == CFE_TBL_ERR_BAD_SPACECRAFT_ID)
+                        {
+                            CFE_EVS_SendEventWithAppID(CFE_TBL_SPACECRAFT_ID_ERR_EID,
+                                                       CFE_EVS_ERROR,
+                                                       CFE_TBL_TaskData.TableTaskAppId,
+                                                       "Unable to verify Spacecraft ID for '%s', ID = 0x%08X",
+                                                       LoadFilename, StdFileHeaderPtr->SpacecraftID);
+                        }
+                    }
+                    #endif
+
+                    /* Verify Processor ID contained in table file header [optional] */
+                    #if (CFE_TBL_VALID_PRID_COUNT > 0)
+                    if (Status == CFE_SUCCESS)
+                    {
+                        Status = CFE_TBL_ERR_BAD_PROCESSOR_ID;
+                        for (IndexPR = 0; IndexPR < CFE_TBL_VALID_PRID_COUNT; IndexPR++)
+                        {
+                            if (StdFileHeaderPtr->ProcessorID == ListPR[IndexPR])
+                            {
+                                Status = CFE_SUCCESS;
+                            }
+                        }
+
+                        if (Status == CFE_TBL_ERR_BAD_PROCESSOR_ID)
+                        {
+                            CFE_EVS_SendEventWithAppID(CFE_TBL_PROCESSOR_ID_ERR_EID,
+                                                       CFE_EVS_ERROR,
+                                                       CFE_TBL_TaskData.TableTaskAppId,
+                                                       "Unable to verify Processor ID for '%s', ID = 0x%08X",
+                                                       LoadFilename, StdFileHeaderPtr->ProcessorID);
+                        }
+                    }
+                    #endif
                 }
             }
         }

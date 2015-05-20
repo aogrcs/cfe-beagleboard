@@ -1,6 +1,6 @@
 /*
 ** File: utf_cfe_sb_api.c
-** $Id: utf_cfe_sb_api.c 1.4 2010/10/25 15:06:34EDT jmdagost Exp  $
+** $Id: utf_cfe_sb_api.c 1.5 2012/01/13 12:51:59GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,9 +18,11 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:34EDT $
-** $Revision: 1.4 $
+** $Date: 2012/01/13 12:51:59GMT-05:00 $
+** $Revision: 1.5 $
 ** $Log: utf_cfe_sb_api.c  $
+** Revision 1.5 2012/01/13 12:51:59GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.4 2010/10/25 15:06:34EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.3 2010/10/04 14:57:27EDT jmdagost 

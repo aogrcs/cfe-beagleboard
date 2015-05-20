@@ -1,9 +1,9 @@
 /*
 **
 **  Filename: utf_cfe_es.h
-**  $Id: utf_cfe_es.h 1.5 2010/10/25 15:09:29EDT jmdagost Exp  $
+**  $Id: utf_cfe_es.h 1.6 2012/02/28 10:33:00GMT-05:00 wmoleski Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -23,9 +23,11 @@
 **
 **	Notes:
 **
-**  $Date: 2010/10/25 15:09:29EDT $
+**  $Date: 2012/02/28 10:33:00GMT-05:00 $
 **  $ $
 **  $Log: utf_cfe_es.h  $
+**  Revision 1.6 2012/02/28 10:33:00GMT-05:00 wmoleski 
+**  Added function hooks and Return Code handling and updated the examples to test these changes.
 **  Revision 1.5 2010/10/25 15:09:29EDT jmdagost 
 **  Corrected bad apostrophe in prologue.
 **  Revision 1.4 2010/10/20 12:45:13EDT jmdagost 
@@ -69,6 +71,7 @@
 #define CFE_ES_POOLCREATENOSEM_HOOK     1
 #define CFE_ES_GETPOOLBUF_HOOK          2
 #define CFE_ES_PUTPOOLBUF_HOOK          3
+#define CFE_ES_CREATECHILDTASK_HOOK     4
 
 /*********** API Identifiers Used to set return codes************/
 #define CFE_ES_RESETCFE_PROC            0
@@ -101,12 +104,22 @@
 #define NUM_OF_CFE_ES_API_PROCS        27
 
 /******************************************************************************
-**  Function: UTF_SB_set_function_hook()
+**  Function: UTF_ES_set_function_hook()
 **
 **  Purpose:
-**    Install a user defined hook function for a SB function call.
+**    Install a user defined hook function for an ES function call.
+**    NOTE: This is used in the esmempool.c file.
 */
 void UTF_ES_set_function_hook(int Index, void *FunPtr);
+
+/******************************************************************************
+**  Function: UTF_ES_API_set_function_hook()
+**
+**  Purpose:
+**    Install a user defined hook function for an ES function call.
+**    NOTE: This is used in the es_api.c file.
+*/
+void UTF_ES_API_set_function_hook(int Index, void *FunPtr);
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */

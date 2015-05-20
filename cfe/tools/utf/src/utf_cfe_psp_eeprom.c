@@ -1,6 +1,6 @@
 /*
 ** File: utf_cfe_psp_eeprom.c
-** $Id: utf_cfe_psp_eeprom.c 1.3 2010/10/25 15:06:35EDT jmdagost Exp  $
+** $Id: utf_cfe_psp_eeprom.c 1.5 2012/01/13 12:51:57GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,9 +18,13 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:35EDT $
-** $Revision: 1.3 $
+** $Date: 2012/01/13 12:51:57GMT-05:00 $
+** $Revision: 1.5 $
 ** $Log: utf_cfe_psp_eeprom.c  $
+** Revision 1.5 2012/01/13 12:51:57GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.4 2010/11/29 08:45:13EST jmdagost 
+** Enhanced support for CFE_PSP_EepromWriteEnable and CFE_PSP_EepromWriteDisable
 ** Revision 1.3 2010/10/25 15:06:35EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 14:57:11EDT jmdagost 
@@ -52,9 +56,13 @@ typedef struct
     int32 (*CFE_PSP_EepromWrite8)(uint32, uint8);
     int32 (*CFE_PSP_EepromWrite16)(int32, uint16);
     int32 (*CFE_PSP_EepromWrite32)(int32, uint32);
+    int32 (*CFE_PSP_EepromWriteEnable)(uint32);
+    int32 (*CFE_PSP_EepromWriteDisable)(uint32);
 } UTF_PSP_HookTable_t;
 
 UTF_PSP_HookTable_t UTF_PSP_HookTable = {
+    NULL,
+    NULL,
     NULL,
     NULL,
     NULL
@@ -73,6 +81,8 @@ void UTF_PSP_set_function_hook(int Index, void *FunPtr)
     if (Index == CFE_PSP_EEPROMWRITE8_HOOK) { UTF_PSP_HookTable.CFE_PSP_EepromWrite8 = FunPtr; }
     else if (Index == CFE_PSP_EEPROMWRITE16_HOOK) { UTF_PSP_HookTable.CFE_PSP_EepromWrite16 = FunPtr; }
     else if (Index == CFE_PSP_EEPROMWRITE32_HOOK) { UTF_PSP_HookTable.CFE_PSP_EepromWrite32 = FunPtr; }
+    else if (Index == CFE_PSP_EEPROMWRITEENA_HOOK) { UTF_PSP_HookTable.CFE_PSP_EepromWriteEnable = FunPtr; }
+    else if (Index == CFE_PSP_EEPROMWRITEDIS_HOOK) { UTF_PSP_HookTable.CFE_PSP_EepromWriteDisable = FunPtr; }
     else { UTF_error("Invalid PSP Hook Index In Set Hook Call %d", Index); }
 }
 
@@ -148,11 +158,31 @@ int32 CFE_PSP_EepromWrite32(uint32 Address, uint32 Data)
 
 int32 CFE_PSP_EepromWriteEnable(uint32 Bank)
 {
+    /* Handle the Function Hook */
+    if (UTF_PSP_HookTable.CFE_PSP_EepromWriteEnable)
+        return(UTF_PSP_HookTable.CFE_PSP_EepromWriteEnable(Bank));
+
+    /* Handle Preset Return Code */
+    if (cfe_psp_return_value[CFE_PSP_EEPROMWRITEENA_PROC] !=  UTF_CFE_USE_DEFAULT_RETURN_CODE)
+    {
+       return cfe_psp_return_value[CFE_PSP_EEPROMWRITEENA_PROC];
+    }
+
     return(CFE_PSP_SUCCESS);
 }
 
 int32 CFE_PSP_EepromWriteDisable(uint32 Bank)
 {
+    /* Handle the Function Hook */
+    if (UTF_PSP_HookTable.CFE_PSP_EepromWriteDisable)
+        return(UTF_PSP_HookTable.CFE_PSP_EepromWriteDisable(Bank));
+
+    /* Handle Preset Return Code */
+    if (cfe_psp_return_value[CFE_PSP_EEPROMWRITEDIS_PROC] !=  UTF_CFE_USE_DEFAULT_RETURN_CODE)
+    {
+       return cfe_psp_return_value[CFE_PSP_EEPROMWRITEDIS_PROC];
+    }
+
     return(CFE_PSP_SUCCESS);
 }
 

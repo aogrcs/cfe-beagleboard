@@ -122,7 +122,7 @@ int main(void)
 
     UTF_put_text("\n***CFE_ES_PutPoolBuf Return Code Setting Test ***\n");
     UTF_CFE_ES_Set_Api_Return_Code(CFE_ES_PUTPOOLBUF_PROC, CFE_ES_ERR_MEM_BLOCK_SIZE);
-    UTF_put_text("CFE_ES_GetPoolBuf Return Code %x\n", CFE_ES_PutPoolBuf(HandlePtr1,(uint32 *)BufPtr3));
+    UTF_put_text("CFE_ES_PutPoolBuf Return Code %x\n", CFE_ES_PutPoolBuf(HandlePtr1,(uint32 *)BufPtr3));
     UTF_CFE_ES_Use_Default_Api_Return_Code(CFE_ES_PUTPOOLBUF_PROC);
     UTF_put_text("CFE_ES_PutPoolBuf Return Code %x\n", CFE_ES_PutPoolBuf(HandlePtr1,(uint32 *)BufPtr3));
 

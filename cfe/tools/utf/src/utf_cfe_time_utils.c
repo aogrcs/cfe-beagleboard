@@ -1,6 +1,6 @@
 /*
 ** File: utf_cfe_time_utils.c
-**  $Id: utf_cfe_time_utils.c 1.5 2010/10/25 15:06:40EDT jmdagost Exp  $
+**  $Id: utf_cfe_time_utils.c 1.6 2012/01/13 12:52:01GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,9 +18,11 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:40EDT $
-** $Revision: 1.5 $
+** $Date: 2012/01/13 12:52:01GMT-05:00 $
+** $Revision: 1.6 $
 ** $Log: utf_cfe_time_utils.c  $
+** Revision 1.6 2012/01/13 12:52:01GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.5 2010/10/25 15:06:40EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 14:57:45EDT jmdagost 

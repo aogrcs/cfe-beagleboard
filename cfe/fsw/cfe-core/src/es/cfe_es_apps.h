@@ -11,8 +11,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  This file contains the Internal interface for the cFE Application control functions of ES.
@@ -23,6 +21,8 @@
 **     cFE Flight Software Application Developers Guide
 **
 **  $Log: cfe_es_apps.h  $
+**  Revision 1.6 2012/01/13 11:49:59GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.5 2008/07/31 15:41:32EDT apcudmore 
 **  Added execution counter API:
 **    -- Added execution counter to ES internal task data

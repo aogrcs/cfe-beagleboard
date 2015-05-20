@@ -1,18 +1,16 @@
 /*
 **  File:
 **  utf_version.h
-**  $Id: utf_version.h 1.4.1.5 2010/12/27 08:35:05EST bmedina Exp  $
+**  $Id: utf_version.h 1.5.2.5 2014/12/02 19:28:47GMT-05:00 sstrege Exp  $
 **
 **
-**      Copyright (c) 2004-2012, United States government as represented by the
-**      administrator of the National Aeronautics Space Administration.
-**      All rights reserved. This software(cFE) was created at NASA's Goddard
+**      Copyright (c) 2004-2006, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
 **
-**      This is governed by the NASA Open Source Agreement and may be used,
-**      distributed and modified only pursuant to the terms of that agreement.
-**
-**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement. 
 **
 **
 **  Purpose:
@@ -27,16 +25,16 @@
 **
 **  Modification History:
 **  $Log: utf_version.h  $
-**  Revision 1.4.1.5 2010/12/27 08:35:05EST bmedina 
-**  changing version to 6.1.1a
-**  Revision 1.4.1.4 2010/11/29 06:45:27EST bmedina 
-**  changing version to 9.9.9a
-**  Revision 1.4.1.3 2010/11/29 06:38:53EST bmedina 
-**  changing version to 6.1.1a
-**  Revision 1.4.1.2 2010/11/16 09:19:32EST bmedina 
-**  changing version to 9.9.9
-**  Revision 1.4.1.1 2010/11/16 09:14:12EST bmedina 
-**  changing version to 6.1.0
+**  Revision 1.5.2.5 2014/12/02 19:28:47GMT-05:00 sstrege 
+**  Changing version number for the branch to 6.4.1
+**  Revision 1.5.2.4 2014/09/30 17:41:39EDT sstrege 
+**  Changing the version number for the branch tip to 9.9.9.z
+**  Revision 1.5.2.3 2014/09/30 15:57:43EDT sstrege 
+**  Changing version number for 6.4.0 release
+**  Revision 1.5.2.2 2014/09/10 22:36:43EDT sstrege 
+**  Changing the version number for the branch tip to 9.9.9
+**  Revision 1.5 2012/01/13 13:04:35EST acudmore 
+**  Updated license text to reflect open source
 **  Revision 1.4 2010/10/25 15:09:23EDT jmdagost 
 **  Corrected bad apostrophe in prologue.
 **  Revision 1.3 2010/10/04 15:05:06EDT jmdagost 
@@ -57,7 +55,7 @@
 ** Macro Definitions
 */
 #define UTF_MAJOR_VERSION         6
-#define UTF_MINOR_VERSION         1
+#define UTF_MINOR_VERSION         4
 #define UTF_SUBMINOR_VERSION      1
 #define UTF_REVISION              'a'
 

@@ -2,8 +2,6 @@
 **  File:  
 **    cfe_es_api.c
 **
-**
-**
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
@@ -11,7 +9,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
 **
 **
 **  Purpose:  
@@ -26,6 +23,27 @@
 **  Modification History:
 **
 ** $Log: cfe_es_api.c  $
+** Revision 1.21 2014/09/05 11:37:51GMT-05:00 acudmore 
+** Updated Syslog and ERlog text in CFE_ES_ResetCFE
+** Revision 1.20 2014/08/22 15:50:05GMT-05:00 lwalling 
+** Changed signed loop counters to unsigned
+** Revision 1.19 2014/07/23 15:35:46EDT acudmore 
+** Updated where the Processor Reset counter is incremented.
+** Made the ER log entry text clearer.
+** Revision 1.18 2014/05/05 14:44:53GMT-05:00 acudmore 
+** fixed potential unititialized variable
+** Revision 1.17 2014/05/05 14:03:39GMT-05:00 acudmore 
+** Fixed syslog logic to check for invalid syslog mode and index due to corrupted global memory
+** Revision 1.16 2012/04/20 15:21:32GMT-05:00 acudmore 
+** Fixed reset subtype in CFE_ES_ResetCFE function.
+** Revision 1.15 2012/01/13 11:49:59EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.14 2012/01/11 18:51:33EST aschoeni 
+** Removed child task exit message from system log
+** Revision 1.13 2011/09/02 11:02:56EDT jmdagost 
+** Added new-line charactesr to the end of sys log messages that were missing them.
+** Revision 1.12 2011/07/15 14:28:52EDT lwalling 
+** Removed const qualifier from CounterName argument to CFE_ES_RegisterGenCounter()
 ** Revision 1.11 2010/11/05 15:54:33EDT aschoeni 
 ** Added Generic Counter API to ES
 ** Revision 1.10 2010/11/05 15:05:23EDT acudmore 
@@ -186,22 +204,26 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
     if ( ResetType == CFE_ES_PROCESSOR_RESET )
     {
        /*
+       ** Increment the processor reset count
+       */
+       CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount++;
+
+       /*
        ** Before doing a Processor reset, check to see 
        ** if the maximum number has been exceeded
        */
-       if ( CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount >= 
+       if ( CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount > 
             CFE_ES_ResetDataPtr->ResetVars.MaxProcessorResetCount )
        {
-           CFE_ES_WriteToSysLog("ES ResetCFE: CFE ES Power On Reset Due to Max Processor Resets.\n");
-           
+           CFE_ES_WriteToSysLog("POWER ON RESET due to max proc resets (Commanded).\n");
+
            /*
            ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
            ** the entry just in case something fails.
            */
            status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, 
-                                         CFE_ES_ResetDataPtr->ResetVars.ResetSubtype,
-                                         "POWER ON RESET due to Maximum Processor Resets in CFE_ES_ResetCFE.", NULL,0 );
-
+                                         CFE_ES_RESET_COMMAND,
+                                         "POWER ON RESET due to max proc resets (Commanded).", NULL,0 );
            /*
            ** Call the BSP reset routine 
            */
@@ -209,20 +231,19 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
        }
        else
        {
-           CFE_ES_WriteToSysLog("ES ResetCFE: CFE ES Processor Reset called.\n");
+           CFE_ES_WriteToSysLog("PROCESSOR RESET called from CFE_ES_ResetCFE (Commanded).\n");
 
            /*
            ** Update the reset variables
            */
-           CFE_ES_ResetDataPtr->ResetVars.ProcessorResetCount++;
            CFE_ES_ResetDataPtr->ResetVars.ES_CausedReset = TRUE;
 
            /*
            ** Log the reset in the ER Log
            */
            status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_PROCESSOR_RESET,
-                                       CFE_ES_ResetDataPtr->ResetVars.ResetSubtype,
-                                       "PROCESSOR RESET Called from CFE_ES_ResetCFE.", NULL,0 );
+                                       CFE_ES_RESET_COMMAND,
+                                       "PROCESSOR RESET called from CFE_ES_ResetCFE (Commanded).", NULL,0 );
            /*
            ** Call the BSP reset routine
            */
@@ -238,15 +259,15 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
     }
     else if ( ResetType == CFE_ES_POWERON_RESET )
     {
-       CFE_ES_WriteToSysLog("ES ResetCFE: CFE ES Power On Reset called.\n");
+       CFE_ES_WriteToSysLog("POWERON RESET called from CFE_ES_ResetCFE (Commanded).\n");
 
        /*
        ** Log the reset in the ER Log. The log will be wiped out, but it's good to have
        ** the entry just in case something fails.
        */
        status =  CFE_ES_WriteToERLog(CFE_ES_CORE_LOG_ENTRY, CFE_ES_POWERON_RESET, 
-                                       CFE_ES_ResetDataPtr->ResetVars.ResetSubtype,
-                                       "POWERON RESET Called from CFE_ES_ResetCFE.", NULL,0 );
+                                       CFE_ES_RESET_COMMAND,
+                                       "POWERON RESET called from CFE_ES_ResetCFE (Commanded).", NULL,0 );
 
        /*
        ** Call the BSP reset routine
@@ -673,60 +694,64 @@ void CFE_ES_WaitForStartupSync(uint32 TimeOutMilliseconds)
    */
    if ( CFE_ES_Global.StartupSemaphoreReleased == FALSE)
    {
-       /*
-       ** Get App ID
-       */
-       ReturnCode = CFE_ES_GetAppIDInternal(&AppID);
+      /*
+      ** Get App ID
+      */
+      ReturnCode = CFE_ES_GetAppIDInternal(&AppID);
+      if ( ReturnCode == CFE_SUCCESS )
+      {
+         if ( CFE_ES_Global.AppTable[AppID].StateRecord.AppState == CFE_ES_APP_STATE_INITIALIZING)
+         {
+             /* 
+             ** Change the state to RUNNING
+             ** This will prevent the AppStartupCounter from being decremented again if the wait on the 
+             ** semaphore times out. So this code will run in one of two places: This function or the 
+             ** first time that the CFE_ES_RunLoop function is called, but it should not run in both for 
+             ** an app. If the init code gets more complicated, it should be put in a common function. 
+             */
+             CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_RUNNING;
 
-       if ( CFE_ES_Global.AppTable[AppID].StateRecord.AppState == CFE_ES_APP_STATE_INITIALIZING)
-       {
-           /* 
-           ** Change the state to RUNNING
-           ** This will prevent the AppStartupCounter from being decremented again if the wait on the 
-           ** semaphore times out. So this code will run in one of two places: This function or the 
-           ** first time that the CFE_ES_RunLoop function is called, but it should not run in both for 
-           ** an app. If the init code gets more complicated, it should be put in a common function. 
-           */
-           CFE_ES_Global.AppTable[AppID].StateRecord.AppState = CFE_ES_APP_STATE_RUNNING;
+         }    
 
-       }    
+         /*
+         ** The counter must be decremented here to properly count the calling app as finishing 
+         ** it's initialization.
+         */
+         CFE_ES_Global.AppStartupCounter--;
 
-       /*
-       ** The counter must be decremented here to properly count the calling app as finishing 
-       ** it's initialization.
-       */
-       CFE_ES_Global.AppStartupCounter--;
+         /*
+         ** If the waiting app ends up being the last one, then release the semaphore and dont wait
+         */
+         if (( CFE_ES_Global.StartupFileComplete == TRUE ) && ( CFE_ES_Global.AppStartupCounter <= 0 ))
+         {
+             CFE_ES_Global.AppStartupCounter = 0;
+             CFE_ES_Global.StartupSemaphoreReleased = TRUE;
+             CFE_ES_UnlockSharedData(__func__,__LINE__);
 
-       /*
-       ** If the waiting app ends up being the last one, then release the semaphore and dont wait
-       */
-       if (( CFE_ES_Global.StartupFileComplete == TRUE ) && ( CFE_ES_Global.AppStartupCounter <= 0 ))
-       {
-          CFE_ES_Global.AppStartupCounter = 0;
-          CFE_ES_Global.StartupSemaphoreReleased = TRUE;
-          CFE_ES_UnlockSharedData(__func__,__LINE__);
+             /* 
+             ** Release semaphore 
+             */
+             OS_BinSemFlush(CFE_ES_Global.StartupSyncSemaphore);  
 
-          /* 
-          ** Release semaphore 
-          */
-          OS_BinSemFlush(CFE_ES_Global.StartupSyncSemaphore);  
-
-       }
-       else
-       {
-          /* 
-          ** Wait on the semaphore
-          */ 
-          CFE_ES_UnlockSharedData(__func__,__LINE__);
-          ReturnCode = OS_BinSemTimedWait(CFE_ES_Global.StartupSyncSemaphore, TimeOutMilliseconds);
-          
-       }
+         }
+         else
+         {
+             /* 
+             ** Wait on the semaphore
+             */ 
+             CFE_ES_UnlockSharedData(__func__,__LINE__);
+             ReturnCode = OS_BinSemTimedWait(CFE_ES_Global.StartupSyncSemaphore, TimeOutMilliseconds);
+         }
+      }
+      else /* GetAppIdInternal fails */
+      {
+         CFE_ES_UnlockSharedData(__func__,__LINE__);
+      }
    }
-   else
+   else /* Semaphore is already released */
    {
       CFE_ES_UnlockSharedData(__func__,__LINE__);
    }
-
 
 } /* End of CFE_ES_WaitForStartupSync() */
 
@@ -785,7 +810,7 @@ int32 CFE_ES_RegisterApp(void)
 int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, char *AppName)
 {
    int32 Result = CFE_ES_ERR_APPNAME;
-   int   i;
+   uint32 i;
 
    CFE_ES_LockSharedData(__func__,__LINE__);
 
@@ -798,7 +823,7 @@ int32 CFE_ES_GetAppIDByName(uint32 *AppIdPtr, char *AppName)
       {
          if ( strncmp(AppName, (char *)CFE_ES_Global.AppTable[i].StartParams.Name, OS_MAX_API_NAME) == 0 )
          {
-            *AppIdPtr = i;
+            *AppIdPtr = (int) i;
             Result = CFE_SUCCESS;
             break;
          }
@@ -1323,9 +1348,6 @@ void CFE_ES_ExitChildTask(void)
       ParentTaskId = CFE_ES_Global.AppTable[AppId].TaskInfo.MainTaskId;
       if ( TaskId != ParentTaskId )
       {
-   
-         CFE_ES_WriteToSysLog("Child Task %d exited.\n",TaskId );  
-         
          /*
          ** Invalidate the task table entry
          */
@@ -1378,7 +1400,6 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
     uint32        ReturnCode;
     int32         i;
 
-
     /* write the current time into the TmpString buffer */
     CFE_TIME_Print(TmpString, CFE_TIME_GetTime());
 
@@ -1392,62 +1413,39 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
     /* Add the message to the time string in the TmpString buffer */
     strncat(TmpString,MsgWithoutTime,CFE_EVS_MAX_MESSAGE_LENGTH);
    
-    /*
-    ** Output the entry to the console. 
-    */
+    /* Output the entry to the console. */
     OS_printf("%s",TmpString);
-
     TmpStringLen = strlen(TmpString);
 
-    /*
-    ** Check to see if the log buffer will be full if we add all or a portion of this message
-    */
-    if ( ((CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen) >= CFE_ES_SYSTEM_LOG_SIZE ) && 
-            (CFE_ES_ResetDataPtr->SystemLogIndex < CFE_ES_SYSTEM_LOG_SIZE) && (CFE_ES_ResetDataPtr->SystemLogMode == CFE_ES_LOG_DISCARD) )
+    /* process the log entry depending on the log type */
+    if ( CFE_ES_ResetDataPtr->SystemLogMode == CFE_ES_LOG_DISCARD )
     {
-        LogOverflow = CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen - CFE_ES_SYSTEM_LOG_SIZE;
-
-        /*
-        ** Add one for adding '/0' to the end because the message will be truncated
-        */
-        LogOverflow++;
-
-        TruncTmpStringLen = TmpStringLen - LogOverflow;
-
-        strncpy((char *)&(CFE_ES_ResetDataPtr->SystemLog[CFE_ES_ResetDataPtr->SystemLogIndex]), TmpString, TruncTmpStringLen);
-        strncpy((char *)&(CFE_ES_ResetDataPtr->SystemLog[CFE_ES_ResetDataPtr->SystemLogIndex + TruncTmpStringLen]), "\0", 1 );
-
-        CFE_ES_ResetDataPtr->SystemLogIndex = CFE_ES_ResetDataPtr->SystemLogIndex + TruncTmpStringLen + 1;
-        CFE_ES_ResetDataPtr->SystemLogEntryNum = CFE_ES_ResetDataPtr->SystemLogEntryNum + 1;
-        ReturnCode = CFE_SUCCESS;
-
-        OS_printf("Warning: Last System Log Message Truncated.\n");
-    }
-    else
-    {
-        /*
-        ** Check to see if the log buffer is full
-        */
-        if (( CFE_ES_ResetDataPtr->SystemLogIndex >= CFE_ES_SYSTEM_LOG_SIZE ) && 
-             (CFE_ES_ResetDataPtr->SystemLogMode == CFE_ES_LOG_DISCARD))
+        /* if the index is already out of bounds, the log is full */
+        if ( CFE_ES_ResetDataPtr->SystemLogIndex >= CFE_ES_SYSTEM_LOG_SIZE )  
         {
+            OS_printf("Warning: System Log full, log entry discarded.\n");
             ReturnCode = CFE_ES_ERR_SYS_LOG_FULL;
-        }
-        else
+        }   
+        /* if the message will not fit in the remaining space, truncate it */  
+        else if ((CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen) >= CFE_ES_SYSTEM_LOG_SIZE )
         {
-            
-            if (( (CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen) >= CFE_ES_SYSTEM_LOG_SIZE ) && 
-                  (CFE_ES_ResetDataPtr->SystemLogMode == CFE_ES_LOG_OVERWRITE))
-            {
-                /* fill in the rest of the space at the end of the log with spaces " " to prevent old messages being mistaken for new ons */
-                for (i = CFE_ES_ResetDataPtr->SystemLogIndex; i < CFE_ES_SYSTEM_LOG_SIZE; i++)
-                {
-                    CFE_ES_ResetDataPtr->SystemLog[i] = ' ';
-                }
-                
-                CFE_ES_ResetDataPtr->SystemLogIndex = 0;
-            }
+            LogOverflow = CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen - CFE_ES_SYSTEM_LOG_SIZE;
 
+            /* Add one for adding '/0' to the end because the message will be truncated */
+            LogOverflow++;
+
+            TruncTmpStringLen = TmpStringLen - LogOverflow;
+
+            strncpy((char *)&(CFE_ES_ResetDataPtr->SystemLog[CFE_ES_ResetDataPtr->SystemLogIndex]), TmpString, TruncTmpStringLen);
+            strncpy((char *)&(CFE_ES_ResetDataPtr->SystemLog[CFE_ES_ResetDataPtr->SystemLogIndex + TruncTmpStringLen]), "\0", 1 );
+
+            CFE_ES_ResetDataPtr->SystemLogIndex = CFE_ES_ResetDataPtr->SystemLogIndex + TruncTmpStringLen + 1;
+            CFE_ES_ResetDataPtr->SystemLogEntryNum = CFE_ES_ResetDataPtr->SystemLogEntryNum + 1;
+            OS_printf("Warning: Last System Log Message Truncated.\n");
+            ReturnCode = CFE_SUCCESS;
+        } 
+        else /* the message fits */
+        {
             TmpStringLen = strlen(TmpString);
             strncpy((char *)&(CFE_ES_ResetDataPtr->SystemLog[CFE_ES_ResetDataPtr->SystemLogIndex]), TmpString, TmpStringLen);
             CFE_ES_ResetDataPtr->SystemLogIndex = CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen;
@@ -1455,6 +1453,35 @@ int32 CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...)
             ReturnCode = CFE_SUCCESS;
         }
     }
+    else if ( CFE_ES_ResetDataPtr->SystemLogMode == CFE_ES_LOG_OVERWRITE )
+    {
+        /* if the index is already out of bounds, reset it to zero */
+        if ( CFE_ES_ResetDataPtr->SystemLogIndex >= CFE_ES_SYSTEM_LOG_SIZE )  
+        {
+           CFE_ES_ResetDataPtr->SystemLogIndex = 0;
+        }
+        /* the message will not fit in the remaining space */
+        else if ((CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen) >= CFE_ES_SYSTEM_LOG_SIZE)  
+        {
+            /* pad the space at the end of the log to remove any partial old messages */
+            for (i = CFE_ES_ResetDataPtr->SystemLogIndex; i < CFE_ES_SYSTEM_LOG_SIZE; i++)
+            {
+                CFE_ES_ResetDataPtr->SystemLog[i] = ' ';
+            }
+            CFE_ES_ResetDataPtr->SystemLogIndex = 0;
+        }
+
+        TmpStringLen = strlen(TmpString);
+        strncpy((char *)&(CFE_ES_ResetDataPtr->SystemLog[CFE_ES_ResetDataPtr->SystemLogIndex]), TmpString, TmpStringLen);
+        CFE_ES_ResetDataPtr->SystemLogIndex = CFE_ES_ResetDataPtr->SystemLogIndex + TmpStringLen;
+        CFE_ES_ResetDataPtr->SystemLogEntryNum = CFE_ES_ResetDataPtr->SystemLogEntryNum + 1;
+        ReturnCode = CFE_SUCCESS;
+    }
+    else
+    {
+        OS_printf("Warning: Invalid System Log mode, log entry discarded.\n");
+        ReturnCode = CFE_ES_ERR_SYS_LOG_FULL;
+    }    
 
     return(ReturnCode);
 
@@ -1496,7 +1523,7 @@ int32 CFE_ES_UnloadDriver(uint32 DriverId)
 */
 uint32 CFE_ES_CalculateCRC(void *DataPtr, uint32 DataLength, uint32 InputCRC, uint32 TypeCRC)
 {
-    int32  i;
+    uint32  i;
     int16  Index;
     int16  Crc = 0;
     uint8 *BufPtr;
@@ -1688,7 +1715,7 @@ int32 CFE_ES_RestoreFromCDS(void *RestoreToMemory, CFE_ES_CDSHandle_t Handle)
 /* end of file */
 
 
-int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, const char *CounterName)
+int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, char *CounterName)
 {
    int32 ReturnCode = CFE_ES_BAD_ARGUMENT;
    uint32 CheckPtr;
@@ -1806,7 +1833,7 @@ int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, char *CounterName)
 {
 
    int32 Result = CFE_ES_BAD_ARGUMENT;
-   int   i;
+   uint32   i;
 
    /*
    ** Search the ES Generic Counter table for a counter with a matching name.
@@ -1819,7 +1846,7 @@ int32 CFE_ES_GetGenCounterIDByName(uint32 *CounterIdPtr, char *CounterName)
          {
             if(CounterIdPtr != NULL)
             {
-               *CounterIdPtr = i;
+               *CounterIdPtr = (int) i;
                Result = CFE_SUCCESS;
             }
             break;
@@ -1891,7 +1918,7 @@ void CFE_ES_LockSharedData(const char *FunctionName, int32 LineNumber)
     {
         CFE_ES_GetAppIDInternal(&AppId);
 
-        CFE_ES_WriteToSysLog("ES SharedData Mutex Take Err Stat=0x%x,App=%d,Func=%s,Line=%d",
+        CFE_ES_WriteToSysLog("ES SharedData Mutex Take Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
                  Status,AppId,FunctionName,LineNumber);
 
     }/* end if */
@@ -1925,7 +1952,7 @@ void CFE_ES_UnlockSharedData(const char *FunctionName, int32 LineNumber)
 
         CFE_ES_GetAppIDInternal(&AppId);
 
-        CFE_ES_WriteToSysLog("ES SharedData Mutex Give Err Stat=0x%x,App=%d,Func=%s,Line=%d",
+        CFE_ES_WriteToSysLog("ES SharedData Mutex Give Err Stat=0x%x,App=%d,Func=%s,Line=%d\n",
                                 Status,AppId,FunctionName,LineNumber);
 
     }/* end if */
@@ -1952,7 +1979,7 @@ void CFE_ES_UnlockSharedData(const char *FunctionName, int32 LineNumber)
 void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString, 
                                  uint32 *ContextPointer, uint32 ContextSize)
 {
-    int                    i;
+    uint32                 i;
     int32                  Status;
     OS_task_prop_t         TaskProp;
     CFE_ES_TaskInfo_t      EsTaskInfo;
@@ -1978,11 +2005,11 @@ void CFE_ES_ProcessCoreException(uint32  HostTaskId,     uint8 *ReasonString,
           if ( TaskProp.OStask_id == HostTaskId )
           {
              FoundExceptionTask = 1;
-             ExceptionTaskID = i;
+             ExceptionTaskID = (int) i;
           }
        }
     }
-                                                                                                                                     
+
     /*
     ** If the Task is found in the OS, see if the cFE App ID associated with it can be found.
     */

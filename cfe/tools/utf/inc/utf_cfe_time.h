@@ -1,8 +1,8 @@
 /*
 **  Filename: utf_cfe_time.h
-**  $Id: utf_cfe_time.h 1.1 2008/08/20 14:57:19EDT wfmoleski Exp  $
+**  $Id: utf_cfe_time.h 1.1 2008/08/20 13:57:19GMT-05:00 wfmoleski Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -21,10 +21,10 @@
 **
 **	Notes:
 **
-**  $Date: 2008/08/20 14:57:19EDT $
+**  $Date: 2008/08/20 13:57:19GMT-05:00 $
 **  $Revision: 1.1 $
 **  $Log: utf_cfe_time.h  $
-**  Revision 1.1 2008/08/20 14:57:19EDT wfmoleski 
+**  Revision 1.1 2008/08/20 13:57:19GMT-05:00 wfmoleski 
 **  Initial revision
 **  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/inc/project.pj
 **

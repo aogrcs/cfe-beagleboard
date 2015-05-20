@@ -11,8 +11,9 @@ PROC $sc_$cpu_cfe_stress
 ;  Assumptions and Constraints
 ;
 ;  Change History
-;	Date		Name			Description
+;	Date		Name		Description
 ;	04/28/08	W. Moleski	Initial development.
+;	02/08/12	W. Moleski	Added variable for ram disk
 ;
 ;  Arguments
 ;	None 
@@ -22,13 +23,22 @@ PROC $sc_$cpu_cfe_stress
 ;
 ;  Expected Test Results and Analysis
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
+
 #include "cfe_platform_cfg.h"
+
+%liv (log_procedure) = logging
+
+;; Define local variables
+local ramDir = "RAM:0"
+local ramDirLogical = "/ram/"
 
 write ";*********************************************************************"
 write "; Step 1: Upload the necessary files for the cFE Stress test."
 write ";*********************************************************************"
 ;; Upload the table load file used by TST_TBL3
-s ftp_file ("RAM:0","tsttbl3_tbl2load.dat","tsttbl3_tbl2load.dat","$CPU","P")
+s ftp_file (ramDir,"tsttbl3_tbl2load.dat","tsttbl3_tbl2load.dat","$CPU","P")
 wait 10
 
 ;; Reset the Processor Reset Counter so that a Power-On reset does not occur
@@ -74,7 +84,7 @@ wait 5
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -84,11 +94,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -101,7 +111,7 @@ wait 5
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -111,11 +121,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -132,7 +142,7 @@ wait 5
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -142,11 +152,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -159,7 +169,7 @@ wait 5
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -169,11 +179,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -186,7 +196,7 @@ wait 5
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -196,11 +206,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -213,7 +223,7 @@ wait 5
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -223,11 +233,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -245,7 +255,7 @@ while 1 do
   wait until $SC_$CPU_ES_SYSLOGBYTEUSED > logSize
 
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -255,11 +265,11 @@ while 1 do
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -276,7 +286,7 @@ wait 2
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -286,11 +296,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -303,7 +313,7 @@ wait 2
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -313,11 +323,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -330,7 +340,7 @@ wait 2
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -340,11 +350,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -357,7 +367,7 @@ wait 2
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -367,11 +377,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -384,7 +394,7 @@ wait 2
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -394,11 +404,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -411,7 +421,7 @@ wait 2
 
 if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
   ;; Dump the system log
-  fullFileName = "/ram/syslog"&fileCtr
+  fullFileName = ramDirLogical & "syslog" & fileCtr
   /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=fullFileName
   wait 1
 
@@ -421,11 +431,11 @@ if $SC_$CPU_ES_SYSLOGBYTEUSED > logSize then
 
   ;; Get the file to the ground
   fileName = "syslog"&fileCtr
-  s ftp_file ("RAM:0",fileName,fileName,"$CPU","G")
+  s ftp_file (ramDir,fileName,fileName,"$CPU","G")
   wait 3
 
   ;; Delete the file onboard to prevent filling up RAM
-  s ftp_file ("RAM:0","na",fileName,"$CPU","R")
+  s ftp_file (ramDir,"na",fileName,"$CPU","R")
   wait 2
 
   ;; Increment the file counter
@@ -436,15 +446,15 @@ endif
 /$SC_$CPU_ES_DELETEAPP Application="TST_SB2"
 wait 2
 
-/$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="/ram/syslogfinal"
+/$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=ramDirLogical & "syslogfinal"
 wait 5
 
 ;; Get the System Log files dumped above to the ground
-s ftp_file ("RAM:0","syslogfinal","syslogfinal","$CPU","G")
+s ftp_file (ramDir,"syslogfinal","syslogfinal","$CPU","G")
 wait 3
 
 ;; Delete the file onboard to prevent filling up RAM
-s ftp_file ("RAM:0","na","syslogfinal","$CPU","R")
+s ftp_file (ramDir,"na","syslogfinal","$CPU","R")
 wait 3
 
 ;**********************************************************************

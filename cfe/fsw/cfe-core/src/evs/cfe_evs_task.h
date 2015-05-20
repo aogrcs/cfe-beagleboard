@@ -1,7 +1,7 @@
 /*
 **
 **  Filename: cfe_evs_task.h
-**  $Id: cfe_evs_task.h 1.2 2010/10/04 17:07:45EDT jmdagost Exp  $
+**  $Id: cfe_evs_task.h 1.4 2012/01/13 12:00:55GMT-05:00 acudmore Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -29,9 +29,13 @@
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
 **
-**  $Date: 2010/10/04 17:07:45EDT $
-**  $Revision: 1.2 $
+**  $Date: 2012/01/13 12:00:55GMT-05:00 $
+**  $Revision: 1.4 $
 **  $Log: cfe_evs_task.h  $
+**  Revision 1.4 2012/01/13 12:00:55GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.3 2011/04/05 16:33:45EDT lwalling 
+**  Optimize EVS use of string functions, plus other performance improvements
 **  Revision 1.2 2010/10/04 17:07:45EDT jmdagost 
 **  Cleaned up copyright symbol.
 **  Revision 1.1 2008/04/17 08:05:14EDT ruperera 
@@ -83,23 +87,22 @@
 #include "cfe_es.h"            /* Memory Pool definitions */
 #include "cfe_platform_cfg.h"  /* cFE platform configuration definitions */
 #include "osapi.h"             /* OS definitions */
+#include "cfe_evs_msg.h"        /* EVS message definitions */
 #include "cfe_evs_verify.h"
 #include "cfe_evs.h"
 #include "cfe_evs_events.h"
 
 /*********************  Macro and Constant Type Definitions   ***************************/
 
-#define CFE_EVS_TABLE_ENTRY_SIZE        500
-#define CFE_EVS_TABLE_RAM_SIZE          (CFE_EVS_TABLE_ENTRY_SIZE*CFE_ES_MAX_APPLICATIONS)
+#define CFE_EVS_MSG_TRUNCATED           '$'
 #define CFE_EVS_FREE_SLOT               (-1)
 #define CFE_EVS_NO_MASK                 0
-#define CFE_EVS_BIG_BUFFER_SIZE         1220
 #define CFE_EVS_PIPE_DEPTH              32
 #define CFE_EVS_MSG_LIMIT               4
 #define CFE_EVS_MAX_EVENT_SEND_COUNT    65535
 #define CFE_EVS_MAX_FILTER_COUNT        65535
 #define CFE_EVS_PIPE_NAME               "EVS_CMD_PIPE"
-#define CFE_EVS_UNDEF_APPID             0xFFFF
+#define CFE_EVS_UNDEF_APPID             0xFFFFFFFF
 #define CFE_EVS_MAX_PORT_MSG_LENGTH     (CFE_EVS_MAX_MESSAGE_LENGTH+OS_MAX_API_NAME+30)
 
 /* Since CFE_EVS_MAX_PORT_MSG_LENGTH is the size of the buffer that is sent to 
@@ -111,61 +114,55 @@
 #endif
 
 
-
-
 /************************  Internal Structure Definitions  *****************************/
-typedef struct {
-   int16  EventID;   /* Numerical event identifier */
-   uint16 Mask;      /* Binary filter mask */
-   uint16 Count;     /* Binary filter counter */
-   uint16 Padding;   /* Structure padding */
 
-} CFE_EVS_EVSBinFilter_t;
+typedef struct
+{
+   int16               EventID;     /* Numerical event identifier */
+   uint16              Mask;        /* Binary filter mask */
+   uint16              Count;       /* Binary filter counter */
+   uint16              Padding;     /* Structure padding */
 
-typedef struct {
-    CFE_EVS_EVSBinFilter_t    BinFilters[CFE_EVS_MAX_EVENT_FILTERS];  /* Array of binary filters */
-    uint32                    AppID;                                  /* Numerical application identifier */
-    uint8                     ActiveFlag;                             /* Application event service active flag */
-    uint8                     EventTypesActiveFlag;                   /* Application event types active flag */
-    uint16                    EventCount;                             /* Application event counter */
-
-} CFE_EVS_Table_t;
+} EVS_BinFilter_t;
 
 
-typedef struct {
-    uint8           Registered;  /* Application registration flag */
-    CFE_EVS_Table_t *Address;    /* Application table pointer */
+typedef struct
+{
+    EVS_BinFilter_t    BinFilters[CFE_EVS_MAX_EVENT_FILTERS];  /* Array of binary filters */
 
-} CFE_EVS_TablePtr_t;
+    uint8              ActiveFlag;             /* Application event service active flag */
+    uint8              EventTypesActiveFlag;   /* Application event types active flag */
+    uint16             EventCount;             /* Application event counter */
+    uint16             RegisterFlag;           /* Application has registered flag */
+
+} EVS_AppData_t;
 
 
 typedef struct {
-   char                   AppName[OS_MAX_API_NAME];          /* Application name */
-   uint8                  ActiveFlag;                        /* Application event service active flag */
-   uint8                  EventTypesActiveFlag;              /* Application event types active flag */
-   uint16                 EventCount;                        /* Application event counter */
-   CFE_EVS_EVSBinFilter_t Filters[CFE_EVS_MAX_EVENT_FILTERS];/* Application event filters */
+   char                AppName[OS_MAX_API_NAME];               /* Application name */
+   uint8               ActiveFlag;                             /* Application event service active flag */
+   uint8               EventTypesActiveFlag;                   /* Application event types active flag */
+   uint16              EventCount;                             /* Application event counter */
+   EVS_BinFilter_t     Filters[CFE_EVS_MAX_EVENT_FILTERS];     /* Application event filters */
 
 } CFE_EVS_AppDataFile_t;
 
-/* Global data structure */
-typedef struct {
-   /*
-   ** EVS memory data
-   */
-   uint8                 EVS_TableRam[CFE_EVS_TABLE_RAM_SIZE];
-   CFE_ES_MemHandle_t    EVS_TableHdl;
-   CFE_EVS_TablePtr_t    EVS_TablePtr[CFE_ES_MAX_APPLICATIONS];
 
-   CFE_EVS_Log_t         *EVS_LogPtr;    /* Pointer to the EVS log in the ES Reset area*/
+/* Global data structure */
+typedef struct
+{
+   EVS_AppData_t       AppData[CFE_ES_MAX_APPLICATIONS];    /* Application state data and event filters */
+
+   CFE_EVS_Log_t      *EVS_LogPtr;    /* Pointer to the EVS log in the ES Reset area*/
                                          /* see cfe_es_global.h */
                                          
    /*
    ** EVS task data
    */
-   CFE_EVS_TlmPkt_t   EVS_TlmPkt;
-   CFE_SB_PipeId_t    EVS_CommandPipe;
-   uint32             EVS_SharedDataMutexID;
+   CFE_EVS_TlmPkt_t    EVS_TlmPkt;
+   CFE_SB_PipeId_t     EVS_CommandPipe;
+   uint32              EVS_SharedDataMutexID;
+   uint32              EVS_AppID;
 
 } CFE_EVS_GlobalData_t;
 

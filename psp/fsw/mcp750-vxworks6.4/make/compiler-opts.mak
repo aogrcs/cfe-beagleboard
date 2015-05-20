@@ -46,7 +46,7 @@ ENDIAN_DEFS=-D_EB -DENDIAN=_EB -DSOFTWARE_BIG_BIT_ORDER
 ##
 ## Compiler Architecture Switches
 ## 
-ARCH_OPTS = -mcpu=750 -mstrict-align -fno-builtin -fvolatile
+ARCH_OPTS = -mcpu=750 -mstrict-align -fno-builtin
 
 ##
 ## Application specific compiler switches 

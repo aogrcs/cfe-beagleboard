@@ -14,9 +14,11 @@ default::$(TABLES)
 
 #
 # Default table rule
+# The absolute path is not ideal, but this prevents the 
+# incorrect version of the utility from being used.
 #
 .o.tbl:$(OBJS)
-	$(TABLE_BIN) $<
+	../$(TABLE_BIN)/$(TABLE_BIN) $<
 
 ##
 ## Default Compiler rule

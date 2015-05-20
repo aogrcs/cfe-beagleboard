@@ -17,60 +17,88 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb_api.c  $
-** Revision 1.26 2010/11/04 16:41:53EDT aschoeni 
+** Revision 1.40 2014/08/22 16:41:25GMT-05:00 lwalling 
+** Change signed loop counters to unsigned
+** Revision 1.39 2014/06/17 13:42:34EDT rmcgraw 
+** DCR18686:1 Initialized all AppId and CallerID's with 0xFFFFFFFF
+** Revision 1.38 2014/05/05 14:47:16EDT rmcgraw
+** DCR19498:1 Fixed buffers in use count, was going negative for zero copy transfers
+** Revision 1.37 2014/05/05 13:53:09EDT rmcgraw
+** DCR19578:1 - Add UnlockSharedData for errors in ZeroCopyReleaseDesc
+** Revision 1.36 2014/04/24 10:57:07EDT rmcgraw
+** DCR19487:1 - Remove size argument in CFE_SB_GetBufferFromCaller
+** Revision 1.35 2012/07/09 15:00:18EDT rmcgraw
+** DCR19413:1 Release buf mem for zero cpy send, no subscribers and error cases
+** Revision 1.34 2012/01/13 12:15:11EST acudmore
+** Changed license text to reflect open source
+** Revision 1.33 2012/01/06 09:27:19EST rmcgraw
+** DCR16100:1 Added perf markers for msg lim and pipe overflow errors
+** Revision 1.32 2011/12/20 10:25:30GMT-05:00 rmcgraw
+** DCR15187:1 Removed function CFE_SB_DecrMsgLimCnt and MsgLim Counter error event
+** Revision 1.31 2011/12/09 12:22:56EST rmcgraw
+** DCR15763:1 Added call to LockSharedData for case of invalid pipe id rcvd in RcvMsg API
+** Revision 1.30 2011/09/09 14:25:33EDT aschoeni
+** Added fix for ZeroCopy issues
+** Revision 1.29 2011/04/29 10:04:48EDT rmcgraw
+** Add check for NULL ptr in send loop
+** Revision 1.28 2011/04/28 10:37:31EDT rmcgraw
+** Fixed compiler error
+** Revision 1.27 2011/04/28 10:10:15EDT rmcgraw
+** DCR14592:1 Fix for the SB Send semaphore problem
+** Revision 1.26 2010/11/04 16:41:53EDT aschoeni
 ** Added optional sender information storage
-** Revision 1.25 2010/11/04 14:27:15EDT aschoeni 
+** Revision 1.25 2010/11/04 14:27:15EDT aschoeni
 ** Optimized rcv function
-** Revision 1.24 2010/11/03 15:07:01EDT jmdagost 
+** Revision 1.24 2010/11/03 15:07:01EDT jmdagost
 ** Added cfe.h include file.
-** Revision 1.23 2009/07/29 19:23:26EDT aschoeni 
+** Revision 1.23 2009/07/29 19:23:26EDT aschoeni
 ** Updated for ZeroCopyHandle_t and GetPoolBufInfo
-** Revision 1.22 2009/07/24 18:27:10EDT aschoeni 
+** Revision 1.22 2009/07/24 18:27:10EDT aschoeni
 ** Added Zero Copy Mode
-** Revision 1.21 2009/07/20 14:10:54EDT aschoeni 
+** Revision 1.21 2009/07/20 14:10:54EDT aschoeni
 ** Made GetAppTskName reentrant
-** Revision 1.20 2009/07/17 19:43:01EDT aschoeni 
+** Revision 1.20 2009/07/17 19:43:01EDT aschoeni
 ** Added PassMsg API to sb to support sequence count preservation
-** Revision 1.19 2009/06/26 17:02:07EDT aschoeni 
+** Revision 1.19 2009/06/26 17:02:07EDT aschoeni
 ** Updated SB to use __func__ instead of __FILE__ for lock and unlock errors
-** Revision 1.18 2009/06/10 09:17:57EDT acudmore 
+** Revision 1.18 2009/06/10 09:17:57EDT acudmore
 ** Updated OS_Mem* and OS_BSP* to CFE_PSP_*
-** Revision 1.17 2009/05/08 11:27:08EDT rmcgraw 
+** Revision 1.17 2009/05/08 11:27:08EDT rmcgraw
 ** DCR7631:1 Removed index checks in Subscribe and Unsubscribe - dead code and cannot be tested
-** Revision 1.16 2009/04/29 10:04:33EDT rmcgraw 
+** Revision 1.16 2009/04/29 10:04:33EDT rmcgraw
 ** DCR5801:11 Changed subscription return value when buf allocation fails
-** Revision 1.15 2009/03/30 10:45:01EDT rmcgraw 
+** Revision 1.15 2009/03/30 10:45:01EDT rmcgraw
 ** DCR5801:2 Fixed infinite loop when deleting a pipe with subscriptions
-** Revision 1.14 2009/02/26 17:57:39EST rmcgraw 
+** Revision 1.14 2009/02/26 17:57:39EST rmcgraw
 ** DCR6805:1 Corrected note under SendMsg API prolog regarding seq count
-** Revision 1.13 2009/02/10 16:53:23EST rmcgraw 
+** Revision 1.13 2009/02/10 16:53:23EST rmcgraw
 ** DCR1700:1 Decrement pipes-in-use counter in DeletePipe API
-** Revision 1.12 2009/02/10 12:29:07EST rmcgraw 
+** Revision 1.12 2009/02/10 12:29:07EST rmcgraw
 ** DCR6956:1 In Create Pipe API, set user's pipe id to invalid for error cases
-** Revision 1.11 2009/02/10 11:25:56EST rmcgraw 
+** Revision 1.11 2009/02/10 11:25:56EST rmcgraw
 ** DCR1699:1 Removed pipe owner in five events
-** Revision 1.10 2009/02/06 15:35:08EST rmcgraw 
+** Revision 1.10 2009/02/06 15:35:08EST rmcgraw
 ** DCR5801:3 Moved Total Msg Size test before the lock in the send api
-** Revision 1.9 2009/02/06 11:29:04EST rmcgraw 
+** Revision 1.9 2009/02/06 11:29:04EST rmcgraw
 ** DCR5801:2 General Cleanup
-** Revision 1.8 2009/02/03 16:33:29EST rmcgraw 
+** Revision 1.8 2009/02/03 16:33:29EST rmcgraw
 ** DCR5801:2 Fixed DestPtr errors in Send API
-** Revision 1.7 2009/02/03 11:06:58EST rmcgraw 
+** Revision 1.7 2009/02/03 11:06:58EST rmcgraw
 ** DCR5801:2 Changed destination desciptors from array based to linked list
-** Revision 1.6 2009/01/30 12:27:07EST rmcgraw 
+** Revision 1.6 2009/01/30 12:27:07EST rmcgraw
 ** DCR5801:5 Removed call to GetPipePtr in send API inside loop
-** Revision 1.5 2009/01/30 11:50:07EST rmcgraw 
+** Revision 1.5 2009/01/30 11:50:07EST rmcgraw
 ** DCR5801:8 Set users ptr to null only when readqueue fails in rcv API
-** Revision 1.4 2009/01/30 11:45:06EST rmcgraw 
+** Revision 1.4 2009/01/30 11:45:06EST rmcgraw
 ** DCR5801:9 Removed unused calls to GetAppID in send and rcv APIs
-** Revision 1.3 2009/01/30 11:07:03EST rmcgraw 
+** Revision 1.3 2009/01/30 11:07:03EST rmcgraw
 ** DCR5801:3 Moved the semaphore lock in the send and rcv API's
-** Revision 1.2 2009/01/30 10:34:57EST rmcgraw 
+** Revision 1.2 2009/01/30 10:34:57EST rmcgraw
 ** DCR5801:1 Began tracking subsribers with 'destinations' counter.
-** Revision 1.1 2008/04/17 08:05:30EDT ruperera 
+** Revision 1.1 2008/04/17 08:05:30EDT ruperera
 ** Initial revision
 ** Member added to cfe project on tlserver3
-** Revision 1.74 2007/09/19 14:38:48EDT rjmcgraw 
+** Revision 1.74 2007/09/19 14:38:48EDT rjmcgraw
 ** DCR4421 Removed use count err events and reworded buf allocation error event
 ** Revision 1.73 2007/09/19 12:01:46EDT rjmcgraw
 ** Return code in unsubscribe changed from no subscribers to cfe success
@@ -142,7 +170,7 @@ extern cfe_sb_t CFE_SB;
 ******************************************************************************/
 int32  CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16  Depth, char *PipeName)
 {
-    uint32          AppId = 0;
+    uint32          AppId = 0xFFFFFFFF;
     uint32          TskId = 0;
     uint32          SysQueueId = 0;
     int32           Status;
@@ -152,7 +180,7 @@ int32  CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16  Depth, char *PipeNa
 
     /* take semaphore to prevent a task switch during this call */
     CFE_SB_LockSharedData(__func__,__LINE__);
-    
+
     TskId = OS_TaskGetId();
 
     /* set user's pipe id value to 'invalid' for error cases below */
@@ -194,10 +222,10 @@ int32  CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16  Depth, char *PipeNa
 
     /* get callers AppId */
     CFE_ES_GetAppID(&AppId);
-    
+
     /* get callers name */
     CFE_ES_GetAppName(AppName, AppId, OS_MAX_API_NAME);
-    
+
     /* Hardcode a NULL terminator, in case rcvd name was too long */
     AppName[OS_MAX_API_NAME-1]= '\0';
 
@@ -259,7 +287,7 @@ int32  CFE_SB_CreatePipe(CFE_SB_PipeId_t *PipeIdPtr, uint16  Depth, char *PipeNa
 */
 int32 CFE_SB_DeletePipe(CFE_SB_PipeId_t PipeId)
 {
-    uint32  CallerId = 0;
+    uint32  CallerId = 0xFFFFFFFF;
     int32   Status = 0;
 
     /* get the callers Application Id */
@@ -315,8 +343,8 @@ int32 CFE_SB_DeletePipeWithAppId(CFE_SB_PipeId_t PipeId, uint32 AppId)
 int32 CFE_SB_DeletePipeFull(CFE_SB_PipeId_t PipeId,uint32 AppId)
 {
     uint8         PipeTblIdx;
-    int32         RtnFromVal,i,Stat;
-    uint32        Owner;
+    int32         RtnFromVal,Stat;
+    uint32        Owner,i;
     uint32        TskId = 0;
     CFE_SB_Msg_t  *PipeMsgPtr;
     CFE_SB_DestinationD_t *DestPtr = NULL;
@@ -357,11 +385,11 @@ int32 CFE_SB_DeletePipeFull(CFE_SB_PipeId_t PipeId,uint32 AppId)
     /* when found, remove the pipe ID from the destination list via 'unsubscribe' */
     for(i=0;i<CFE_SB_MAX_MSG_IDS;i++){
         if(CFE_SB.RoutingTbl[i].MsgId != CFE_SB_INVALID_MSG_ID){
-            
+
             DestPtr = CFE_SB.RoutingTbl[i].ListHeadPtr;
-        
+
             while(DestPtr != NULL){
-            
+
                 if(DestPtr -> PipeId == PipeId){
                     /* release the semaphore, unsubscribe will need to take it */
                     CFE_SB_UnlockSharedData(__func__,__LINE__);
@@ -369,9 +397,9 @@ int32 CFE_SB_DeletePipeFull(CFE_SB_PipeId_t PipeId,uint32 AppId)
                                        PipeId,AppId);
                     CFE_SB_LockSharedData(__func__,__LINE__);
                 }/* end if */
-                
+
                 DestPtr = DestPtr -> Next;
-                
+
             }/* end while */
 
         }/* end if */
@@ -409,7 +437,7 @@ int32 CFE_SB_DeletePipeFull(CFE_SB_PipeId_t PipeId,uint32 AppId)
     CFE_SB.StatTlmMsg.PipeDepthStats[PipeTblIdx].Depth = 0;
     CFE_SB.StatTlmMsg.PipeDepthStats[PipeTblIdx].InUse = 0;
     CFE_SB.StatTlmMsg.PipeDepthStats[PipeTblIdx].PeakInUse = 0;
-    
+
     CFE_SB.StatTlmMsg.PipesInUse--;
 
     CFE_SB_UnlockSharedData(__func__,__LINE__);
@@ -579,7 +607,7 @@ int32  CFE_SB_SubscribeFull(CFE_SB_MsgId_t   MsgId,
     uint16 Idx;
     int32  Stat;
     uint32 TskId = 0;
-    uint32 AppId = 0;
+    uint32 AppId = 0xFFFFFFFF;
     uint8  PipeIdx;
     CFE_SB_DestinationD_t *DestBlkPtr = NULL;
     char   FullName[(OS_MAX_API_NAME * 2)];
@@ -678,7 +706,7 @@ int32  CFE_SB_SubscribeFull(CFE_SB_MsgId_t   MsgId,
              CFE_SB_MAX_DEST_PER_PKT,MsgId,CFE_SB_GetPipeName(PipeId),
              CFE_SB_GetAppTskName(TskId,FullName));
         return CFE_SB_MAX_DESTS_MET;
-    }/* end if */        
+    }/* end if */
 
     DestBlkPtr = CFE_SB_GetDestinationBlk();
     if(DestBlkPtr == NULL){
@@ -689,7 +717,7 @@ int32  CFE_SB_SubscribeFull(CFE_SB_MsgId_t   MsgId,
              CFE_SB_GetAppTskName(TskId,FullName));
         return CFE_SB_BUF_ALOC_ERR;
     }/* end if */
-    
+
     /* initialize destination block */
     DestBlkPtr -> PipeId = PipeId;
     DestBlkPtr -> MsgId2PipeLim = (uint16)MsgLim;
@@ -702,7 +730,7 @@ int32  CFE_SB_SubscribeFull(CFE_SB_MsgId_t   MsgId,
 
     /* add destination block to head of list */
     CFE_SB_AddDest(Idx, DestBlkPtr);
-    
+
     CFE_SB.RoutingTbl[Idx].Destinations++;
 
     CFE_SB.StatTlmMsg.SubscriptionsInUse++;
@@ -758,7 +786,7 @@ int32  CFE_SB_SubscribeFull(CFE_SB_MsgId_t   MsgId,
 ******************************************************************************/
 int32 CFE_SB_Unsubscribe(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId)
 {
-    uint32  CallerId = 0;
+    uint32  CallerId = 0xFFFFFFFF;
     int32   Status = 0;
 
     /* get the callers Application Id */
@@ -793,7 +821,7 @@ int32 CFE_SB_Unsubscribe(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId)
 ******************************************************************************/
 int32 CFE_SB_UnsubscribeLocal(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeId)
 {
-    uint32  CallerId = 0;
+    uint32  CallerId = 0xFFFFFFFF;
     int32   Status = 0;
 
     /* get the callers Application Id */
@@ -879,7 +907,7 @@ int32 CFE_SB_UnsubscribeFull(CFE_SB_MsgId_t MsgId,CFE_SB_PipeId_t PipeId,
     int32   Stat;
     CFE_SB_DestinationD_t   *DestPtr = NULL;
     char    FullName[(OS_MAX_API_NAME * 2)];
-    
+
 
     /* take semaphore to prevent a task switch during this call */
     CFE_SB_LockSharedData(__func__,__LINE__);
@@ -929,31 +957,31 @@ int32 CFE_SB_UnsubscribeFull(CFE_SB_MsgId_t MsgId,CFE_SB_PipeId_t PipeId,
             MsgId,CFE_SB_GetPipeName(PipeId),CFE_SB_GetAppTskName(TskId,FullName));
         return CFE_SUCCESS;
     }/* end if */
-    
+
     /* At this point, there must be at least one destination. */
     /* So the value of 'ListHeadPtr' will not be NULL by design */
-    
+
     /* search the list for a matching pipe id */
     DestPtr = CFE_SB.RoutingTbl[Idx].ListHeadPtr;
-        
+
     do{
-        
+
         if(DestPtr->PipeId == PipeId){
             /* match found, remove node from list */
             CFE_SB_RemoveDest(Idx,DestPtr);
-            
+
             /* return node to memory pool */
             CFE_SB_PutDestinationBlk(DestPtr);
-            
+
             CFE_SB.RoutingTbl[Idx].Destinations--;
             CFE_SB.StatTlmMsg.SubscriptionsInUse--;
-            
+
             MatchFound = TRUE;
-        
+
         }/* end if */
-        
+
         DestPtr = DestPtr->Next;
-        
+
     }while((MatchFound == FALSE)&&(DestPtr != NULL));
 
     /* if 'Destinations' was decremented to zero above... */
@@ -1035,7 +1063,7 @@ int32  CFE_SB_SendMsg(CFE_SB_Msg_t    *MsgPtr)
 **
 ** Assumptions, External Events, and Notes:
 **
-**          Note: This function does NOT increment and track the source 
+**          Note: This function does NOT increment and track the source
 **                sequence counter for telemetry messages.
 **
 ** Date Written:
@@ -1103,6 +1131,9 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
     uint32                  TskId = 0;
     uint16                  i;
     char                    FullName[(OS_MAX_API_NAME * 2)];
+    CFE_SB_EventBuf_t       SBSndErr;
+
+    SBSndErr.EvtsToSnd = 0;
 
     /* get task id for events and Sender Info*/
     TskId = OS_TaskGetId();
@@ -1124,6 +1155,11 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
     if(CFE_SB_ValidateMsgId(MsgId) != CFE_SUCCESS){
         CFE_SB_LockSharedData(__func__,__LINE__);
         CFE_SB.HKTlmMsg.MsgSendErrCnt++;
+        if (CopyMode == CFE_SB_SEND_ZEROCOPY)
+        {
+            BufDscPtr = CFE_SB_GetBufferFromCaller(MsgId, MsgPtr);
+            CFE_SB_DecrBufUseCnt(BufDscPtr);
+        }
         CFE_SB_UnlockSharedData(__func__,__LINE__);
         CFE_EVS_SendEventWithAppID(CFE_SB_SEND_INV_MSGID_EID,CFE_EVS_ERROR,CFE_SB.AppId,
             "Send Err:Invalid MsgId(0x%x)in msg,App %s",
@@ -1137,6 +1173,11 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
     if(TotalMsgSize > CFE_SB_MAX_SB_MSG_SIZE){
         CFE_SB_LockSharedData(__func__,__LINE__);
         CFE_SB.HKTlmMsg.MsgSendErrCnt++;
+        if (CopyMode == CFE_SB_SEND_ZEROCOPY)
+        {
+            BufDscPtr = CFE_SB_GetBufferFromCaller(MsgId, MsgPtr);
+            CFE_SB_DecrBufUseCnt(BufDscPtr);
+        }
         CFE_SB_UnlockSharedData(__func__,__LINE__);
         CFE_EVS_SendEventWithAppID(CFE_SB_MSG_TOO_BIG_EID,CFE_EVS_ERROR,CFE_SB.AppId,
             "Send Err:Msg Too Big MsgId=0x%x,app=%s,size=%d,MaxSz=%d",
@@ -1150,10 +1191,16 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
     RtgTblIdx = CFE_SB_GetRoutingTblIdx(MsgId);
 
     /* if there have been no subscriptions for this pkt, */
-    /* increment the dropped pkt cnt, send event and return success */      
+    /* increment the dropped pkt cnt, send event and return success */
     if(RtgTblIdx == CFE_SB_AVAILABLE){
-    
+
         CFE_SB.HKTlmMsg.NoSubscribersCnt++;
+
+        if (CopyMode == CFE_SB_SEND_ZEROCOPY){
+            BufDscPtr = CFE_SB_GetBufferFromCaller(MsgId, MsgPtr);
+            CFE_SB_DecrBufUseCnt(BufDscPtr);
+        }
+
         CFE_SB_UnlockSharedData(__func__,__LINE__);
 
         /* Determine if event can be sent without causing recursive event problem */
@@ -1172,7 +1219,7 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
 
     /* Allocate a new buffer. */
     if (CopyMode == CFE_SB_SEND_ZEROCOPY){
-        BufDscPtr = CFE_SB_GetBufferFromCaller(MsgId, TotalMsgSize, MsgPtr);
+        BufDscPtr = CFE_SB_GetBufferFromCaller(MsgId, MsgPtr);
     }
     else{
         BufDscPtr = CFE_SB_GetBufferFromPool(MsgId, TotalMsgSize);
@@ -1219,50 +1266,46 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
     RtgTblPtr = &CFE_SB.RoutingTbl[RtgTblIdx];
 
     /* At this point there must be at least one destination for pkt */
-    
+
     DestPtr = RtgTblPtr -> ListHeadPtr;
 
     /* Send the packet to all destinations  */
     for (i=0; i < RtgTblPtr -> Destinations; i++) {
 
-        if (DestPtr->Active == CFE_SB_INACTIVE)    /* destination is inactive */             
-        {            
+        /* The DestPtr should never be NULL in this loop, this is just extra
+           protection in case of the unforseen */
+        if(DestPtr == NULL){
+          break;
+        }
+
+        if (DestPtr->Active == CFE_SB_INACTIVE)    /* destination is inactive */
+        {
             DestPtr = DestPtr -> Next;
             continue;
         }
 
-        PipeDscPtr = &CFE_SB.PipeTbl[DestPtr->PipeId]; 
+        PipeDscPtr = &CFE_SB.PipeTbl[DestPtr->PipeId];
 
-        /* if MsgId-to-Pipe limit exceeded, send an event, increment counter */
+        /* if Msg limit exceeded, log event, increment counter */
         /* and go to next destination */
         if(DestPtr->BuffCount >= DestPtr->MsgId2PipeLim){
-            CFE_SB_UnlockSharedData(__func__,__LINE__);
 
-            /* Determine if event can be sent without causing recursive event problem */
-            if(CFE_SB_RequestToSendEvent(TskId,CFE_SB_MSGID_LIM_ERR_EID_BIT) == CFE_SB_GRANTED){
-
-              CFE_EVS_SendEventWithAppID(CFE_SB_MSGID_LIM_ERR_EID,CFE_EVS_ERROR,CFE_SB.AppId,
-                "Send Err:MsgId-to-Pipe Lim Exceeded MsgId 0x%x,pipe %s,sender %s",
-                RtgTblPtr->MsgId,CFE_SB_GetPipeName(DestPtr->PipeId),CFE_SB_GetAppTskName(TskId,FullName));
-
-              /* clear the bit so the task may send this event again */
-              CFE_CLR(CFE_SB.StopRecurseFlags[TskId],CFE_SB_MSGID_LIM_ERR_EID_BIT);
-            }/* end if */
-
-            CFE_SB_LockSharedData(__func__,__LINE__);
-            CFE_SB.HKTlmMsg.MsgIdToPipeErrCnt++;
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].PipeId  = DestPtr->PipeId;
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].EventId = CFE_SB_MSGID_LIM_ERR_EID;
+            SBSndErr.EvtsToSnd++;
+            CFE_SB.HKTlmMsg.MsgLimErrCnt++;
             PipeDscPtr->SendErrors++;
             DestPtr = DestPtr -> Next;
             continue;
         }
 
         /*
-        ** Write the buffer to the queue of the pipe.  If the write
-        ** failed, release the buffer and increment the pipe's error counter.
+        ** Write the buffer descriptor to the queue of the pipe.  If the write
+        ** failed, log info and increment the pipe's error counter.
         */
-        Status = CFE_SB_WriteQueue(PipeDscPtr, TskId, BufDscPtr, RtgTblPtr->MsgId);
+        Status = OS_QueuePut(PipeDscPtr->SysQueueId,(void *)&BufDscPtr,sizeof(CFE_SB_BufferD_t *),0);
 
-        if (Status == CFE_SUCCESS) {
+        if (Status == OS_SUCCESS) {
             BufDscPtr->UseCount++;    /* used for releasing buffer  */
             DestPtr->BuffCount++; /* used for checking MsgId2PipeLimit */
             DestPtr->DestCnt++;   /* used for statistics */
@@ -1273,12 +1316,30 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
                 CFE_SB.StatTlmMsg.PipeDepthStats[DestPtr->PipeId].InUse;
             }/* end if */
 
+        }else if(Status == OS_QUEUE_FULL) {
+
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].PipeId  = DestPtr->PipeId;
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].EventId = CFE_SB_Q_FULL_ERR_EID;
+            SBSndErr.EvtsToSnd++;
+            CFE_SB.HKTlmMsg.PipeOverflowErrCnt++;
+            PipeDscPtr->SendErrors++;
+
+
+        }else{ /* Unexpected error while writing to queue. */
+
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].PipeId  = DestPtr->PipeId;
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].EventId = CFE_SB_Q_WR_ERR_EID;
+            SBSndErr.EvtBuf[SBSndErr.EvtsToSnd].ErrStat = Status;
+            SBSndErr.EvtsToSnd++;
+            CFE_SB.HKTlmMsg.InternalErrCnt++;
+            PipeDscPtr->SendErrors++;
+
         }/*end if */
 
         DestPtr = DestPtr -> Next;
 
     } /* end loop over destinations */
-    
+
     /*
     ** Decrement the buffer UseCount and free buffer if cnt=0. This decrement is done
     ** because the use cnt is initialized to 1 in CFE_SB_GetBufferFromPool.
@@ -1290,6 +1351,66 @@ int32  CFE_SB_SendMsgFull(CFE_SB_Msg_t    *MsgPtr,
 
     /* release the semaphore */
     CFE_SB_UnlockSharedData(__func__,__LINE__);
+
+
+    /* send an event for each pipe write error that may have occurred */
+    for(i=0;i < SBSndErr.EvtsToSnd; i++)
+    {
+        if(SBSndErr.EvtBuf[i].EventId == CFE_SB_MSGID_LIM_ERR_EID)
+        {
+            /* Determine if event can be sent without causing recursive event problem */
+            if(CFE_SB_RequestToSendEvent(TskId,CFE_SB_MSGID_LIM_ERR_EID_BIT) == CFE_SB_GRANTED){
+
+              CFE_ES_PerfLogEntry(CFE_SB_MSG_LIM_PERF_ID);
+              CFE_ES_PerfLogExit(CFE_SB_MSG_LIM_PERF_ID);
+
+              CFE_EVS_SendEventWithAppID(CFE_SB_MSGID_LIM_ERR_EID,CFE_EVS_ERROR,CFE_SB.AppId,
+                "Msg Limit Err,MsgId 0x%x,pipe %s,sender %s",
+                RtgTblPtr->MsgId,
+                CFE_SB_GetPipeName(SBSndErr.EvtBuf[i].PipeId),
+                CFE_SB_GetAppTskName(TskId,FullName));
+
+              /* clear the bit so the task may send this event again */
+              CFE_CLR(CFE_SB.StopRecurseFlags[TskId],CFE_SB_MSGID_LIM_ERR_EID_BIT);
+            }/* end if */
+
+        }else if(SBSndErr.EvtBuf[i].EventId == CFE_SB_Q_FULL_ERR_EID){
+
+            /* Determine if event can be sent without causing recursive event problem */
+            if(CFE_SB_RequestToSendEvent(TskId,CFE_SB_Q_FULL_ERR_EID_BIT) == CFE_SB_GRANTED){
+
+              CFE_ES_PerfLogEntry(CFE_SB_PIPE_OFLOW_PERF_ID);
+              CFE_ES_PerfLogExit(CFE_SB_PIPE_OFLOW_PERF_ID);
+
+              CFE_EVS_SendEventWithAppID(CFE_SB_Q_FULL_ERR_EID,CFE_EVS_ERROR,CFE_SB.AppId,
+                  "Pipe Overflow,MsgId 0x%x,pipe %s,sender %s",
+                  RtgTblPtr->MsgId,
+                  CFE_SB_GetPipeName(SBSndErr.EvtBuf[i].PipeId),
+                  CFE_SB_GetAppTskName(TskId,FullName));
+
+               /* clear the bit so the task may send this event again */
+               CFE_CLR(CFE_SB.StopRecurseFlags[TskId],CFE_SB_Q_FULL_ERR_EID_BIT);
+            }/* end if */
+
+        }else{
+
+            /* Determine if event can be sent without causing recursive event problem */
+            if(CFE_SB_RequestToSendEvent(TskId,CFE_SB_Q_WR_ERR_EID_BIT) == CFE_SB_GRANTED){
+
+              CFE_EVS_SendEventWithAppID(CFE_SB_Q_WR_ERR_EID,CFE_EVS_ERROR,CFE_SB.AppId,
+                "Pipe Write Err,MsgId 0x%x,pipe %s,sender %s,stat 0x%x",
+                RtgTblPtr->MsgId,
+                CFE_SB_GetPipeName(SBSndErr.EvtBuf[i].PipeId),
+                CFE_SB_GetAppTskName(TskId,FullName),
+                SBSndErr.EvtBuf[i].ErrStat);
+
+               /* clear the bit so the task may send this event again */
+               CFE_CLR(CFE_SB.StopRecurseFlags[TskId],CFE_SB_Q_WR_ERR_EID_BIT);
+            }/* end if */
+
+        }/* end if */
+    }
+
 
     return CFE_SUCCESS;
 
@@ -1349,6 +1470,7 @@ int32  CFE_SB_RcvMsg(CFE_SB_MsgPtr_t    *BufPtr,
     PipeDscPtr = CFE_SB_GetPipePtr(PipeId);
     /* If the pipe does not exist or PipeId is out of range... */
     if (PipeDscPtr == NULL) {
+        CFE_SB_LockSharedData(__func__,__LINE__);
         CFE_SB.HKTlmMsg.MsgReceiveErrCnt++;
         CFE_SB_UnlockSharedData(__func__,__LINE__);
         CFE_EVS_SendEventWithAppID(CFE_SB_BAD_PIPEID_EID,CFE_EVS_ERROR,CFE_SB.AppId,
@@ -1402,22 +1524,26 @@ int32  CFE_SB_RcvMsg(CFE_SB_MsgPtr_t    *BufPtr,
         DestPtr = CFE_SB_GetDestPtr(PipeDscPtr->CurrentBuff->MsgId, PipeDscPtr->PipeId);
 
         /*
-        ** Also decrement the message limit count in the destination descriptor
-        ** used for the MsgId-to-Pipe limit check.
-        ** Note:There is a chance that this call to CFE_SB_DecrMsgLimCnt will return
-        ** a failure status.It may happen if a msg is unsubscribed to while it is on
-        ** the pipe (DestPtr will be NULL). The code is designed to handle this
-        ** situation without a problem. See DCR3217 for more detail.
+        ** DestPtr would be NULL if the msg is unsubscribed to while it is on
+        ** the pipe. The BuffCount may be zero if the msg is unsubscribed to and
+        ** then resubscribed to while it is on the pipe. Both of these cases are
+        ** considered nominal and are handled by the code below.
         */
-        CFE_SB_DecrMsgLimCnt(DestPtr);
+        if(DestPtr != NULL){
+
+            if (DestPtr->BuffCount > 0){
+                DestPtr->BuffCount--;
+            }
+
+        }/* end if DestPtr != NULL */
 
         CFE_SB.StatTlmMsg.PipeDepthStats[PipeDscPtr->PipeId].InUse--;
-    
+
     }else{
-    
+
         /* Set the users pointer to NULL indicating the CFE_SB_ReadQueue failed */
         *BufPtr = NULL;
-    
+
     }/* end if */
 
     /* release the semaphore */
@@ -1462,7 +1588,7 @@ uint32  CFE_SB_GetLastSenderId(CFE_SB_SenderId_t **Ptr,CFE_SB_PipeId_t  PipeId)
 
     CFE_SB_BufferD_t *Ptr2BufDescriptor;
     uint32            TskId = 0;
-    uint32            AppId = 0;
+    uint32            AppId = 0xFFFFFFFF;
     char              FullName[(OS_MAX_API_NAME * 2)];
 
     TskId = OS_TaskGetId();
@@ -1536,17 +1662,21 @@ uint32  CFE_SB_GetLastSenderId(CFE_SB_SenderId_t **Ptr,CFE_SB_PipeId_t  PipeId)
 **
 ******************************************************************************/
 
-CFE_SB_Msg_t  *CFE_SB_ZeroCopyGetPtr(uint16 MsgSize, 
+CFE_SB_Msg_t  *CFE_SB_ZeroCopyGetPtr(uint16 MsgSize,
                                      CFE_SB_ZeroCopyHandle_t *BufferHandle)
 {
    int32                stat1;
-   uint32               AppId;
-   CFE_SB_Msg_t        *address = NULL;
+   uint32               AppId = 0xFFFFFFFF;
+   uint8               *address = NULL;
    CFE_SB_ZeroCopyD_t  *zcd = NULL;
+   CFE_SB_BufferD_t    *bd = NULL;
+
+    CFE_SB_LockSharedData(__func__,__LINE__);
 
     /* Allocate a new zero copy descriptor from the SB memory pool.*/
     stat1 = CFE_ES_GetPoolBuf((uint32 **)&zcd, CFE_SB.Mem.PoolHdl,  sizeof(CFE_SB_ZeroCopyD_t));
     if(stat1 < 0){
+        CFE_SB_UnlockSharedData(__func__,__LINE__);
         return NULL;
     }
 
@@ -1558,16 +1688,24 @@ CFE_SB_Msg_t  *CFE_SB_ZeroCopyGetPtr(uint16 MsgSize,
     }/* end if */
 
     /* Allocate a new buffer (from the SB memory pool) to hold the message  */
-    stat1 = CFE_ES_GetPoolBuf((uint32 **)&address, CFE_SB.Mem.PoolHdl, MsgSize);
-    if((stat1 < 0)||(address==NULL)){
+    stat1 = CFE_ES_GetPoolBuf((uint32 **)&bd, CFE_SB.Mem.PoolHdl, MsgSize + sizeof(CFE_SB_BufferD_t));
+    if((stat1 < 0)||(bd==NULL)){
         /*deallocate the first buffer if the second buffer creation fails*/
         stat1 = CFE_ES_PutPoolBuf(CFE_SB.Mem.PoolHdl, (uint32 *)zcd);
         if(stat1 > 0){
             CFE_SB.StatTlmMsg.MemInUse-=stat1;
         }
+        CFE_SB_UnlockSharedData(__func__,__LINE__);
         return NULL;
     }
-    
+
+    /* Increment the number of buffers in use by one even though two buffers */
+    /* were allocated. SBBuffersInUse increments on a per-message basis */
+    CFE_SB.StatTlmMsg.SBBuffersInUse++;
+    if(CFE_SB.StatTlmMsg.SBBuffersInUse > CFE_SB.StatTlmMsg.PeakSBBuffersInUse){
+        CFE_SB.StatTlmMsg.PeakSBBuffersInUse = CFE_SB.StatTlmMsg.SBBuffersInUse;
+    }/* end if */
+
     /* Add the size of the actual buffer to the memory-in-use ctr and */
     /* adjust the high water mark if needed */
     CFE_SB.StatTlmMsg.MemInUse+=stat1;
@@ -1575,11 +1713,13 @@ CFE_SB_Msg_t  *CFE_SB_ZeroCopyGetPtr(uint16 MsgSize,
        CFE_SB.StatTlmMsg.PeakMemInUse = CFE_SB.StatTlmMsg.MemInUse;
     }/* end if */
 
-    /* get callers AppId */
-    CFE_ES_GetAppID(&AppId);
+    /* first set ptr to actual msg buffer the same as ptr to descriptor */
+    address = (uint8 *)bd;
+
+    /* increment actual msg buffer ptr beyond the descriptor */
+    address += sizeof(CFE_SB_BufferD_t);
 
     /* Initialize the zero copy descriptor structure. */
-    zcd->AppID     = AppId;
     zcd->Size      = MsgSize;
     zcd->Buffer    = (void *)address;
     zcd->Next      = NULL;
@@ -1590,8 +1730,19 @@ CFE_SB_Msg_t  *CFE_SB_ZeroCopyGetPtr(uint16 MsgSize,
     }
     zcd->Prev = CFE_SB.ZeroCopyTail;
     CFE_SB.ZeroCopyTail = (void *)zcd;
- 
-   (*BufferHandle) = (CFE_SB_ZeroCopyHandle_t) zcd;
+
+    CFE_SB_UnlockSharedData(__func__,__LINE__);
+
+    /* get callers AppId */
+    CFE_ES_GetAppID(&AppId);
+    zcd->AppID     = AppId;
+
+    (*BufferHandle) = (CFE_SB_ZeroCopyHandle_t) zcd;
+
+    /* Initialize the buffer descriptor structure. */
+    bd->UseCount  = 1;
+    bd->Size      = MsgSize;
+    bd->Buffer    = (void *)address;
 
     return (CFE_SB_Msg_t *)address;
 
@@ -1631,14 +1782,20 @@ int32 CFE_SB_ZeroCopyReleasePtr(CFE_SB_Msg_t  *Ptr2Release,
 
     Status = CFE_SB_ZeroCopyReleaseDesc(Ptr2Release, BufferHandle);
 
+    CFE_SB_LockSharedData(__func__,__LINE__);
+
     if(Status == CFE_SUCCESS){
         /* give the buffer back to the buffer pool */
-        Stat2 = CFE_ES_PutPoolBuf(CFE_SB.Mem.PoolHdl, (uint32 *)Ptr2Release);
+        Stat2 = CFE_ES_PutPoolBuf(CFE_SB.Mem.PoolHdl,
+                                  (uint32 *) (((uint8 *)Ptr2Release) - sizeof(CFE_SB_BufferD_t)));
         if(Stat2 > 0){
              /* Substract the size of the actual buffer from the Memory in use ctr */
             CFE_SB.StatTlmMsg.MemInUse-=Stat2;
+            CFE_SB.StatTlmMsg.SBBuffersInUse--;
         }/* end if */
     }
+
+    CFE_SB_UnlockSharedData(__func__,__LINE__);
 
     return Status;
 
@@ -1674,11 +1831,12 @@ int32 CFE_SB_ZeroCopyReleaseDesc(CFE_SB_Msg_t  *Ptr2Release,
     int32    Stat;
     CFE_SB_ZeroCopyD_t *zcd = (CFE_SB_ZeroCopyD_t *) BufferHandle;
 
+    CFE_SB_LockSharedData(__func__,__LINE__);
+
     Stat = CFE_ES_GetPoolBufInfo(CFE_SB.Mem.PoolHdl, (uint32 *)zcd);
 
-    if((Ptr2Release == NULL) ||
-       (Stat < 0) ||
-       (zcd->Buffer != (void *)Ptr2Release)){
+    if((Ptr2Release == NULL) || (Stat < 0) || (zcd->Buffer != (void *)Ptr2Release)){
+        CFE_SB_UnlockSharedData(__func__,__LINE__);
         return CFE_SB_BUFFER_INVALID;
     }
 
@@ -1699,6 +1857,8 @@ int32 CFE_SB_ZeroCopyReleaseDesc(CFE_SB_Msg_t  *Ptr2Release,
         /* Substract the size of the actual buffer from the Memory in use ctr */
         CFE_SB.StatTlmMsg.MemInUse-=Stat;
     }/* end if */
+
+    CFE_SB_UnlockSharedData(__func__,__LINE__);
 
     return CFE_SUCCESS;
 
@@ -1873,90 +2033,5 @@ int32  CFE_SB_ReadQueue (CFE_SB_PipeD_t         *PipeDscPtr,
 
 }/* end CFE_SB_ReadQueue */
 
-
-/******************************************************************************
-**  Function:  CFE_SB_WriteQueue()
-**
-**  Purpose:
-**    Write an SB message to the system queue.  The message is represented
-**    by a pointer to the buffer descriptor of the message.
-**
-**  Arguments:
-**    PipeDscPtr: Pointer to pipe descriptor.
-**    AppId     : Application ID of the sending task (used for error messages).
-**    BufDscPtr : Pointer to buffer descriptor of the message.
-**    MsgId     : Message ID of the packet (used for error messages).
-**
-**  Return:
-**      CFE_SUCCESS          = message was successfully written
-**      CFE_SB_PIPE_OVERFLOW = pipe is full; no more messages can be accepted
-**      CFE_SB_PIPE_WR_ERR   = an unexpected queue write error occurred
-**
-**  Assumptions:
-**      SB Shared Data semaphore is locked prior to calling this routine.
-*/
-
-int32  CFE_SB_WriteQueue (CFE_SB_PipeD_t            *PipeDscPtr,
-                          uint32                    TskId,
-                          const CFE_SB_BufferD_t    *BufDscPtr,
-                          CFE_SB_MsgId_t            MsgId)
-{
-    int32             Status;
-    char              FullName[(OS_MAX_API_NAME * 2)];
-
-    /* Write the buffer descriptor address to the queue.  */
-    Status = OS_QueuePut(PipeDscPtr->SysQueueId,(void *)&BufDscPtr,sizeof(CFE_SB_BufferD_t *),0);
-
-    /* translate the return value */
-    switch(Status){
-
-      case OS_SUCCESS:
-          return CFE_SUCCESS;
-          break;
-
-      case OS_QUEUE_FULL:
-          CFE_SB.HKTlmMsg.PipeOverflowErrCnt++;
-          PipeDscPtr->SendErrors++;
-          CFE_SB_UnlockSharedData(__func__,__LINE__);
-
-          /* Determine if event can be sent without causing recursive event problem */
-          if(CFE_SB_RequestToSendEvent(TskId,CFE_SB_Q_FULL_ERR_EID_BIT) == CFE_SB_GRANTED){
-
-            CFE_EVS_SendEventWithAppID(CFE_SB_Q_FULL_ERR_EID,CFE_EVS_ERROR,CFE_SB.AppId,
-                "Pipe Overflow,MsgId 0x%x,pipe %s,stat 0x%x,app %s",
-                MsgId,CFE_SB_GetPipeName(PipeDscPtr->PipeId),Status,CFE_SB_GetAppTskName(TskId,FullName));
-
-             /* clear the bit so the task may send this event again */
-             CFE_CLR(CFE_SB.StopRecurseFlags[TskId],CFE_SB_Q_FULL_ERR_EID_BIT);
-          }/* end if */
-
-          CFE_SB_LockSharedData(__func__,__LINE__);
-          return CFE_SB_PIPE_OVERFLOW;
-          break;
-
-      default:
-          /* Unexpected error while writing to queue. */
-          CFE_SB.HKTlmMsg.InternalErrCnt++;
-          PipeDscPtr->SendErrors++;
-          CFE_SB_UnlockSharedData(__func__,__LINE__);
-
-          /* Determine if event can be sent without causing recursive event problem */
-          if(CFE_SB_RequestToSendEvent(TskId,CFE_SB_Q_WR_ERR_EID_BIT) == CFE_SB_GRANTED){
-
-            CFE_EVS_SendEventWithAppID(CFE_SB_Q_WR_ERR_EID,CFE_EVS_ERROR,CFE_SB.AppId,
-              "Pipe Write Err,MsgId 0x%x,pipe %s,stat 0x%x,app %s",
-              MsgId,CFE_SB_GetPipeName(PipeDscPtr->PipeId),Status,CFE_SB_GetAppTskName(TskId,FullName));
-
-             /* clear the bit so the task may send this event again */
-             CFE_CLR(CFE_SB.StopRecurseFlags[TskId],CFE_SB_Q_WR_ERR_EID_BIT);
-          }/* end if */
-
-          CFE_SB_LockSharedData(__func__,__LINE__);
-          return CFE_SB_PIPE_WR_ERR;
-          break;
-
-    }/* end switch */
-
-}/* end CFE_SB_WriteQueue */
-
 /*****************************************************************************/
+

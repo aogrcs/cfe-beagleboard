@@ -17,10 +17,10 @@
 #
 # Assumptions and Notes:
 #
-# $Date: 2008/04/17 08:09:34EDT $
+# $Date: 2008/04/17 07:09:34GMT-05:00 $
 # $Revision: 1.1 $
 # $Log: utf_sbsim.pm  $
-# Revision 1.1 2008/04/17 08:09:34EDT ruperera 
+# Revision 1.1 2008/04/17 07:09:34GMT-05:00 ruperera 
 # Initial revision
 # Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/perl_tool/project.pj
 # Revision 1.2 2006/04/10 15:44:17EDT sslegel 

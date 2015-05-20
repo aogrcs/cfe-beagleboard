@@ -15,7 +15,7 @@ PROC $sc_$cpu_print_all_pipes(stepnum)
 ;	
 ;	Name			Description
 ;       stepnum                 String that gets appended to the getfiletocvt
-;                                filename to make it unique.
+;                               filename to make it unique.
 ;
 ;  Procedures Called
 ;

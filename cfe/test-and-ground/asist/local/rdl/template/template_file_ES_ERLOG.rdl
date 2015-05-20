@@ -23,6 +23,7 @@
 !  2006/11/15  WFM	: Initial
 !  2009/12/09  WFM	: Modified the ERLE[64] to use the cFE configuration
 !			: parameter CFE_ES_ER_LOG_ENTRIES
+!  2012/02/14  WFM	: Modified the ERLog_Context from ULI to UB
 !                                                             
 !==============================================================================
 !
@@ -56,7 +57,7 @@ TYPES
      CHAR ERLog_Description[80] DESC="Ascii data for the event"
      ULI ERLog_ContextPresent	DESC="Indicates whether the context data is valid"
      ULI  ERLog_AppID		DESC="The Application ID"
-     ULI  ERLog_Context[CONTEXT_SIZE] DESC="The CPU Context data"
+     UB  ERLog_Context[CONTEXT_SIZE] DESC="The CPU Context data"
    END
    
 END_TYPES

@@ -9,12 +9,12 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 ** Purpose: This file contains the functions that implement the software timing
 **  performance markers.
 **
 ** $Log: cfe_es_perf.c  $
+** Revision 1.8 2012/01/13 11:50:03GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.7 2010/11/05 12:07:55EDT acudmore 
 ** When the write of a performance log to a file fails, reset the DataToWrite variable so a new dump can be done later.
 ** Revision 1.6 2010/11/04 17:19:17EDT jmdagost 

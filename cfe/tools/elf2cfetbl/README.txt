@@ -21,20 +21,44 @@ UTILITY SOURCE FILES:
 
 CREATING THE UTILITY:
 
-   There is a Makefile that can be used to build the utility.  The standard CFS 'setvars.sh'
-   script should be run prior to attempting to run the elf2cfetbl Makefile.
-   There is also one include path that may need to be modified for a particular deployment of
-   the elf2cfetbl tool.  The last include path specified in the Makefile must point to the
-   location of the cfe_platform_cfg.h file.
-   
-   To build the tool:
-   
-      $ make tool
-      
-   To compile the sample table image:
-   
-      $ make sample
+   The elf2cfetbl utility and the tables it converts depend on processor
+   specific configuration paramters that are defined in cfe_platform_cfg.h.
+   Because of this, it is recommended that the elf2cfetbl utility is compiled
+   and used for each processor in a cFE/CFS mission directory structure.
+   Compiling the utility in this source directory and copying it to a 
+   common directory in the executable path on the development host can cause errors
+   when creating the flight software tables. 
+   If the elf2cfetbl utility is compiled and used in the build/<cpu> tree,
+   then the tables should always use the correct parameters, and the tool 
+   does not have to be installed on the development workstation. 
 
+   In order to setup the tool to build, check the build/<cpu> directory to see
+   if the "elf2cfetbl" directory and corresponding "elf2cfetbl/Makefile"
+   exists. If they are present, then the utility can be compiled by executing
+   the makefile from that directory:
+   $ cd build/cpu1/elf2cfetbl
+   $ make
+
+   If the elf2cfetbl directory and Makefile are not present in the build 
+   directory, the directory can be created, and the Makefile can be copied
+   from the "for_build" directory here. 
+
+   $ mkdir <path-to-build>/build/cpu1/elf2cfetbl
+   $ cp for-build/Makefile <path-to-build>/build/cpu1/elf2cfetbl
+
+   Once the directory is setup, the build for the CPU should use this utility.
+   If for some reason the build fails because the elf2cfetbl utility cannot be
+   found, then it is possible the build makefiles or PSP configuration has not 
+   been updated to look for the elf2cfetbl utility in the correct place. 
+   In this case, check the file:
+   <path-to-cfe>/cfe/fsw/cfe-core/src/make/table-rules.mak
+   In this file, make sure the table rule looke like this:
+   #
+   # Default table rule
+   #
+   .o.tbl:$(OBJS)
+          ../elf2cfetbl/$(TABLE_BIN) $<
+  
 PREPARING A SOURCE FILE FOR USE WITH THE UTILITY:
 
    Preparing a .c file for use with the utility requires the use of a special macro.

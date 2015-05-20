@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_task.h 1.7 2010/10/27 17:53:37EDT dkobe Exp  $
+** $Id: cfe_tbl_task.h 1.8 2012/01/13 12:17:41GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,8 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_task.h  $
+** Revision 1.8 2012/01/13 12:17:41GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.7 2010/10/27 17:53:37EDT dkobe 
 ** Added TableLoadedOnce flag to Critical Table Registry
 ** Revision 1.6 2010/10/27 16:37:16EDT dkobe 

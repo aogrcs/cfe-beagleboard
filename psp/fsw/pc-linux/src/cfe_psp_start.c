@@ -2,14 +2,14 @@
 ** File:  cfe_psp_start.c
 **
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA Goddard 
 **      Space Flight Center pursuant to government contracts.
 **
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-** 
+**      This software may be used only pursuant to a United States government 
+**      sponsored project and the United States government may not be charged
+**      for use thereof. 
 **
 **
 
@@ -35,7 +35,8 @@
 #include <getopt.h>
 #include <string.h>
 #include <limits.h>
-
+#include <pthread.h>
+#include <sched.h>
 
 /*
 ** cFE includes 
@@ -140,15 +141,19 @@ static const struct option longOpts[] = {
 **  Return:
 **    (none)
 */
-
 int main(int argc, char *argv[])
 {
-   uint32 reset_type;
-   uint32 reset_subtype;
-   struct sigaction sa;
-   struct itimerval timer;
-   int    opt = 0;
-   int    longIndex = 0;
+   uint32             reset_type;
+   uint32             reset_subtype;
+   struct             sigaction sa;
+   struct             itimerval timer;
+   int                opt = 0;
+   int                longIndex = 0;
+   sigset_t           mask;
+   pthread_t          thread_id;
+   struct sched_param thread_params;
+   int                ret;
+
 #ifdef CFE_PSP_EEPROM_SUPPORT
    int32  Status;
    uint32 eeprom_address;
@@ -334,9 +339,48 @@ int main(int argc, char *argv[])
 #endif
 
    /*
+   ** Disable Signals to parent thread and therefore all
+   ** child threads create will block all signals
+   ** Note: Timers will not work in the application unless
+   **       threads are spawned in OS_Application_Startup.
+   */
+   sigfillset(&mask);
+   sigdelset(&mask, SIGINT); /* Needed to kill program */
+   sigprocmask(SIG_SETMASK, &mask, NULL);
+
+
+   /*
+   ** Raise the priority of the main thread so ES Main completes  
+   */
+   thread_id = pthread_self(); 
+   thread_params.sched_priority = sched_get_priority_max(SCHED_FIFO);
+   ret = pthread_setschedparam(thread_id, SCHED_FIFO, &thread_params);
+   if ( ret != 0 )
+   {
+      OS_printf("Unable to set main thread priority to max\n");
+   }
+
+   /*
    ** Call cFE entry point.
    */
    CFE_ES_Main(reset_type, reset_subtype, 1, (uint8 *)CFE_ES_NONVOL_STARTUP_FILE); 
+
+   /*
+   ** Re-enable Signals to current thread so that
+   ** any signals will interrupt in this threads context
+   ** ... this is needed for timers
+   */
+   sigprocmask(SIG_UNBLOCK, &mask, NULL);
+
+   /*
+   ** Lower the thread priority to before entering the sleep loop
+   */
+   thread_params.sched_priority = sched_get_priority_min(SCHED_FIFO);
+   ret = pthread_setschedparam(thread_id, SCHED_FIFO, &thread_params);
+   if ( ret != 0 )
+   {
+      OS_printf("Unable to set main thread priority to minimum\n");
+   }
 
    /*
    ** Let the main thread sleep 
@@ -367,6 +411,7 @@ int main(int argc, char *argv[])
 **  Return:
 **    (none)
 */
+
 void CFE_PSP_SigintHandler (void)
 {
       OS_printf("\nCFE_PSP: Control-C Captured - Exiting cFE\n");

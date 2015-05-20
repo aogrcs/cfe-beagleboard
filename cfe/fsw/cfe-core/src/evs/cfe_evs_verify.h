@@ -18,8 +18,10 @@
 ** Author:   K.Audra(Microtel)
 **
 ** Notes:
-** $Revision: 1.4 $
+** $Revision: 1.5 $
 ** $Log: cfe_evs_verify.h  $
+** Revision 1.5 2012/01/13 12:00:56GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.4 2010/10/27 16:35:23EDT jmdagost 
 ** Updated error message for default log mode test
 ** Revision 1.3 2010/10/25 15:01:43EDT jmdagost 

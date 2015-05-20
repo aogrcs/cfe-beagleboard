@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_time_utils.c 1.5 2010/10/25 15:00:06EDT jmdagost Exp  $
+** $Id: cfe_time_utils.c 1.10 2012/10/01 16:37:48GMT-05:00 aschoeni Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -20,6 +20,16 @@
 ** Notes:
 **
 ** $Log: cfe_time_utils.c  $
+** Revision 1.10 2012/10/01 16:37:48GMT-05:00 aschoeni 
+** removed relative path in include (handle in makefile)
+** Revision 1.9 2012/01/13 12:21:36EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.8 2011/12/07 19:20:04EST aschoeni 
+** Removed returns for TIME and SB for cleaning up apps
+** Revision 1.7 2011/11/30 15:10:06EST jmdagost 
+** Replaced ifdef/ifndef preprocessor tests with if...==TRUE/if...!=TRUE tests
+** Revision 1.6 2011/01/18 16:05:51EST lwalling 
+** Make sending 1hz command packet a configuration option
 ** Revision 1.5 2010/10/25 15:00:06EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 15:16:16EDT jmdagost 
@@ -66,7 +76,7 @@
 */
 #include "cfe_time_utils.h"
 
-#include "../es/cfe_es_global.h"
+#include "cfe_es_global.h"
 
 #include <string.h>
 
@@ -270,7 +280,7 @@ void CFE_TIME_InitData(void)
     CFE_TIME_TaskData.ClockSetState  = CFE_TIME_NOT_SET;
     CFE_TIME_TaskData.ClockFlyState  = CFE_TIME_IS_FLY;
 
-#ifdef CFE_TIME_CFG_SOURCE
+#if (CFE_TIME_CFG_SOURCE == TRUE)
     CFE_TIME_TaskData.ClockSource    = CFE_TIME_USE_EXTERN;
 #else
     CFE_TIME_TaskData.ClockSource    = CFE_TIME_USE_INTERN;
@@ -333,7 +343,7 @@ void CFE_TIME_InitData(void)
     /*
     ** Range checking for external time source data...
     */
-    #ifdef CFE_TIME_CFG_SOURCE
+    #if (CFE_TIME_CFG_SOURCE == TRUE)
     CFE_TIME_TaskData.MaxDelta.Seconds    = CFE_TIME_MAX_DELTA_SECS;
     CFE_TIME_TaskData.MaxDelta.Subseconds = CFE_TIME_Micro2SubSecs(CFE_TIME_MAX_DELTA_SUBS);
     #else
@@ -396,7 +406,7 @@ void CFE_TIME_InitData(void)
     /*
     ** Initialize "time at the tone" data command packet...
     */
-    #ifdef CFE_TIME_CFG_SERVER
+    #if (CFE_TIME_CFG_SERVER == TRUE)
     CFE_SB_InitMsg(&CFE_TIME_TaskData.ToneDataCmd,
                     CFE_TIME_DATA_CMD_MID,
                     sizeof(CFE_TIME_ToneDataCmd_t), TRUE);
@@ -405,8 +415,8 @@ void CFE_TIME_InitData(void)
     /*
     ** Initialize simulated tone signal (time server only)...
     */
-    #ifdef CFE_TIME_CFG_SERVER
-      #ifdef CFE_TIME_CFG_FAKE_TONE
+    #if (CFE_TIME_CFG_SERVER == TRUE)
+      #if (CFE_TIME_CFG_FAKE_TONE == TRUE)
     CFE_SB_InitMsg(&CFE_TIME_TaskData.FakeToneCmd,
                     CFE_TIME_FAKE_CMD_MID,
                     sizeof(CFE_TIME_FakeToneCmd_t), TRUE);
@@ -414,11 +424,13 @@ void CFE_TIME_InitData(void)
     #endif
 
     /*
-    ** Initialize local 1Hz "wake-up" command packet...
+    ** Initialize local 1Hz "wake-up" command packet (optional)...
     */
+    #if (CFE_TIME_ENA_1HZ_CMD_PKT == TRUE)
     CFE_SB_InitMsg(&CFE_TIME_TaskData.Local1HzCmd,
                     CFE_TIME_1HZ_CMD_MID,
                     sizeof(CFE_TIME_1HzCmd_t), TRUE);
+    #endif
 
     return;
 
@@ -501,7 +513,7 @@ uint16 CFE_TIME_GetStateFlags(void)
     /*
     ** This instance of Time Service is a "server"...
     */
-    #ifdef CFE_TIME_CFG_SERVER
+    #if (CFE_TIME_CFG_SERVER == TRUE)
     StateFlags |= CFE_TIME_FLAG_SERVER;
     #endif
 
@@ -552,7 +564,7 @@ void CFE_TIME_GetHkData(CFE_TIME_Reference_t *Reference)
     /*
     ** 1Hz STCF adjustment values (server only)...
     */
-    #ifdef CFE_TIME_CFG_SERVER
+    #if (CFE_TIME_CFG_SERVER == TRUE)
     CFE_TIME_TaskData.HkPacket.Seconds1HzAdj = CFE_TIME_TaskData.OneHzAdjust.Seconds;   
     CFE_TIME_TaskData.HkPacket.Subsecs1HzAdj = CFE_TIME_TaskData.OneHzAdjust.Subseconds;    
     #endif
@@ -560,7 +572,7 @@ void CFE_TIME_GetHkData(CFE_TIME_Reference_t *Reference)
     /*
     ** Time at tone delay values (client only)...
     */
-    #ifdef CFE_TIME_CFG_CLIENT
+    #if (CFE_TIME_CFG_CLIENT == TRUE)
     CFE_TIME_TaskData.HkPacket.SecondsDelay = CFE_TIME_TaskData.AtToneDelay.Seconds;   
     CFE_TIME_TaskData.HkPacket.SubsecsDelay = CFE_TIME_TaskData.AtToneDelay.Subseconds;    
     #endif
@@ -752,7 +764,7 @@ void CFE_TIME_GetReference(CFE_TIME_Reference_t *Reference)
     /*
     ** Synchronize "this" time client to the time server...
     */
-    #ifdef CFE_TIME_CFG_CLIENT
+    #if (CFE_TIME_CFG_CLIENT == TRUE)
     if (CFE_TIME_TaskData.DelayDirection == CFE_TIME_ADD_ADJUST)
     {
         CurrentMET = CFE_TIME_Add(CurrentMET, Reference->AtToneDelay);
@@ -831,7 +843,7 @@ int16 CFE_TIME_CalculateState(CFE_TIME_Reference_t *Reference)
             ** If the server is fly-wheel then the client must also
             **    report fly-wheel (even if it is not)...
             */
-            #ifdef CFE_TIME_CFG_CLIENT
+            #if (CFE_TIME_CFG_CLIENT == TRUE)
             if (CFE_TIME_TaskData.ServerFlyState == CFE_TIME_IS_FLY)
             {
                 ClockState = CFE_TIME_FLYWHEEL;
@@ -884,7 +896,7 @@ void CFE_TIME_SetState(int16 NewState)
     {
         CFE_TIME_TaskData.Forced2Fly    = TRUE;
         CFE_TIME_TaskData.ClockFlyState = CFE_TIME_IS_FLY;
-        #ifdef CFE_TIME_CFG_SERVER
+        #if (CFE_TIME_CFG_SERVER == TRUE)
         CFE_TIME_TaskData.ServerFlyState = CFE_TIME_IS_FLY;
         #endif
     }
@@ -916,7 +928,7 @@ void CFE_TIME_SetState(int16 NewState)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SOURCE
+#if (CFE_TIME_CFG_SOURCE == TRUE)
 void CFE_TIME_SetSource(int16 NewSource)
 {
     int32 IntFlags;
@@ -945,7 +957,7 @@ void CFE_TIME_SetSource(int16 NewSource)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SIGNAL
+#if (CFE_TIME_CFG_SIGNAL == TRUE)
 void CFE_TIME_SetSignal(int16 NewSignal)
 {
     int32 IntFlags; 
@@ -982,7 +994,7 @@ void CFE_TIME_SetSignal(int16 NewSignal)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_CLIENT
+#if (CFE_TIME_CFG_CLIENT == TRUE)
 void CFE_TIME_SetDelay(CFE_TIME_SysTime_t NewDelay, int16 Direction)
 {
     int32 IntFlags;
@@ -1012,7 +1024,7 @@ void CFE_TIME_SetDelay(CFE_TIME_SysTime_t NewDelay, int16 Direction)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime)
 {
     int32 IntFlags; 
@@ -1037,7 +1049,7 @@ void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime)
     /*
     ** Restore leap seconds if default time format is UTC...
     */
-    #ifdef CFE_TIME_CFG_DEFAULT_UTC
+    #if (CFE_TIME_CFG_DEFAULT_UTC == TRUE)
     NewSTCF.Seconds += Reference.AtToneLeaps;
     #endif
 
@@ -1071,7 +1083,7 @@ void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET)
 {
     int32 IntFlags;
@@ -1090,7 +1102,7 @@ void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET)
     /*
     ** Update h/w MET register...
     */
-    #ifndef CFE_TIME_CFG_VIRTUAL
+    #if (CFE_TIME_CFG_VIRTUAL != TRUE)
     OS_SetLocalMET(NewMET.Seconds);
     #endif
 
@@ -1112,7 +1124,7 @@ void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetSTCF(CFE_TIME_SysTime_t NewSTCF)
 {
     int32 IntFlags;
@@ -1141,7 +1153,7 @@ void CFE_TIME_SetSTCF(CFE_TIME_SysTime_t NewSTCF)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetLeaps(int16 NewLeaps)
 {
     int32 IntFlags;
@@ -1170,7 +1182,7 @@ void CFE_TIME_SetLeaps(int16 NewLeaps)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetAdjust(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 {
     int32 IntFlags;
@@ -1213,7 +1225,7 @@ void CFE_TIME_SetAdjust(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_Set1HzAdj(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 {
     int32 IntFlags;
@@ -1246,9 +1258,8 @@ void CFE_TIME_Set1HzAdj(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-int32 CFE_TIME_CleanUpApp(uint32 AppId)
+void CFE_TIME_CleanUpApp(uint32 AppId)
 {
-    int32  Status = CFE_SUCCESS;
     uint32 i = 0;
     
     while (i<CFE_TIME_MAX_NUM_SYNCH_FUNCS)
@@ -1262,7 +1273,7 @@ int32 CFE_TIME_CleanUpApp(uint32 AppId)
         i++;
     }
     
-    return Status;
+    return;
 }
 
 /************************/

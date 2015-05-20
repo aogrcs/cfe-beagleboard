@@ -19,14 +19,14 @@
 !
 !       HISTORY: 
 !
-!  2006/09/20  WFM             : Initial
-!  2007/05/14  WFM             : Added Name item and spare
+!  2006/09/20  WFM           : Initial
+!  2007/05/14  WFM           : Added Name item and spare
+!  2014/08/27  WFM           : Removed TBL_NAME_LEN #define and added comments
 !
 !==============================================================================
 !
-#include "osconfig.h"
-#include "cfe_mission_cfg.h"
-#define TBL_NAME_LEN (OS_MAX_API_NAME + CFE_TBL_MAX_NAME_LENGTH + 2)
+!! OS_MAX_PATH_LEN is defined in the osconfig.h file
+!! TBL_NAME_LEN is defined in the cfe_types.rdl file
 
 PACKET Pxxxx APID=nnnn, DESC="$sc $cpu TST TBL Info Packet"
 !

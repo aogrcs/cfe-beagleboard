@@ -17,6 +17,8 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb_init.c  $
+** Revision 1.12 2012/01/13 12:15:12GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.11 2010/11/04 16:41:25EDT aschoeni 
 ** Added optional sender information storage
 ** Revision 1.10 2010/10/20 12:36:52EDT jmdagost 

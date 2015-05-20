@@ -1,8 +1,8 @@
 /*
 ** File: utf_osloader.h
-**  $Id: utf_osloader.h 1.3 2010/10/25 15:09:23EDT jmdagost Exp  $
+**  $Id: utf_osloader.h 1.4 2010/11/24 17:11:00GMT-05:00 jmdagost Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -17,9 +17,11 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:09:23EDT $
-** $Revision: 1.3 $
+** $Date: 2010/11/24 17:11:00GMT-05:00 $
+** $Revision: 1.4 $
 ** $Log: utf_osloader.h  $
+** Revision 1.4 2010/11/24 17:11:00GMT-05:00 jmdagost 
+** Added prototype for setting OS symbol table dump to file return status.
 ** Revision 1.3 2010/10/25 15:09:23EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 15:05:02EDT jmdagost 
@@ -62,6 +64,14 @@ void UTF_InitSymbolTable(void);
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 UTF_SetSymbolTableEntry (UTF_SymbolTable_t entry);
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/*  UTF_SetOSSymbolTableDumpStatus(int32)                                  */
+/*  Set the return status for the for UTF OS_SymbolTableDump function      */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+void UTF_SetOSSymbolTableDumpStatus (int32 status);
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */

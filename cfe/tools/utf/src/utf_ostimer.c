@@ -1,4 +1,12 @@
 /*
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement.
+**
 ** File   : ostimer.c
 ** Author : Alan Cudmore
 ** Purpose: This file contains the OSAL Timer API for vxWorks6

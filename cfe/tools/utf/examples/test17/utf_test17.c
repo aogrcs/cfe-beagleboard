@@ -7,10 +7,10 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2008/04/17 08:09:08EDT $
+** $Date: 2008/04/17 07:09:08GMT-05:00 $
 ** $Revision: 1.1 $
 ** $Log: utf_test17.c  $
-** Revision 1.1 2008/04/17 08:09:08EDT ruperera 
+** Revision 1.1 2008/04/17 07:09:08GMT-05:00 ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/examples/test17/project.pj
 ** Revision 1.2 2007/10/16 09:46:34EDT wfmoleski 

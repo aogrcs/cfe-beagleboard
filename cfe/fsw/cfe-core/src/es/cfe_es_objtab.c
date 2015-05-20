@@ -12,8 +12,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 **   Purpose:
 **     This file contains the OS_object_table for MAP Build1.
 **
@@ -23,6 +21,12 @@
 **
 **  Notes:
 **  $Log: cfe_es_objtab.c  $
+**  Revision 1.5 2014/07/25 10:56:45GMT-05:00 lwalling 
+**  Changed INCLUDE_CFE_TBL to EXCLUDE_CFE_TBL
+**  Revision 1.4 2014/07/23 11:33:21EDT lwalling 
+**  Made Table Services conditionsal based on new environment variable INCLUDE_CFE_TBL
+**  Revision 1.3 2012/01/13 11:50:03EST acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.2 2008/07/08 15:40:39EDT apcudmore 
 **  Added CFE_FS global data, lock/unlock functions, log messages for decompress API.
 **  Revision 1.1 2008/04/17 08:05:06EDT ruperera 
@@ -50,7 +54,9 @@ void CFE_TIME_TaskMain(void);
 void CFE_SB_TaskMain(void);
 void CFE_EVS_TaskMain(void);
 void CFE_ES_TaskMain(void);
+#ifndef EXCLUDE_CFE_TBL
 void CFE_TBL_TaskMain(void);
+#endif
 
 /*
 ** External functions to call during startup
@@ -58,7 +64,9 @@ void CFE_TBL_TaskMain(void);
 int32 CFE_EVS_EarlyInit(void);
 int32 CFE_SB_EarlyInit(void);
 int32 CFE_TIME_EarlyInit(void);
+#ifndef EXCLUDE_CFE_TBL
 int32 CFE_TBL_EarlyInit(void);
+#endif
 int32 CFE_ES_CDS_EarlyInit(void);
 int32 CFE_FS_EarlyInit(void);
 
@@ -89,7 +97,11 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_ES_OBJECT_TABLE_SIZE] =
    { CFE_ES_NULL_ENTRY,    "NULL",                {NULL},                    0, 0, 0, 0, 0, 0, 0, 0},
    { CFE_ES_FUNCTION_CALL, "CFE_TIME_EarlyInit",  {CFE_TIME_EarlyInit},      0, 0, 0, 0, 0, 0, 0, 0},
    { CFE_ES_NULL_ENTRY,    "NULL",                {NULL},                    0, 0, 0, 0, 0, 0, 0, 0},
+#ifndef EXCLUDE_CFE_TBL
    { CFE_ES_FUNCTION_CALL, "CFE_TBL_EarlyInit",   {CFE_TBL_EarlyInit},       0, 0, 0, 0, 0, 0, 0, 0},
+#else
+   { CFE_ES_NULL_ENTRY,    "NULL",                {NULL},                    0, 0, 0, 0, 0, 0, 0, 0},
+#endif
    { CFE_ES_NULL_ENTRY,    "NULL",                {NULL},                    0, 0, 0, 0, 0, 0, 0, 0},
    { CFE_ES_FUNCTION_CALL, "CFE_FS_EarlyInit",    {CFE_FS_EarlyInit},        0, 0, 0, 0, 0, 0, 0, 0},
 
@@ -113,7 +125,11 @@ CFE_ES_ObjectTable_t  CFE_ES_ObjectTable[CFE_ES_OBJECT_TABLE_SIZE] =
    { CFE_ES_NULL_ENTRY,"NULL",     {NULL},                                          0, 0,  0,   0,                           0,                              0, 0, 0},
    { CFE_ES_CORE_TASK, "CFE_TIME", {(CFE_ES_EarlyInitFuncPtr_t)CFE_TIME_TaskMain},  0, 0,  0,   CFE_TIME_START_TASK_PRIORITY,CFE_TIME_START_TASK_STACK_SIZE, 0, 0, 0},
    { CFE_ES_NULL_ENTRY,"NULL",     {NULL},                                          0, 0,  0,   0,                           0,                              0, 0, 0},
+#ifndef EXCLUDE_CFE_TBL
    { CFE_ES_CORE_TASK, "CFE_TBL",  {(CFE_ES_EarlyInitFuncPtr_t)CFE_TBL_TaskMain},   0, 0,  0,   CFE_TBL_START_TASK_PRIORITY, CFE_TBL_START_TASK_STACK_SIZE,  0, 0, 0},
+#else
+   { CFE_ES_NULL_ENTRY,"NULL",     {NULL},                                          0, 0,  0,   0,                           0,                              0, 0, 0},
+#endif
 
    /*
    ** Spare entries

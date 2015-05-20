@@ -1,6 +1,6 @@
 /******************************************************************************
 ** File: cfe_msgids.h
-** $Id: cfe_msgids.h 1.1 2008/04/17 08:09:12EDT ruperera Exp  $
+** $Id: cfe_msgids.h 1.1 2008/04/17 07:09:12GMT-05:00 ruperera Exp  $
 **
 ** Purpose:
 **   This header file contains the Message Id's for messages used by the
@@ -12,10 +12,10 @@
 **   This file should not contain messages defined by cFE external
 **   applications.
 **
-** $Date: 2008/04/17 08:09:12EDT $
+** $Date: 2008/04/17 07:09:12GMT-05:00 $
 ** $Revision: 1.1 $
 ** $Log: cfe_msgids.h  $
-** Revision 1.1 2008/04/17 08:09:12EDT ruperera 
+** Revision 1.1 2008/04/17 07:09:12GMT-05:00 ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/examples/test3/project.pj
 ** Revision 1.2 2006/08/01 08:46:49EDT wfmoleski 

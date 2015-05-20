@@ -1,6 +1,14 @@
 /*
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement. 
+**
 ** File:
-** $Id: ut_bsp_stubs.c 1.6 2010/11/23 13:17:48EST jmdagost Exp  $
+** $Id: ut_bsp_stubs.c 1.9 2014/05/28 09:21:51GMT-05:00 wmoleski Exp  $
 **
 ** Purpose:
 ** Unit test stubs for BSP routines
@@ -9,8 +17,14 @@
 ** Minimal work is done, only what is required for unit testing
 **
 ** $Data:$
-** $Revision: 1.6 $
+** $Revision: 1.9 $
 ** $Log: ut_bsp_stubs.c  $
+** Revision 1.9 2014/05/28 09:21:51GMT-05:00 wmoleski 
+** Overwriting cFE Unit Test files with the updated JSC files.
+** Revision 1.8 2012/01/13 13:59:29EST acudmore 
+** Added license text
+** Revision 1.7 2011/11/30 15:44:39EST jmdagost 
+** Added CFE_PSP_MemValidateRange stub function.
 ** Revision 1.6 2010/11/23 13:17:48EST jmdagost 
 ** Added CFE_PSP_MemRead8() stub.
 ** Revision 1.5 2010/09/09 15:02:57EDT jmdagost 
@@ -59,12 +73,20 @@
 ** Initial revision
 ** Member added to project d:/mksdata/MKS-CFE-PROJECT/fsw/cfe-core/unit-test/project.pj
 */
+
+/*
+** Includes
+*/
+#include <string.h>
 #include "cfe.h"
 #include "osapi.h"
 #include "common_types.h"
-
 #include "ut_stubs.h"
-#include <string.h>
+
+/*
+** Macro definitions
+*/
+#define CFE_PSP_CDS_SIZE CFE_ES_CDS_SIZE
 
 /*
 ** Global variables
@@ -72,308 +94,609 @@
 uint8 *CFE_PSP_CDSPtr = 0;
 uint8 *CFE_PSP_ResetAreaPtr = 0;
 uint8 *CFE_PSP_UserReservedAreaPtr = 0;
-                                          
-extern FILE *UT_logfile;
-#define CFE_PSP_CDS_SIZE            CFE_ES_CDS_SIZE
-/*
-** Exported Global Data
-*/
+int   CfeData = 1234;
 
+/*
+** External global variables
+*/
 extern uint32 UT_RestartType;
-extern uint32 UT_StatusBSP;
-extern CFE_ES_ResetData_t   UT_CFE_ES_ResetData;
-extern CFE_ES_ResetData_t * UT_CFE_ES_ResetDataPtr;
-extern int  UT_DummyFuncRtn;
-extern int UT_BSPLoadGoodFile;
-extern int UT_SizeofESResetArea;
-extern int UT_BSP_Fail;
-extern int UT_CDS_Size;
+extern int32  UT_StatusBSP;
+extern int    UT_DummyFuncRtn;
+extern int    UT_SizeofESResetArea;
+extern int    UT_BSP_Fail;
+extern int    UT_CDS_Size;
+extern char   cMsg[];
+
+extern CFE_ES_ResetData_t UT_CFE_ES_ResetData;
+extern CFE_ES_ResetData_t *UT_CFE_ES_ResetDataPtr;
+
 extern UT_SetRtn_t BSPWriteCDSRtn;
 extern UT_SetRtn_t BSPReadCDSRtn;
 extern UT_SetRtn_t BSPUnloadAppFileRtn;
+extern UT_SetRtn_t PSPRestartRtn;
+extern UT_SetRtn_t PSPMemValRangeRtn;
+extern UT_SetRtn_t BSPGetCFETextRtn;
+
 extern boolean UT_CDS_GoodEnd;
 extern boolean UT_BSPCheckValidity;
 extern boolean UT_CDSReadBlock;
 
-extern UT_SetRtn_t BSPGetCFETextRtn;
-extern OS_time_t   BSP_Time;
+extern OS_time_t BSP_Time;
 
-int CfeData = 1234;
-
-/*extern CFE_ES_Global_t CFE_ES_Global;*/ 
-
-
-
+/*
+** Function prototypes
+*/
 int32 dummy_function(void);
 
 /*
-** Function Definitions
+** Functions
 */
-uint32 CFE_PSP_GetProcessorId (void)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetProcessorId stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_GetProcessorId.  It is set to return a fixed value for the
+**        unit tests.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns 0.
+**
+******************************************************************************/
+uint32 CFE_PSP_GetProcessorId(void)
 {
-  return 0;
+    return 0;
 }
 
-uint32 CFE_PSP_GetSpacecraftId (void)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetSpacecraftId stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_GetSpacecraftId.  It is set to return a fixed value for the
+**        unit tests.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns 0.
+**
+******************************************************************************/
+uint32 CFE_PSP_GetSpacecraftId(void)
 {
-  return 0;
+    return 0;
 }
-void CFE_PSP_GetTime( OS_time_t *LocalTime)
+
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetTime stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_GetTime.  The LocalTime structure is set to the user-defined
+**        values in BSP_Time.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
+void CFE_PSP_GetTime(OS_time_t *LocalTime)
 {
-    LocalTime ->seconds = BSP_Time.seconds;
-    LocalTime -> microsecs = BSP_Time.microsecs;
+    LocalTime->seconds = BSP_Time.seconds;
+    LocalTime-> microsecs = BSP_Time.microsecs;
 }
 
-int32 CFE_PSP_WriteToCDS(void *PtrToDataToWrite, uint32 CDSOffset, uint32 NumBytes)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_WriteToCDS stub function
+**
+** \par Description
+**        This function is used to mimic the response of the PSP function
+**        CFE_PSP_WriteToCDS.  The user can adjust the response by setting
+**        the values in the BSPWriteCDSRtn structure prior to this function
+**        being called.  If the value BSPWriteCDSRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value BSPWriteCDSRtn.value.
+**        Otherwise, the value of the user-defined variable UT_BSP_Fail
+**        determines the status returned by the function.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either OS_SUCCESS, OS_ERROR, or a user-defined value.
+**
+******************************************************************************/
+int32 CFE_PSP_WriteToCDS(void *PtrToDataToWrite,
+                         uint32 CDSOffset,
+                         uint32 NumBytes)
 {
-    int status;
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
 
-  if(BSPWriteCDSRtn.count > 0)
-  {
-      BSPWriteCDSRtn.count--;
-      if(BSPWriteCDSRtn.count == 0)
-        return BSPWriteCDSRtn.value;
-  }        
-
-      
-    if (UT_BSP_Fail & BSP_WRITECDS_FAIL)
+    if (BSPWriteCDSRtn.count > 0)
     {
-        fprintf(UT_logfile, "  CFE_PSP_WriteToCDS called: (FAILURE)\n");
-        status = OS_ERROR;
-    } 
-    else 
-    {
-      /*  fprintf(UT_logfile, "  CFE_PSP_WriteToCDS called: (SUCCESS)\n");*/
-        status = OS_SUCCESS;
+        BSPWriteCDSRtn.count--;
+
+        if (BSPWriteCDSRtn.count == 0)
+        {
+            status = BSPWriteCDSRtn.value;
+            flag = TRUE;
+        }
     }
+      
+    if (flag == FALSE)
+    {
+        if (UT_BSP_Fail & BSP_WRITECDS_FAIL)
+        {
+            status = OS_ERROR;
+#ifdef UT_VERBOSE
+            UT_Text("  CFE_PSP_WriteToCDS called: (FAILURE)");
+#endif
+        }
+#ifdef UT_VERBOSE
+        else
+        {
+            UT_Text("  CFE_PSP_WriteToCDS called: (SUCCESS)");
+        }
+#endif
+    }
+
     return status;
 }
 
-int32 CFE_PSP_ReadFromCDS(void *PtrToDataToRead, uint32 CDSOffset, uint32 NumBytes)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_ReadFromCDS stub function
+**
+** \par Description
+**        This function is used to mimic the response of the PSP function
+**        CFE_PSP_ReadFromCDS.  The user can adjust the response by setting
+**        the values in the BSPReadCDSRtn structure prior to this function
+**        being called.  If the value BSPReadCDSRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value BSPReadCDSRtn.value.
+**        Otherwise, the value of the user-defined variable UT_BSP_Fail
+**        determines the status returned by the function.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either OS_SUCCESS, OS_ERROR, or a user-defined value.
+**
+******************************************************************************/
+int32 CFE_PSP_ReadFromCDS(void *PtrToDataToRead,
+                          uint32 CDSOffset,
+                          uint32 NumBytes)
 {
-    int status;
-    if(BSPReadCDSRtn.count > 0)
+    int32   status;
+    boolean flag = FALSE;
+
+    if (BSPReadCDSRtn.count > 0)
     {
         BSPReadCDSRtn.count--;
-        if(BSPReadCDSRtn.count == 0)
-        {
-            if(UT_BSPCheckValidity == TRUE)
-            {
-                memcpy(PtrToDataToRead, "_CDSBeg_",NumBytes);
-            }
-           
-            return BSPReadCDSRtn.value;
-        }
-    }    
-  
-    if (UT_BSP_Fail & BSP_READCDS_FAIL)
-    {
-        fprintf(UT_logfile, "  CFE_PSP_ReadFromCDS called: (FAILURE)\n");
-        status = OS_ERROR;
-    } 
-    else 
-    {
-        fprintf(UT_logfile, "  CFE_PSP_ReadFromCDS called: (SUCCESS)\n");
-        status = OS_SUCCESS;
-        if (UT_CDS_GoodEnd == TRUE)
+
+        if (BSPReadCDSRtn.count == 0)
         {
             if (UT_BSPCheckValidity == TRUE)
             {
-            memcpy(PtrToDataToRead,"_CDSEnd_",NumBytes);
+                memcpy(PtrToDataToRead, "_CDSBeg_", NumBytes);
             }
+           
+            status = BSPReadCDSRtn.value;
+            flag = TRUE;
+        }
+    }    
+  
+    if (flag == FALSE)
+    {
+        if (UT_BSP_Fail & BSP_READCDS_FAIL)
+        {
+            status = OS_ERROR;
+#ifdef UT_VERBOSE
+            UT_Text("  CFE_PSP_ReadFromCDS called: (FAILURE)");
+#endif
         }
         else
         {
-            if( UT_BSPCheckValidity == TRUE)
+            status = OS_SUCCESS;
+
+            if (UT_CDS_GoodEnd == TRUE)
             {
-                memcpy(PtrToDataToRead,"gibberis",NumBytes);
+                if (UT_BSPCheckValidity == TRUE)
+                {
+                    memcpy(PtrToDataToRead, "_CDSEnd_", NumBytes);
+                }
             }
+            else
+            {
+                if (UT_BSPCheckValidity == TRUE)
+                {
+                    memcpy(PtrToDataToRead, "gibberish", NumBytes);
+                }
+            }
+
+#ifdef UT_VERBOSE
+            UT_Text("  CFE_PSP_ReadFromCDS called: (SUCCESS)");
+#endif
         }
-        
     }
 
-        return status;
+    return status;
 }
 
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetCDSSize stub function
+**
+** \par Description
+**        This function is used to mimic the response of the PSP function
+**        CFE_PSP_GetCDSSize.  The user can adjust the response by
+**        setting the value of UT_BSP_Fail prior to this function being called.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either OS_SUCCESS or OS_ERROR.
+**
+******************************************************************************/
 int32 CFE_PSP_GetCDSSize(uint32 *SizeOfCDS)
 {
-    int status;
+    int32 status = OS_SUCCESS;
+
     if (UT_BSP_Fail & BSP_GETCDSSIZE_FAIL)
     {
-        fprintf(UT_logfile, "  CFE_PSP_GetCDSSize called: (FAILURE)\n");
         status = OS_ERROR;
+#ifdef UT_VERBOSE
+        UT_Text("  CFE_PSP_GetCDSSize called: (FAILURE)");
+#endif
     } 
+#ifdef UT_VERBOSE
     else 
     {
-        fprintf(UT_logfile, "  CFE_PSP_GEtCDSSize called: (SUCCESS)\n");
-        status = OS_SUCCESS;
+        UT_Text("  CFE_PSP_GEtCDSSize called: (SUCCESS)");
     }
+#endif
 
     *SizeOfCDS = UT_CDS_Size;
-
     return status;   
 }
 
-int32 CFE_PSP_GetVolatileDiskMem(void *PtrToVolDisk, uint32 *SizeOfVolDisk )
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetVolatileDiskMem stub function
+**
+** \par Description
+**        This function is used to mimic the response of the PSP function
+**        CFE_PSP_GetVolatileDiskMem.  The user can adjust the response by
+**        setting the value of UT_BSP_Fail prior to this function being called.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either OS_SUCCESS or OS_ERROR.
+**
+******************************************************************************/
+int32 CFE_PSP_GetVolatileDiskMem(void *PtrToVolDisk, uint32 *SizeOfVolDisk)
 {
-   int32 return_code;
-  
+    int32 status = OS_SUCCESS;
 
     if (UT_BSP_Fail & BSP_GETVOLDISKMEM_FAIL)
     {
-        fprintf(UT_logfile, "  CFE_PSP_GetVolatileDiskMem called: (FAILURE)\n");
-        return OS_ERROR;
+        status = OS_ERROR;
+#ifdef UT_VERBOSE
+        UT_Text("  CFE_PSP_GetVolatileDiskMem called: (FAILURE)");
+#endif
     } 
+    else if (SizeOfVolDisk == NULL)
+    {
+        status = OS_ERROR;
+    }
+    else
+    {
+        memset(&(PtrToVolDisk),0,sizeof(PtrToVolDisk));
+        *SizeOfVolDisk = 0;
+    }
 
-   if ( SizeOfVolDisk == NULL )
-   {
-      return_code = OS_ERROR;
-   }
-   else
-   {
-      memset(&(PtrToVolDisk),0,sizeof(PtrToVolDisk));
-      *SizeOfVolDisk = 0;
-      return_code = OS_SUCCESS;
-   }
-   
-   return(return_code);
-
+    return status;
 }
+
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_Restart stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_Restart.  The variable PSPRestartRtn.value is set to the
+**        value passed to the function, reset_type, and the variable
+**        PSPRestartRtn.count is incremented each time this function is called.
+**        The unit tests compare these values to expected results to verify
+**        proper system response.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
 void CFE_PSP_Restart(uint32 reset_type)
 {
-    printf("CFE_PSP__RestartCalled\n");
+#ifdef UT_VERBOSE
+    SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+             "  CFE_PSP__Restart called: reset_type = %lu", reset_type);
+    UT_Text(cMsg);
+#endif
+    PSPRestartRtn.value = reset_type;
+    PSPRestartRtn.count++;
 }
 
+/*****************************************************************************/
+/**
+** \brief dummy_function stub function
+**
+** \par Description
+**        This function is used by the OS API function, OS_SymbolLookup, which
+**        requires a valid function for which to report the address.  The user
+**        defines the function's return value in the variable UT_DummyFuncRtn.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns a user-defined status value, UT_DummyFuncRtn.
+**
+******************************************************************************/
 int32 dummy_function(void)
 {
-    printf("dummy function\n");
+#ifdef UT_VERBOSE
+    UT_Text("  dummy function called");
+#endif
     return UT_DummyFuncRtn;
 }
 
-int32 CFE_PSP_loadAppFile(uint32 *ModuleId, uint32 *StartAddress,
-                               char   *FileName, char   *EntryPoint,
-                               uint32  LoadAddress)
-{
-
-  
-   if (( FileName == NULL ) || (EntryPoint == NULL )  || (ModuleId == NULL) || (StartAddress == NULL))
-   {
-      OS_printf("BSP: Error, invalid parameters to BSPloadAppFile\n");
-      return(OS_ERROR);
-   }
-   
-   if (UT_BSPLoadGoodFile ==TRUE)
-   {
-       *StartAddress = & dummy_function;
-       *ModuleId =  &dummy_function; /* this looks like its not that important for the UT */
-       return OS_SUCCESS;
-   }
-   else
-   {
-       return(OS_ERROR);
-   }
-}
-
-int32 CFE_PSP_UnloadAppFile(uint32 ModuleId)
-{
-    int status;
-
-  if(BSPUnloadAppFileRtn.count > 0)
-  {
-      BSPUnloadAppFileRtn.count--;
-      if(BSPUnloadAppFileRtn.count == 0)
-        return BSPUnloadAppFileRtn.value;
-  }       
-
-  return OS_SUCCESS;
-
-}
-
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_Get_Timebase stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_Get_Timebase.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
 void CFE_PSP_Get_Timebase(uint32 *Tbu, uint32* Tbl)
 {
-   /* SUB -add function call code*/
+#ifdef UT_VERBOSE
+    UT_Text("  CFE_PSP_Get_Timebase called");
+#endif
 }
 
-int32 CFE_PSP_GetKernelTextSegmentInfo(void *PtrToKernelSegment, uint32 *SizeOfKernelSegment)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetResetArea stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_GetResetArea.  It returns the user-defined value,
+**        UT_StatusBSP.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns a user-defined status value, UT_StatusBSP.
+**
+******************************************************************************/
+int32 CFE_PSP_GetResetArea(void *PtrToResetArea, uint32 *SizeOfResetArea)
 {
-   int32 return_code;
-   uint32 Address;
-   
-   if ( SizeOfKernelSegment == NULL )
-   {
-      return_code = OS_ERROR;
-   }
-   else
-   {
-      /* Just use any area of memory for the "kernel" */
-      Address = (uint32)(&UT_CFE_ES_ResetData);
-      memcpy(PtrToKernelSegment,&Address,sizeof(PtrToKernelSegment));
-      *SizeOfKernelSegment = sizeof(UT_CFE_ES_ResetData);
-      
-      return_code = OS_SUCCESS;
-   }
-   
-   return(return_code);
-}
-
-int32 CFE_PSP_GetResetArea (void *PtrToResetArea, uint32 *SizeOfResetArea)
-{
-    UT_CFE_ES_ResetDataPtr = &(UT_CFE_ES_ResetData); 
-    memcpy(PtrToResetArea,&(UT_CFE_ES_ResetDataPtr),sizeof(PtrToResetArea));
+    UT_CFE_ES_ResetDataPtr = &UT_CFE_ES_ResetData;
+    memcpy(PtrToResetArea, &UT_CFE_ES_ResetDataPtr, sizeof(PtrToResetArea));
     *SizeOfResetArea = UT_SizeofESResetArea;
-    
     return UT_StatusBSP;
 }
 
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_AttachExceptions stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_AttachExceptions.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
 void  CFE_PSP_AttachExceptions(void)
 {
 }
 
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_SetDefaultExceptionEnvironment stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_SetDefaultExceptionEnvironment.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
 void CFE_PSP_SetDefaultExceptionEnvironment(void)
 {
 }
 
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetTimerTicksPerSecond stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_GetTimerTicksPerSecond.  It is set to return a fixed value
+**        for the unit tests.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns 2000.
+**
+******************************************************************************/
 uint32 CFE_PSP_GetTimerTicksPerSecond(void)
 {
     return(2000);
 }
 
-
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetTimerLow32Rollover stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_GetTimerLow32Rollover.  It is set to return a fixed value
+**        for the unit tests.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns 1000000.
+**
+******************************************************************************/
 uint32 CFE_PSP_GetTimerLow32Rollover(void)
 {
     return(100000);
 }
 
-/*njy */
-int32 CFE_PSP_GetCFETextSegmentInfo(void *PtrToCFESegment, uint32 *SizeOfCFESegment)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_GetCFETextSegmentInfo stub function
+**
+** \par Description
+**        This function is used to mimic the response of the PSP function
+**        CFE_PSP_GetCFETextSegmentInfo.  The user can adjust the response by
+**        setting the values in the BSPGetCFETextRtn structure prior to this
+**        function being called.  If the value BSPGetCFETextRtn.count is
+**        greater than zero then the counter is decremented; if it then equals
+**        zero the return value is set to the user-defined value
+**        BSPGetCFETextRtn.value.  OS_SUCCESS is returned otherwise.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either a user-defined status flag or OS_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_PSP_GetCFETextSegmentInfo(void *PtrToCFESegment,
+                                    uint32 *SizeOfCFESegment)
 {
-    uint32 Address;
-    
-    if(BSPGetCFETextRtn.count > 0)
+    int32   status = OS_SUCCESS;
+    boolean flag = FALSE;
+    uint32  Address;
+
+    if (BSPGetCFETextRtn.count > 0)
     {
         BSPGetCFETextRtn.count--;
-        if(BSPGetCFETextRtn.count == 0)
-            return BSPGetCFETextRtn.value;
+
+        if (BSPGetCFETextRtn.count == 0)
+        {
+            status = BSPGetCFETextRtn.value;
+            flag = TRUE;
+        }
     }   
     
-    /* just set the pointer and size to anything */
-    Address = (uint32)(&CfeData);
-    memcpy(PtrToCFESegment, &Address,sizeof(PtrToCFESegment));
-/*    PtrToCFESegment = & CfeData; */
-    *SizeOfCFESegment = sizeof (CfeData);
+    if (flag == FALSE)
+    {
+        /* Set the pointer and size to anything */
+        Address = (uint32) &CfeData;
+        memcpy(PtrToCFESegment, &Address, sizeof(PtrToCFESegment));
+        *SizeOfCFESegment = sizeof(CfeData);
+    }
+
+    return status;
+}
+
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_MemRead8 stub function
+**
+** \par Description
+**        This function is used as a placeholder for the PSP function
+**        CFE_PSP_MemRead8.  It sets the Data variable to a fixed value and
+**        always returns OS_SUCCESS.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns OS_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_PSP_MemRead8(uint32 Address, uint8 *Data)
+{
+    *Data = 0x01;
     return OS_SUCCESS;
 }
 
-int32 CFE_PSP_MemRead8(uint32 Address, uint8 *Data)
+/*****************************************************************************/
+/**
+** \brief CFE_PSP_MemValidateRange stub function
+**
+** \par Description
+**        This function is used to mimic the response of the PSP function
+**        CFE_PSP_MemValidateRange.  The user can adjust the response by
+**        setting the values in the PSPMemValRangeRtn structure prior to this
+**        function being called.  If the value PSPMemValRangeRtn.count is
+**        greater than zero then the counter is decremented; if it then equals
+**        zero the return value is set to the user-defined value
+**        PSPMemValRangeRtn.value.  OS_SUCCESS is returned otherwise.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either a user-defined status flag or OS_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_PSP_MemValidateRange(uint32 Address, uint32 Size, uint32 MemoryType)
 {
-/*    boolean Status;
+    int32 status = OS_SUCCESS;
 
-    Status = UTF_read_sim_address(Address, 1, Data);
+    if (PSPMemValRangeRtn.count > 0)
+    {
+        PSPMemValRangeRtn.count--;
 
-    if(Status == FALSE)
-        return(OS_ERROR);
-*/
-    *Data = 0x01;
+        if (PSPMemValRangeRtn.count == 0)
+        {
+            status = PSPMemValRangeRtn.value;
+        }
+    }
 
-    return(OS_SUCCESS);
+    return status;
 }

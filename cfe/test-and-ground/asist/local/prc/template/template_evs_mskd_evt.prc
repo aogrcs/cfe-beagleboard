@@ -18,153 +18,136 @@ PROC $sc_$cpu_evs_mskd_evt
 ;           The requesting Application's Event Type Enable Status is Enabled 
 ;           for the Event Type of the request-specified Event Message. 
 ;
-write"*************************************************************"
-;
+; *****************************************************************************
+ 
 #include "cfe_evs_gen_reqts.h"
-;
+ 
 FOR i = 0 to ut_req_array_size DO
-write "Requirement at [",i,"] = ", ut_requirement[i] 
+  write "Requirement at [",i,"] = ", ut_requirement[i] 
 ENDDO 
-;
-write"  _________"   
-write   "        |  Request generation of DEBUG type event messages"
-write"           | "
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
-                    wait 3
+ 
+write "***********************************************************************"
+write "  _________"   
+write "           |  Request generation of DEBUG type event messages"
+write "           | "
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "**** NOTE: No DEBUG Evt Msg ID 1 generated, its binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, DEBUG
-                    wait 3
+/$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="5" Milliseconds="100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - DEBUG Evt Msg ID 1 was not generated as expected. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - Events were generated when not expected."
+endif
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, DEBUG, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId = "7" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 5) then
-write "cEVS3103 passed"
-                      ut_setrequirements cEVS3103, "P"
-                      write " Evt Msg ID 7 binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-write"*************************************************************"
+/$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId="7" Iters="5" Milliseconds="100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 5) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - DEBUG Evt Msg ID 7 events were generated. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - The expected events were not generated."
+endif
+ 
+write "************************************************************************"
+write "  _________"
+write "           |  Request generation of INFO type event messages"
+write "           | "
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, INFO, 1
 
-write"  _________"
-write   "        |  Request generation of INFO type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1, INFO
-                    wait 3
-;                
-                    /$sc_$cpu_TST_EVS_SendEvtMsg INFO  EventId = "1" Iters = "5" Milliseconds = "100"
-                    wait 2
-;                
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "NOTE: No INFO Evt Msg ID 1 generated, its binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, INFO
-                    wait 3
-;
-                    /$sc_$cpu_TST_EVS_SendEvtMsg INFO EventId = "7" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 5) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "Evt Msg ID 7 binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-write"*************************************************************"
-;
-write"  _________"   
-write   "        |  Request generation of ERROR type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1, ERROR
-                    wait 3
+/$sc_$cpu_TST_EVS_SendEvtMsg INFO EventId="1" Iters="5" Milliseconds="100"
+wait 2
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId = "1" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "NOTE: No ERROR Evt Msg ID 1, its binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - INFO Evt Msg ID 1 was not generated as expected. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - Events were generated when not expected."
+endif
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, INFO, 1
+ 
+/$sc_$cpu_TST_EVS_SendEvtMsg INFO EventId="7" Iters="5" Milliseconds="100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 5) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - INFO Evt Msg ID 7 events were generated. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - The expected events were not generated."
+endif
+ 
+write "************************************************************************"
+write "  _________"   
+write "           |  Request generation of ERROR type event messages"
+write "           | "
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, ERROR, 1
 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, ERROR
-                    wait 3
+/$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId="1" Iters="5" Milliseconds="100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - ERROR Evt Msg ID 1 was not generated as expected. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - Events were generated when not expected."
+endif
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, ERROR, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId = "7" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 5) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "Evt Msg ID 7 binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-write"*************************************************************"
-;
-write"  _________"
-write   "        |  Request generation of CRITICAL type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1,  CRIT
-                    wait 3
-;
-                    /$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId = "1" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "NOTE: No CRIT Evt Msg ID 1 generated, its binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
-
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, CRITICAL
-                    wait 3
-;
-                    /$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId = "7" Iters = "5" Milliseconds = "100"
-                    wait 2
-;
-                    if ($sc_$cpu_num_found_messages = 5) then
-                      ut_setrequirements cEVS3103, "P"
-write "cEVS3103 passed"
-                      write "Evt Msg ID 7 binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
-                    else
-                        ut_setrequirements cEVS3103, "F"
-write "cEVS3103 failed"
-                    endif             
-;
+/$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId="7" Iters="5" Milliseconds="100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 5) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - ERROR Evt Msg ID 7 events were generated. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - The expected events were not generated."
+endif             
+ 
+write "************************************************************************"
+write "  _________"
+write "           |  Request generation of CRITICAL type event messages"
+write "           | "
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, CRITICAL, 1
+ 
+/$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId = "1" Iters = "5" Milliseconds = "100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - CRIT Evt Msg ID 1 was not generated as expected. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[1].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - Events were generated when not expected."
+endif             
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, CRITICAL, 1
+ 
+/$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId = "7" Iters = "5" Milliseconds = "100"
+wait 2
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 5) then
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - CRIT Evt Msg ID 7 events were generated. Binary filter mask = ", %hex($sc_$cpu_EVS_AppData[7].BinFltr[7].Msk, 4) 
+else
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - The expected events were not generated."
+endif             
+ 
 ENDPROC ; $sc_$cpu_evs_mskd_evt

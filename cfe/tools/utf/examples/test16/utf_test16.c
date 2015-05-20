@@ -1,5 +1,5 @@
 /* File: utf_test16.c
-**  $Id: utf_test16.c 1.2 2008/07/30 13:05:07EDT wfmoleski Exp  $
+**  $Id: utf_test16.c 1.2 2008/07/30 12:05:07GMT-05:00 wfmoleski Exp  $
 **
 ** Purpose: 
 **   This test demonstrates a Table Sharing scenario.
@@ -16,10 +16,10 @@
  *    comment out '#define UTF_USE_STDOUT' statement in
  *    utf_custom.h file.
 **
-** $Date: 2008/07/30 13:05:07EDT $
+** $Date: 2008/07/30 12:05:07GMT-05:00 $
 ** $Revision: 1.2 $
 ** $Log: utf_test16.c  $
-** Revision 1.2 2008/07/30 13:05:07EDT wfmoleski 
+** Revision 1.2 2008/07/30 12:05:07GMT-05:00 wfmoleski 
 ** Several Table Services modifications affected the UTF including a new API. The test16 example was 
 ** modified to execute this new API.
 ** Revision 1.1 2008/04/17 08:09:06EDT ruperera 

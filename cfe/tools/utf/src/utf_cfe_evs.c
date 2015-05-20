@@ -1,6 +1,6 @@
 /*
 **  File Name: utf_cfe_evs.c
-**  $Id: utf_cfe_evs.c 1.7 2010/10/26 17:01:07EDT jmdagost Exp  $
+**  $Id: utf_cfe_evs.c 1.8 2012/01/13 12:51:56GMT-05:00 acudmore Exp  $
 **
 **  Title: Event Services API library 
 **
@@ -16,9 +16,11 @@
 **  Purpose: This module defines the library functions of the
 **           Event Services API
 **
-**  $Date: 2010/10/26 17:01:07EDT $
-**  $Revision: 1.7 $
+**  $Date: 2012/01/13 12:51:56GMT-05:00 $
+**  $Revision: 1.8 $
 **  $Log: utf_cfe_evs.c  $
+**  Revision 1.8 2012/01/13 12:51:56GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.7 2010/10/26 17:01:07EDT jmdagost 
 **  Made CFE_EVS_ResetFilter() argument a signed int.
 **  Revision 1.6 2010/10/25 15:06:44EDT jmdagost 

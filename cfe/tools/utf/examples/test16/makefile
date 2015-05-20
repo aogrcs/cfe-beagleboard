@@ -1,9 +1,9 @@
 ##############################################################################
 ## GNU Makefile for building UTF unit test utf_test16.
-##     ** $Date: 2009/10/20 13:37:00EDT $
+##     ** $Date: 2009/10/20 12:37:00GMT-05:00 $
 ##     ** $Revision: 1.4 $
 ##     ** $Log: makefile  $
-##     ** Revision 1.4 2009/10/20 13:37:00EDT wmoleski 
+##     ** Revision 1.4 2009/10/20 12:37:00GMT-05:00 wmoleski 
 ##     ** Updates to each example makefile to include the new cfe_psp filenames and remove the old utf_psp_support.c
 ##     ** file. Update to utf_test15.c to correct a typo. Updates to ActualOutput and ExpectedOutput where needed.
 ##     ** Revision 1.3 2009/10/13 15:23:42EDT wmoleski 

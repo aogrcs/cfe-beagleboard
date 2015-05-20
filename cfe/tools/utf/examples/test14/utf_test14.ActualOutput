@@ -199,6 +199,10 @@ UTF Info: Task <ImportantTask2> added to Task Tbl.
 CFE_ES_CreateChildTask returned 0. Expected 0.
 ChildTask 4 created.
 
+Test Case #4: CFE_ES_CreateChildTask Function Hook test
+CreateChildTask Function Hook called for 'HookTask'
+CreateChildTask Hook Return Code 0
+
 ***Test CFE_ES_RegisterChildTask API***
 
 Test Case #1: Call CFE_ES_RegisterChildTask()
@@ -362,6 +366,15 @@ TaskTable[2]:
     TaskID = 2
     Name   = Application#3
   Exe Ctr  = 0
+
+Test Case #1: OS_BinSemCreate Function Hook test
+OS_BinSemCreate Function Hook called for 'BinarySemName'
+OS_BinSemCreate Hook Return Code 0
+
+Test Case #2: OS_BinSemCreate Return Code test
+UTF Info: Return value for CFE SB Api #1 set to 12ab34cd
+OS_BinSemCreate Return Code 12ab34cd
+UTF Info: Return code for CFE SB Api #1 returned to default
 
 ***Test CFE_ES_WriteToSysLog API***
 

@@ -11,8 +11,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  This file contains the ES global data definitions.
@@ -22,6 +20,10 @@
 **     cFE Flight Software Application Developers Guide
 **
 **  $Log: cfe_es_global.h  $
+**  Revision 1.8 2012/01/13 11:50:02GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.7 2012/01/10 19:27:48EST aschoeni 
+**  Reduced context size in erlog by factor of 4 (to bytes from dwords)
 **  Revision 1.6 2010/11/05 15:54:35EDT aschoeni 
 **  Added Generic Counter API to ES
 **  Revision 1.5 2009/07/28 16:32:36EDT jmdagost 
@@ -135,7 +137,7 @@ typedef struct
      char                    Description[80];               /* The ascii data for the event */
      uint32                  ContextIsPresent;                  /* Indicates the context data is valid */
      uint32                  AppID;                          /* The application ID */
-     uint32                  Context[CFE_PSP_CPU_CONTEXT_SIZE];  /* cpu  context */
+     uint8                   Context[CFE_PSP_CPU_CONTEXT_SIZE];  /* cpu  context */
 
 } CFE_ES_ERLog_t;
 

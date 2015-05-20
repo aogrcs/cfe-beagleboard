@@ -11,116 +11,107 @@ PROC $sc_$cpu_es_logging
 ;	Analyzer Capture).
 ;
 ;  Requirements Tested
-;  	Based on Core Flight Executive Software Requirements 
-;
-;	cES1005:	Upon receipt of a Command, the cFE shall create the
-;			Command specified Application by defining the 
-;			Application in the System Resources Definition using
-;			information from the Command specified file, and
-;			beginning execution of the Application.
-;	cES1005.1:	The Command shall include the following parameters: 
-;			    a) Application Name
-;			    b) Application Entry Point
-;			    c) Application File Name
-;			    d) Application Stack Size
-;			    e) Application Priority
-;			    f) Application Memory Start Page
-;			    g) Application Memory Page Count
-;	cES1009:	Upon receipt of a Command, the cFE shall perform a Power
-;			On Reset of the Core Flight Executive.
-;	cES1010:	Upon receipt of a Command, the cFE shall perform a 
-;			Processor Reset of the Core Flight Executive.
-;	cES1014:	The cFE shall maintain an Executive Services System Log
-;			which contains a series of ASCII text strings describing
-;			significant events or errors.
-;	cES1014.1:	Each entry in the Executive Services System Log shall be
-;			time tagged with the time that the event happened.
-;	cES1014.2:	The cFE shall calculate the percentage of the Executive
-;			Services System Log that is used.
-;	cES1014.2.1:	If the Executive Services System Log is full and the
-;			System Log Mode is set to OVERWRITE then the cFE shall
-;			write all new entries from the top of the log.
-;	cES1014.2.2:	If the Executive Services System Log is full and the
-;			System Log Mode is set to DISCARD then the cFE shall
-;			discard all new entries.
-;	cES1015:	Upon receipt of a Command, the cFE shall clear the
-;			Executive Services System Log.
-;	cES1016:	Upon receipt of a Command, the cFE shall copy the
-;			information contained in the Executive Services System
-;			Log into a Command specified file.
-;	cES1016.1:	If a file is not specified, the cFE shall use the
-;			<PLATFORM_DEFINED> filename.
-;	cES1017:	The cFE shall maintain an Executive Services Exception
-;			and Reset Log which will log critical system data for
-;			exceptions and resets including: 
-;			    a) A time stamp
-;			    b) Processor Context information
-;			    c) Critical system variables
-;			    d) ASCII string stating the reason for the reset
-;	cES1018:	Upon receipt of a command, the cFE shall clear the
-;			Executive Services Exception and Reset Log.
-;	cES1019:	Upon receipt of a Command, the cFE shall copy the
-;			information contained in the Executive Services
-;			Exception and Reset Log Buffer into a Command specified
-;			file.
-;	cES1019.1:	If a file is not specified, the cFE shall use the
-;			<PLATFORM_DEFINED> filename.
-;	cES1021:	The cFE shall maintain an Executive Services Logic
-;			Analyzer Capture Log for capturing application specified
-;			timestamps and events for off-line perfromance analysis.
-;	cES1022:	Upon receipt of a Request, the cFE shall record the
-;			specified Logic Analyzer Capture Tag in the Logic
-;			Analyzer Capture Log.
-;	cES1022.1:	The cFE shall store a timestamp along with the specified
-;			Logic Analyzer Capture Tag.
-;	cES1022.2:	If the Logic Analyzer Capture Log is full, then the cFE
-;			shall write all new entries from the top of the log.
-;	cES1023:	Upon receipt of a Command, the cFE shall copy the
-;			information contained in the Logic Analyzer Capture Log
-;			into a Command Specified file.
-;	cES1023.1:	If a file is not specified, the cFE shall use the
-;			<PLATFORM_DEFINED> filename.
-;	cES1024:	Upon receipt of a Command, the cFE shall set the
-;			Processor Resets counter to zero.
-;	cES1025:	Upon receipt of a Command, the cFE shall set the
-;			Maximum Processor Resets counter to the Command specified
-;			value.
-;	cES1028:	Upon receipt of a Command, the cFE shall set the System
-;			Log Mode to the Command specified mode, either overwrite
-;			or discard.
-;	cES1509:	Upon a Power On Reset, the cFE shall make an entry in
-;			the Executive Services Exception and Reset Log,
-;			recording the Power On Reset.
-;	cES1510:	Upon Processor Reset, the cFE shall identify the
-;			<PLATFORM_DEFINED> Processor reset sub-type.
-;	cES1511:	Upon Processor Reset, the cFE shall preserve the
-;			Executive Services System Log.
-;	cES1512:	Upon Processor Reset, the cFE shall preserve the
-;			Executive Services Exception and Reset Log.
-;	cES1520:	Upon Processor Reset, the cFE shall make an entry in the
-;			Executive Services Exception and Reset Log recording the
-;			Processor Reset.
-;	cES1702:	The cFE shall detect all unmasked CPU exceptions.
-;	cES1702.1:	Upon detection of a CPU exception, the cFE shall add an
-;			entry in the Executive Services Exception and Reset Log.
-;	cES1702.2:	If the CPU exception was caused by a cFE Application,
-;			the cFE shall restart the cFE Application that caused
-;			the exception.
-;	cES1703:	The cFE shall detect all unmasked processor Floating
-;			Point Exceptions.
-;	cES1703.1:	Upon detection of an unmasked Floating Point exception,
-;			the cFE shall add an entry in the Executive Services
-;			Exception and Reset Log.
-;	cES1703.2:	If the Floating Point exception was caused by a cFE
-;			Application, the cFE shall restart the cFE Application
-;			that caused the exception.
-;	cES1706:	The cFE shall support a <PLATFORM_DEFINED> byte
-;			Executive Services System Log.
-;	cES1707:	The cFE shall support a (PLATFORM_DEFINED> byte
-;			Executive Services Exception and Reset Log.
-;	cES1709:	If the cFE Core goes through <PLATFORM_DEFINED> Maximum
-;			Processor Resets, the cFE shall initiate a Power-On
-;			Reset of the cFE.
+;    cES1005	Upon receipt of a Command, the cFE shall create the Command
+;		specified Application by defining the Application in the System
+;		Resources Definition using information from the Command
+;		specified file, and beginning execution of the Application.
+;    cES1005.1	The Command shall include the following parameters: 
+;			a) Application Name
+;			b) Application Entry Point
+;			c) Application File Name
+;			d) Application Stack Size
+;			e) Application Priority
+;			f) Application Memory Start Page
+;			g) Application Memory Page Count
+;    cES1009	Upon receipt of a Command, the cFE shall perform a Power On
+;		Reset of the Core Flight Executive.
+;    cES1010	Upon receipt of a Command, the cFE shall perform a Processor
+;		Reset of the Core Flight Executive.
+;    cES1014	The cFE shall maintain an Executive Services System Log which
+;		contains a series of ASCII text strings describing significant
+;		events or errors.
+;    cES1014.1	Each entry in the Executive Services System Log shall be time
+;		tagged with the time that the event happened.
+;    cES1014.2	The cFE shall calculate the percentage of the Executive Services;		System Log that is used.
+;   cES1014.2.1	If the Executive Services System Log is full and the System Log
+;		Mode is set to OVERWRITE then the cFE shall write all new
+;		entries from the top of the log.
+;   cES1014.2.2	If the Executive Services System Log is full and the System Log
+;		Mode is set to DISCARD then the cFE shall discard all new
+;		entries.
+;    cES1015	Upon receipt of a Command, the cFE shall clear the Executive
+;		Services System Log.
+;    cES1016	Upon receipt of a Command, the cFE shall copy the information
+;		contained in the Executive Services System Log into a Command
+;		specified file.
+;    cES1016.1	If a file is not specified, the cFE shall use the
+;		<PLATFORM_DEFINED> filename.
+;    cES1017	The cFE shall maintain an Executive Services Exception and Reset
+;		Log which will log critical system data for exceptions and
+;		resets including: 
+;			a) A time stamp
+;			b) Processor Context information
+;			c) Critical system variables
+;			d) ASCII string stating the reason for the reset
+;    cES1018	Upon receipt of a command, the cFE shall clear the Executive
+;		Services Exception and Reset Log.
+;    cES1019	Upon receipt of a Command, the cFE shall copy the information
+;		contained in the Executive Services Exception and Reset Log
+;		Buffer into a Command specified file.
+;    cES1019.1	If a file is not specified, the cFE shall use the
+;		<PLATFORM_DEFINED> filename.
+;    cES1021	The cFE shall maintain an Executive Services Logic Analyzer
+;		Capture Log for capturing application specified timestamps and
+;		events for off-line perfromance analysis.
+;    cES1022	Upon receipt of a Request, the cFE shall record the specified
+;		Logic Analyzer Capture Tag in the Logic Analyzer Capture Log.
+;    cES1022.1	The cFE shall store a timestamp along with the specified Logic
+;		Analyzer Capture Tag.
+;    cES1022.2	If the Logic Analyzer Capture Log is full, then the cFE shall
+;		write all new entries from the top of the log.
+;    cES1023	Upon receipt of a Command, the cFE shall copy the information
+;		contained in the Logic Analyzer Capture Log into a Command
+;		Specified file.
+;    cES1023.1	If a file is not specified, the cFE shall use the
+;		<PLATFORM_DEFINED> filename.
+;    cES1024	Upon receipt of a Command, the cFE shall set the Processor
+;		Resets counter to zero.
+;    cES1025	Upon receipt of a Command, the cFE shall set the Maximum
+;		Processor Resets counter to the Command specified value.
+;    cES1028	Upon receipt of a Command, the cFE shall set the System Log Mode
+;		to the Command specified mode, either overwrite or discard.
+;    cES1509	Upon a Power On Reset, the cFE shall make an entry in the
+;		Executive Services Exception and Reset Log, recording the Power
+;		On Reset.
+;    cES1510	Upon Processor Reset, the cFE shall identify the
+;		<PLATFORM_DEFINED> Processor reset sub-type.
+;    cES1511	Upon Processor Reset, the cFE shall preserve the Executive
+;		Services System Log.
+;    cES1512	Upon Processor Reset, the cFE shall preserve the Executive
+;		Services Exception and Reset Log.
+;    cES1520	Upon Processor Reset, the cFE shall make an entry in the
+;		Executive Services Exception and Reset Log recording the
+;		Processor Reset.
+;    cES1702	The cFE shall detect all unmasked CPU exceptions.
+;    cES1702.1	Upon detection of a CPU exception, the cFE shall add an entry in
+;		the Executive Services Exception and Reset Log.
+;    cES1702.2	If the CPU exception was caused by a cFE Application, the cFE
+;		shall restart the cFE Application that caused the exception.
+;    cES1703	The cFE shall detect all unmasked processor Floating Point
+;		Exceptions.
+;    cES1703.1	Upon detection of an unmasked Floating Point exception, the cFE
+;		shall add an entry in the Executive Services Exception and Reset
+;		Log.
+;    cES1703.2	If the Floating Point exception was caused by a cFE Application,
+;		the cFE shall restart the cFE Application that caused the
+;		exception.
+;    cES1706	The cFE shall support a <PLATFORM_DEFINED> byte Executive
+;		Services System Log.
+;    cES1707	The cFE shall support a (PLATFORM_DEFINED> byte Executive
+;		Services Exception and Reset Log.
+;    cES1709	If the cFE Core goes through <PLATFORM_DEFINED> Maximum
+;		Processor Resets, the cFE shall initiate a Power-On Reset of the
+;		cFE.
 ;
 ;  Prerequisite Conditions
 ;       The ASIST ground station is up and running.
@@ -130,6 +121,8 @@ PROC $sc_$cpu_es_logging
 ;  Change History
 ;	Date		Name			Description
 ;	01/16/07	W. Moleski	Initial development.
+;	02/06/12	W. Moleski	Added variable for ram disk
+;	09/18/14	W. Moleski	Added code to disable SCH debug events
 ;
 ;  Arguments
 ;	None 
@@ -138,8 +131,6 @@ PROC $sc_$cpu_es_logging
 ;	Name					Description
 ;  	ut_pfindicate		Directive to print the pass fail status
 ;				of a particular requirement number.
-;  	ut_setupevt		Directive to look for a particular event
-;				and increment a value to indicate receipt.
 ;	ut_setupevents 		Directive to look for multiple events and 
 ;				increment a value for each event to indicate
 ;				receipt.
@@ -149,6 +140,8 @@ PROC $sc_$cpu_es_logging
 ;
 ;  Expected Test Results and Analysis
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
 #include "ut_statusdefs.h"
@@ -156,6 +149,8 @@ PROC $sc_$cpu_es_logging
 #include "cfe_es_resetTypes.h"
 #include "cfe_evs_events.h"
 #include "tst_es_events.h"
+
+%liv (log_procedure) = logging
 
 ;**********************************************************************
 ; Setup requirements checking
@@ -225,10 +220,10 @@ local cfe_requirements[0 .. ut_req_array_size] = ["ES_1005", "ES_1005.1", "ES_10
 
 local work_dir = %env("WORK")
 local filename
+local ramDir = "RAM:0"
 
 write ";*********************************************************************"
 write "; Step 1.0: System Log Test"
-write ";*********************************************************************"
 write ";*********************************************************************"
 write "; Step 1.1: Command a Power-On Reset on $CPU"
 write ";*********************************************************************"
@@ -246,12 +241,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -259,6 +254,20 @@ if (UT_SC_Status = UT_SC_Success) then
 else
   write "<!> Failed - Could not enable Debug events."
 endif
+
+;; Disable SCH Debug Events if SCH is running
+local SCHisRunning = FALSE
+for i = 1 to CFE_ES_MAX_APPLICATIONS do
+  if ($SC_$CPU_EVS_AppData[i].AppName = "SCH") then
+    SCHisRunning = TRUE
+  endif
+enddo
+
+if (SCHisRunning = TRUE) then
+  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
+  wait 10
+endif
+
 
 write ";*********************************************************************"
 write "; Wait until the user acknowledges that all the data files generated "
@@ -293,11 +302,11 @@ write ";*********************************************************************"
 write "; Step 1.2: Get the System Log and verify that it contains the "
 write ";           proper entries."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1016, "P"
   else
@@ -306,8 +315,8 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog12.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog12.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog12.log"
@@ -332,24 +341,33 @@ write ";*********************************************************************"
 ;;; Display the ER Log Window and verify by inspection that the only entry
 ;;; is the Power-On Reset
 page $SC_$CPU_ES_ERLOG
-wait 10
+wait 5
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er13.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er13.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
-  write "<*> Passed (1017;1019;1509) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+  write "<*> Passed (1017;1019) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
-  ut_setrequirements ES_1509, "A"
 else
-  write "<!> Failed (1017;1019;1509) - Expected Event message ",CFE_ES_ERLOG2_EID, " was not received"
+  write "<!> Failed (1017;1019) - Expected Event message ",CFE_ES_ERLOG2_EID, " was not received"
   ut_setrequirements ES_1017, "F"
   ut_setrequirements ES_1019, "F"
+endif
+
+;; Check the Exception & Reset Log for an entry
+local erLogIndex = $SC_$CPU_ES_ERLOGINDEX
+if ($SC_$CPU_ES_ERLE[erLogIndex].ERLog_ResetType = CFE_ES_POWERON_RESET AND ;;
+    $SC_$CPU_ES_ERLE[erLogIndex].ERLog_ResetSubtype = CFE_ES_RESET_COMMAND) then
+  write "<*> Passed (1509) - ER Log contains an entry indicating the Power-On Reset occurred."
+  ut_setrequirements ES_1509, "P"
+else
+  write "<!> Failed (1509) - ER Log does not contain an entry for the Power-on Reset."
   ut_setrequirements ES_1509, "F"
 endif
 
@@ -357,11 +375,12 @@ write ";*********************************************************************"
 write "; Step 1.4: Startup the TST_ES application."
 write ";*********************************************************************"
 ;  Dump all running apps
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
-wait 10
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
 
-if ($SC_$CPU_num_found_messages = 1) then
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+wait 5
+
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - App Info retrieval. Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - App Info retrieval. Expected Event message ",CFE_ES_ALL_APPS_EID, " was not received"
@@ -382,14 +401,15 @@ enddo
 if (found_app = FALSE) then
   write "; Starting the TST_ES application. "
   s load_start_app ("TST_ES", "$CPU")
-  wait 10
+  wait 5
 
   ;; Dump all running apps again to verify that the TST_ES app is running
-  ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-  s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
-  wait 10
+  ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
 
-  if ($SC_$CPU_num_found_messages = 1) then
+  s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+  wait 5
+
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed - App Info retrieval. Event message ",$SC_$CPU_find_event[1].eventid, " received"
   else
     write "<!> Failed - App Info retrieval. Expected Event message ",CFE_ES_ALL_APPS_EID, " was not received"
@@ -425,7 +445,7 @@ if (found_app = FALSE) then
     ;; Add an Event Filter for the TST_ES HK Request Event in order to
     ;; only receive this event 1 time rather than every 4 seconds
     /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
-    wait 10
+    wait 5
   else
     write "<!> Failed (1005;1005.1) - Failed to start the TST_ES app"
     ut_setrequirements ES_1005, "F"
@@ -441,12 +461,12 @@ write ";*********************************************************************"
 write "; Step 1.5: Get the System Log and verify that it contains the events "
 write ";           generated in the above step."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME=""/ram/waltsSys.log"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed (1014;1016) - Wrote System Log."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1014;1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1014, "P"
     ut_setrequirements ES_1016, "P"
@@ -457,8 +477,8 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","waltsSys.log","$sc_$cpu_es_syslog15.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"waltsSys.log","$sc_$cpu_es_syslog15.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog15.log"
@@ -512,12 +532,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -551,11 +571,11 @@ write ";*********************************************************************"
 write "; Step 1.9: Get the System Log and verify that it contains the "
 write ";           proper entries."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1016, "P"
   else
@@ -564,8 +584,8 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog19.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog19.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog19.log"
@@ -588,7 +608,7 @@ write ";*********************************************************************"
 write "; Step 1.10: Retrieve the Exception and Reset log."
 write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 cmdcnt = $SC_$CPU_ES_CMDPC + 1
 
 ;; Rather than doing this, send the actual command and 
@@ -607,7 +627,7 @@ else
 endif
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1019;1019.1;1512;1520) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1019, "P"
   ut_setrequirements ES_10191, "P"
@@ -622,8 +642,8 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file ("RAM:0","cfe_erlog.log","$sc_$cpu_er110.log","$CPU","G")
-wait 10
+s ftp_file (ramDir,"cfe_erlog.log","$sc_$cpu_er110.log","$CPU","G")
+wait 5
 
 ;; Check if the file above exists and pass the requirement if it does
 filename = work_dir & "/image/$sc_$cpu_er110.log"
@@ -644,8 +664,7 @@ write "; Step 1.11.1: Start the TST_ES test application."
 write ";*********************************************************************"
 write "; Starting the TST_ES application. "
 s load_start_app ("TST_ES", "$CPU")
-
-wait 10
+wait 5
 
 ;; Send commands to subscribe to the TST_ES HK packet
 ;; CPU1 is the default
@@ -662,7 +681,7 @@ endif
 ;; Add an Event Filter for the TST_ES HK Request Event in order to
 ;; only receive this event 1 time rather than every 4 seconds
 /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
-wait 10
+wait 5
 
 write ";*********************************************************************"
 write "; Step 1.11.2: Verify the size of the System Log. If it is not full, "
@@ -681,7 +700,7 @@ if ($SC_$CPU_ES_SYSLOGBYTEUSED < CFE_ES_SYSTEM_LOG_SIZE) then
 
   ;; Here we can just send the TST_ES_WRITE2SYSLOG command
   while ($SC_$CPU_ES_SYSLOGBYTEUSED < CFE_ES_SYSTEM_LOG_SIZE) do
-    ut_setupevt "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO"
+    ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO", 1
     cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
     /$SC_$CPU_TST_ES_Write2SysLog Message="Writing an entry to fill up the System Log"
@@ -712,20 +731,20 @@ else
   ut_setrequirements ES_1706, "F"
 endif
 
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed (1016) - Wrote System Log."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     write "<!> Failed (1016) - Expected Event Message", CFE_ES_SYSLOG2_EID, " not received."
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog1113.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1113.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog1113.log"
@@ -762,7 +781,7 @@ if ($SC_$CPU_ES_SYSLOGMODE = 0) then
   endif
 endif
 
-ut_setupevt "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO", 1
 cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
 /$SC_$CPU_TST_ES_Write2SysLog Message="Writing a message to a Full System Log that should get discarded."
@@ -773,7 +792,7 @@ if (UT_TW_Status = UT_Success) then
 else
   write "<!> Failed - Could not write to the Sys Log."
 endif
-wait 10
+wait 5
 
 write ";*********************************************************************"
 write "; Step 1.11.5: Retrieve the System Log and verify that the entry above"
@@ -788,11 +807,11 @@ else
   ut_setrequirements ES_1706, "F"
 endif
 
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1016, "P"
   else
@@ -801,8 +820,8 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog1115.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1115.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog1115.log"
@@ -842,7 +861,7 @@ if ($SC_$CPU_ES_SYSLOGMODE = 1) then
   endif
 endif
 
-ut_setupevt "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO", 1
 cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
 /$SC_$CPU_TST_ES_Write2SysLog Message="Writing a message to a Full System Log that should overwrite the first entry."
@@ -853,7 +872,7 @@ if (UT_TW_Status = UT_Success) then
 else
   write "<!> Failed - Could not write to the Sys Log."
 endif
-wait 10
+wait 5
 
 write ";*********************************************************************"
 write "; Step 1.11.7: Retrieve the System Log and verify that the entry above"
@@ -863,11 +882,11 @@ write ";*********************************************************************"
 ;; Verify that the System Log is still full
 write "Bytes Used = ",$SC_$CPU_ES_SYSLOGBYTEUSED
 
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1016, "P"
   else
@@ -876,8 +895,8 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog1117.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog1117.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog1117.log"
@@ -899,11 +918,11 @@ endif
 write ";*********************************************************************"
 write "; Step 1.12: Clear the System Log."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG1_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG1_INF_EID, "INFO", 1
 
 ut_sendcmd "$SC_$CPU_ES_CLEARSYSLOG"
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1015) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1015, "P"
   else
@@ -926,19 +945,19 @@ else
   ut_setrequirements ES_1015, "F"
 endif
 
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     write "<!> Failed (1016) - Expected Event Message", CFE_ES_SYSLOG2_EID, " not received."
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog113.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog113.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog113.log"
@@ -959,7 +978,7 @@ write "; Step 1.14: Generate a System Log entry that contains a description  "
 write ";            string that is too long for the log. A string greater than"
 write ";            122 characters is required."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_WRSYSLOG_INF_EID, "INFO", 1
 cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
 /$SC_$CPU_TST_ES_Write2SysLog Message="Writing a message to the System Log that is longer than the message size that the System log can handle. The last char =x is marked with an x after the = that we just passed."
@@ -971,17 +990,17 @@ else
   write "<!> Failed - Could not write to the Sys Log."
 endif
 
-wait 10
+wait 5
 
 write ";*********************************************************************"
 write "; Step 1.15: Retrieve the System Log and verify that the description  "
 write ";            contained in the above entry was truncated."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1016) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1016, "P"
   else
@@ -990,8 +1009,8 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog115.log","$CPU","G")
-  wait 10
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog115.log","$CPU","G")
+  wait 5
 
   ;; Check if the file above exists and pass the requirement if it does
   filename = work_dir & "/image/$sc_$cpu_es_syslog115.log"
@@ -1017,7 +1036,7 @@ write ";*********************************************************************"
 write "; Step 1.17: Send the WRITESYSLOG2FILE command without a path "
 write ";            specification for the filename."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_ERR_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_ERR_EID, "ERROR", 1
 
 errcnt = $SC_$CPU_ES_CMDEC + 1
 
@@ -1030,7 +1049,7 @@ else
   write "<!> Failed - WriteSysLog command did not increment the error counter."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message", CFE_ES_SYSLOG2_ERR_EID, " not received."
@@ -1043,13 +1062,13 @@ write "; Step 2.1: Retrieve the Exception and Reset Log and verify that it "
 write ";           has not changed."
 write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er21.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er21.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1017;1019) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
@@ -1081,12 +1100,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -1112,13 +1131,13 @@ write "; Step 2.3: Retrieve the Exception and Reset Log and verify that it "
 write ";           contains an entry for the exception generated above."
 write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er23.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er23.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1017;1019;1702.1;1703.1) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
@@ -1135,6 +1154,10 @@ endif
 write ";*********************************************************************"
 write "; Step 2.4: Command a Processor Reset."
 write ";*********************************************************************"
+;; Set the reset counter to 0 so that a Processor Reset actually occurs
+/$SC_$CPU_ES_RESETPRCNT
+wait 5
+
 /$SC_$CPU_ES_PROCESSORRESET
 wait 10
 
@@ -1149,12 +1172,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -1168,13 +1191,13 @@ write "; Step 2.5: Retrieve the Exception and Reset Log and verify that it "
 write ";           contains an entry for the Processor Reset."
 write ";*********************************************************************"
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er25.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er25.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1017;1019;1512;1520) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
@@ -1193,8 +1216,8 @@ write "; Step 2.6: Start the TST_ES application with the Exception action"
 write "; 	   set to RESTARTAPP."
 write ";*********************************************************************"
 ;; Load and Start the TST_ES Application with the Reset action set to RESTARTAPP
-s load_app ("RAM:0","TST_ES", "$CPU")
-wait 10
+s load_app (ramDir,"TST_ES", "$CPU")
+wait 5
                                                                                 
 /$SC_$CPU_ES_STARTAPP APPLICATION="TST_ES" APP_ENTRY_PT="TST_ES_TaskMain" APP_FILE_NAME="/ram/tst_es.o" STACKSIZE=x'2000' PRIORITY=x'c8' RESTARTAPP
 wait 5
@@ -1214,7 +1237,7 @@ local TST_ES_Started = FALSE
 wait 20
 
 ;; Look for expected event #1
-if (($SC_$CPU_num_found_messages = 1) AND ;;
+if (($SC_$CPU_find_event[1].num_found_messages = 1) AND ;;
      ($SC_$CPU_find_event[2].num_found_messages = 1)) then
   write "<*> Passed (1702.2;1703.2) - TST_ES restarted after exception"
   ut_setrequirements ES_17022, "P"
@@ -1236,7 +1259,7 @@ write ";*********************************************************************"
 if (TST_ES_Started = FALSE) then
   write "; Starting the TST_ES application. "
   s load_start_app ("TST_ES", "$CPU")
-  wait 10
+  wait 5
 endif
 
 ;; Send commands to subscribe to the TST_ES HK packet
@@ -1254,7 +1277,7 @@ endif
 ;; Add an Event Filter for the TST_ES HK Request Event in order to
 ;; only receive this event 1 time rather than every 4 seconds
 /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
-wait 10
+wait 5
 
 write ";*********************************************************************"
 write "; Step 2.8.2: Verify the maximum number of ER Log Entries."
@@ -1272,7 +1295,7 @@ if ($SC_$CPU_ES_ERLOGINDEX < CFE_ES_ER_LOG_ENTRIES) then
   write "; Need to add ", entriesToFill, " entries in the ER Log."
 
   for i = 1 to entriesToFill do
-    ut_setupevt "$SC", "$CPU", "TST_ES", TST_ES_WRERLOG_INF_EID, "INFO"
+    ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_WRERLOG_INF_EID, "INFO", 1
     cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
     /$SC_$CPU_TST_ES_Write2ERLog Message="Writing an entry to fill up the ER Log"
@@ -1292,18 +1315,18 @@ write "; Step 2.8.3: Retrieve the ER Log and verify it is full."
 write ";*********************************************************************"
 write "; Maximum ER Log Entries = ",CFE_ES_ER_LOG_ENTRIES
 write "; Actual ER Log Entries = ",$SC_$CPU_ES_ERLOGINDEX
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;; Verify that the ER Log is full
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er283.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er283.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1017;1019;1707) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
-  ut_setrequirements ES_1707, "A"
+  ut_setrequirements ES_1707, "P"
 else
   write "<!> Failed (1017;1019;1707) - Expected Event message ",CFE_ES_ERLOG2_EID, " was not received"
   ut_setrequirements ES_1017, "F"
@@ -1321,7 +1344,7 @@ write ";*********************************************************************"
 ;;  expectedERIndex = 0;
 ;;endif
 
-ut_setupevt "$SC", "$CPU", "TST_ES", TST_ES_WRERLOG_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TST_ES", TST_ES_WRERLOG_INF_EID, "INFO", 1
 cmdcnt = $SC_$CPU_TST_ES_CMDPC + 1
 
 /$SC_$CPU_TST_ES_Write2ERLog Message="ER Log entry after the log was full!!!"
@@ -1339,17 +1362,17 @@ write ";*********************************************************************"
 ;; Verify that the ER Log overwrote the first entry
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er285.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er285.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1017;1019;1707) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
-  ut_setrequirements ES_1707, "A"
+  ut_setrequirements ES_1707, "P"
 else
   write "<!> Failed (1017;1019;1707) - Expected Event message ",CFE_ES_ERLOG2_EID, " was not received"
   ut_setrequirements ES_1017, "F"
@@ -1360,11 +1383,11 @@ endif
 write ";*********************************************************************"
 write "; Step 2.9: Send the command to clear the ER Log."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG1_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG1_INF_EID, "INFO", 1
 
 ut_sendcmd "$SC_$CPU_ES_CLEARERLOG"
 if (UT_SC_Status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (1018) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements ES_1018, "P"
   else
@@ -1386,13 +1409,13 @@ else
 endif
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_er210.log","$CPU")
-wait 10
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_er210.log","$CPU")
+wait 5
 
 ; Check if the proper event was generated
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1017;1019) - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   ut_setrequirements ES_1017, "P"
   ut_setrequirements ES_1019, "P"
@@ -1406,7 +1429,7 @@ write ";*********************************************************************"
 write "; Step 2.11: Send the WRITEERLOG2FILE command without a path "
 write ";            specification for the filename."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_ERR_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_ERR_EID, "ERROR", 1
 
 errcnt = $SC_$CPU_ES_CMDEC + 1
 
@@ -1419,7 +1442,7 @@ else
   write "<!> Failed - WriteERLog command did not increment the error counter."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message", CFE_ES_ERLOG2_ERR_EID, " not received."
@@ -1431,7 +1454,7 @@ write ";*********************************************************************"
 write "; Step 3.1: Send the command to start recording Performance tags."
 write ";*********************************************************************"
 ; Setup for the Performance Log DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_PERF_STARTCMD_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_PERF_STARTCMD_EID, "DEBUG", 1
 
 cmdcnt = $SC_$CPU_ES_CMDPC + 1
 /$SC_$CPU_ES_STARTPERF TriggerCenter
@@ -1445,9 +1468,8 @@ else
   ut_setrequirements ES_1022, "F"
 endif
 
-
 ;; Check for the expected event 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1022) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   ut_setrequirements ES_1022, "P"
 else
@@ -1478,7 +1500,7 @@ else
 endif
 
 ;; Look for expected event #1
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_ES_PERF_STOPCMD_EID, " not received."
@@ -1502,8 +1524,8 @@ write ";*********************************************************************"
 write "; Step 3.3: Retrieve the Performance Analyzer Capture Log."
 write ";*********************************************************************"
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file ("RAM:0","cfe_es_perf.dat","$sc_$cpu_es_perf33.dat","$CPU","G")
-wait 10
+s ftp_file (ramDir,"cfe_es_perf.dat","$sc_$cpu_es_perf33.dat","$CPU","G")
+wait 5
 
 ;; Check if the file above exists and pass the requirement if it does
 filename = work_dir & "/image/$sc_$cpu_es_perf33.dat"
@@ -1530,7 +1552,7 @@ cmdcnt = $SC_$CPU_ES_CMDPC + 1
                                                                                 
 ; Delete the TST_ES application
 /$SC_$CPU_ES_DELETEAPP APPLICATION="TST_ES"
-wait 10
+wait 5
 
 ut_tlmwait $SC_$CPU_ES_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1540,7 +1562,7 @@ else
 endif
                                                                                 
 ;; Check if the event was rcv'd
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Expected Event message ",CFE_ES_STOP_DBG_EID, " was not received"
@@ -1554,11 +1576,11 @@ else
 endif
 
 ;; Dump all running apps again to verify that the TST_ES app is running
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
-wait 10
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+wait 5
                                                                                 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - App Info retrieval. Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - App Info retrieval. Expected Event message ",CFE_ES_ALL_APPS_EID, " was not received"
@@ -1664,7 +1686,7 @@ else
 endif
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_PERF_STARTCMD_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_PERF_STARTCMD_EID, "DEBUG", 1
 
 cmdcnt = $SC_$CPU_ES_CMDPC + 1
 /$SC_$CPU_ES_STARTPERF TriggerStart
@@ -1679,7 +1701,7 @@ else
 endif
 
 ;; Check for the expected event 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (1022) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   ut_setrequirements ES_1022, "P"
 else
@@ -1690,7 +1712,7 @@ endif
 ;; Wait until the ES HK data point indicates the PERF log is full
 wait until ($SC_$CPU_ES_PerfDataCnt = CFE_ES_PERF_DATA_BUFFER_SIZE)
 s load_start_app ("TST_ES", "$CPU")
-wait 10
+wait 5
 
 ;; Send commands to subscribe to the TST_ES HK packet
 ;; CPU1 is the default
@@ -1707,7 +1729,7 @@ endif
 ;; Add an Event Filter for the TST_ES HK Request Event in order to
 ;; only receive this event 1 time rather than every 4 seconds
 /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
-wait 10
+wait 5
 
 ;; Wait for the Performance Capture Log to generate data for TST_ES
 wait 30
@@ -1729,10 +1751,10 @@ else
   write "<!> Failed (1023) - Stop Performance Analyzer Capture Command did not increment the CMDPC."
   ut_setrequirements ES_1023, "F"
 endif
-wait 10
+wait 5
 
 ;; Look for expected event #1
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_ES_PERF_STOPCMD_EID, " not received."
@@ -1750,8 +1772,8 @@ write ";*********************************************************************"
 write "; Step 3.7: Retrieve the Performance Analyzer Capture Log."
 write ";*********************************************************************"
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file ("RAM:0","cfe_es_perf.dat","$sc_$cpu_es_perf37.dat","$CPU","G")
-wait 10
+s ftp_file (ramDir,"cfe_es_perf.dat","$sc_$cpu_es_perf37.dat","$CPU","G")
+wait 5
 
 ;; Check if the file above exists and pass the requirement if it does
 filename = work_dir & "/image/$sc_$cpu_es_perf37.dat"
@@ -1772,7 +1794,7 @@ endif
 write ";*********************************************************************"
 write "; Step 3.8: Set the Performance Analyzer Filter Mask."
 write ";*********************************************************************"
-ut_setupevt $SC, $CPU, CFE_ES, CFE_ES_PERF_FILTMSKCMD_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_PERF_FILTMSKCMD_EID, DEBUG, 1
 
 ;; Save the original value
 local bank0Val = $SC_$CPU_ES_PerfFltrMask[1]
@@ -1790,7 +1812,7 @@ else
 endif
 
 ;; Look for expected event
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_ES_PERF_FILTMSKCMD_EID, " not received."
@@ -1818,7 +1840,7 @@ else
 endif
 
 ;; Look for expected event
-if ($SC_$CPU_num_found_messages = 2) then
+if ($SC_$CPU_find_event[1].num_found_messages = 2) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_ES_PERF_FILTMSKCMD_EID, " not received."
@@ -1841,7 +1863,7 @@ else
 endif
 
 ;; Look for expected event #1
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   write "<!> Failed - Expected Event Message ", CFE_ES_PERF_LOG_ERR_EID, " not received."
@@ -1870,7 +1892,7 @@ endif
 cmdcnt = $SC_$CPU_ES_CMDPC + 1
 ; Send the command to reset the counter
 /$SC_$CPU_ES_RESETPRCNT
-wait 10
+wait 5
 
 ut_tlmwait $SC_$CPU_ES_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1900,7 +1922,7 @@ cmdcnt = $SC_$CPU_ES_CMDPC + 1
 
 ;; Setup for any event from the command
 /$SC_$CPU_ES_SETMAXPRCNT Max_count=maxResetCnt
-wait 10
+wait 5
 
 ut_tlmwait $SC_$CPU_ES_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then

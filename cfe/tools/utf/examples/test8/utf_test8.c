@@ -1,7 +1,7 @@
 /*
 **
 **  Filename: utf_test8.c
-**  $Id: utf_test8.c 1.1 2008/04/17 08:09:26EDT ruperera Exp  $
+**  $Id: utf_test8.c 1.1 2008/04/17 07:09:26GMT-05:00 ruperera Exp  $
 **
 **  Purpose:
 **	 Example of using time hook utility.
@@ -12,10 +12,10 @@
 **
 **	Notes:
 **
-**  $Date: 2008/04/17 08:09:26EDT $
+**  $Date: 2008/04/17 07:09:26GMT-05:00 $
 **  $Revision: 1.1 $
 **  $Log: utf_test8.c  $
-**  Revision 1.1 2008/04/17 08:09:26EDT ruperera 
+**  Revision 1.1 2008/04/17 07:09:26GMT-05:00 ruperera 
 **  Initial revision
 **  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/examples/test8/project.pj
 **  Revision 1.5 2006/08/01 08:53:02EDT wfmoleski 

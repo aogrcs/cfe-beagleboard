@@ -1,7 +1,7 @@
 /*
 **  File: 
 **  cfe_es_task.h
-**  $Id: cfe_es_task.h 1.2 2009/07/28 16:40:58EDT jmdagost Exp  $
+**  $Id: cfe_es_task.h 1.3 2012/01/13 11:50:06GMT-05:00 acudmore Exp  $
 **
 **
 **
@@ -12,8 +12,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  cFE Executive Services (ES) task header file
@@ -26,6 +24,8 @@
 **
 **
 ** $Log: cfe_es_task.h  $
+** Revision 1.3 2012/01/13 11:50:06GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.2 2009/07/28 16:40:58EDT jmdagost 
 ** Deleted prototype for no-longer-used ComputeChecksum function.
 ** Revision 1.1 2008/04/17 08:05:10EDT ruperera 

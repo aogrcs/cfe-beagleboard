@@ -45,26 +45,26 @@ clean:
 	-$(RM) *.d
 
 cleandocs:
-	-$(RM) ../docs/users_guide/html/cfe/*.html
-	-$(RM) ../docs/users_guide/html/cfe/*.css
-	-$(RM) ../docs/users_guide/html/cfe/*.png
-	-$(RM) ../docs/users_guide/html/cfe/*.dot
-	-$(RM) ../docs/users_guide/html/cfe/*.gif
-	-$(RM) ../docs/users_guide/latex/cfe/*.tex
-	-$(RM) ../docs/users_guide/latex/cfe/*.dot
-	-$(RM) ../docs/users_guide/latex/cfe/*.sty
-	-$(RM) ../docs/users_guide/latex/cfe/*.ttf
-	-$(RM) ../docs/users_guide/latex/cfe/Makefile
-	-$(RM) ../docs/detailed_design/html/cfe/*.html
-	-$(RM) ../docs/detailed_design/html/cfe/*.css
-	-$(RM) ../docs/detailed_design/html/cfe/*.png
-	-$(RM) ../docs/detailed_design/html/cfe/*.dot
-	-$(RM) ../docs/detailed_design/html/cfe/*.gif
-	-$(RM) ../docs/detailed_design/latex/cfe/*.tex
-	-$(RM) ../docs/detailed_design/latex/cfe/*.dot
-	-$(RM) ../docs/detailed_design/latex/cfe/*.sty
-	-$(RM) ../docs/detailed_design/latex/cfe/*.ttf
-	-$(RM) ../docs/detailed_design/latex/cfe/Makefile
+	-$(RM) ../../docs/users_guide/html/cfe/*.html
+	-$(RM) ../../docs/users_guide/html/cfe/*.css
+	-$(RM) ../../docs/users_guide/html/cfe/*.png
+	-$(RM) ../../docs/users_guide/html/cfe/*.dot
+	-$(RM) ../../docs/users_guide/html/cfe/*.gif
+	-$(RM) ../../docs/users_guide/latex/cfe/*.tex
+	-$(RM) ../../docs/users_guide/latex/cfe/*.dot
+	-$(RM) ../../docs/users_guide/latex/cfe/*.sty
+	-$(RM) ../../docs/users_guide/latex/cfe/*.ttf
+	-$(RM) ../../docs/users_guide/latex/cfe/Makefile
+	-$(RM) ../../docs/detailed_design/html/cfe/*.html
+	-$(RM) ../../docs/detailed_design/html/cfe/*.css
+	-$(RM) ../../docs/detailed_design/html/cfe/*.png
+	-$(RM) ../../docs/detailed_design/html/cfe/*.dot
+	-$(RM) ../../docs/detailed_design/html/cfe/*.gif
+	-$(RM) ../../docs/detailed_design/latex/cfe/*.tex
+	-$(RM) ../../docs/detailed_design/latex/cfe/*.dot
+	-$(RM) ../../docs/detailed_design/latex/cfe/*.sty
+	-$(RM) ../../docs/detailed_design/latex/cfe/*.ttf
+	-$(RM) ../../docs/detailed_design/latex/cfe/Makefile
 
 #
 # Include the dependancy list

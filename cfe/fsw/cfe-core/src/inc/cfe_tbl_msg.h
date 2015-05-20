@@ -1,7 +1,7 @@
 /*
-** $Id: cfe_tbl_msg.h 1.6 2010/10/27 16:33:44EDT dkobe Exp  $
+** $Id: cfe_tbl_msg.h 1.9 2014/08/19 13:49:24GMT-05:00 sstrege Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -16,6 +16,12 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_msg.h  $
+** Revision 1.9 2014/08/19 13:49:24GMT-05:00 sstrege 
+** Fixed doxygen warning
+** Revision 1.8 2014/06/09 18:27:05EDT lwalling 
+** Removed pad bytes from TBL housekeeping packet
+** Revision 1.7 2014/06/09 10:30:25EDT lwalling 
+** Add LastTableLoaded to TBL housekeeping structure
 ** Revision 1.6 2010/10/27 16:33:44EDT dkobe 
 ** Added CRC to Registry Entry Telemetry Message
 ** Revision 1.5 2010/10/27 13:54:24EDT dkobe 
@@ -666,7 +672,7 @@ typedef struct
 ** \brief Table Management Notification Message
 **
 ** \par Description
-**      Whenever an application that owns a table calls the #CFE_TBL_NotifyByMsg API
+**      Whenever an application that owns a table calls the #CFE_TBL_NotifyByMessage API
 **      following the table registration, Table services will generate the following
 **      command message with the application specified message ID, command code and
 **      parameter whenever the table requires management (e.g. - loads and validations).
@@ -741,8 +747,8 @@ typedef struct
                                                                      \brief Path and Name of last table image file loaded */
     char                  LastFileDumped[OS_MAX_PATH_LEN];      /**< \cfetlmmnemonic \TBL_LASTFILEDUMPED 
                                                                      \brief Path and Name of last file dumped to */
-    uint16                ByteAlignPad2;                        /**< \cfetlmmnemonic \TBL_BYTEALIGNPAD2 
-                                                                     \brief Spare word to ensure longword alignment */
+    char                  LastTableLoaded[CFE_TBL_MAX_FULL_NAME_LEN]; /**< \cfetlmmnemonic \TBL_LASTTABLELOADED 
+                                                                          \brief Name of the last table loaded */
 } CFE_TBL_HkPacket_t;
 
 

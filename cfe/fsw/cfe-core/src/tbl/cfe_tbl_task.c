@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_task.c 1.3 2010/10/04 17:05:21EDT jmdagost Exp  $
+** $Id: cfe_tbl_task.c 1.5 2012/01/18 16:32:58GMT-05:00 jmdagost Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,10 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_task.c  $
+** Revision 1.5 2012/01/18 16:32:58GMT-05:00 jmdagost 
+** Updated init event msg to include cFE version numbers.
+** Revision 1.4 2012/01/13 12:17:41EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.3 2010/10/04 17:05:21EDT jmdagost 
 ** Cleaned up copyright symbol.
 ** Revision 1.2 2008/07/31 15:41:30EDT apcudmore 
@@ -51,6 +55,7 @@
 ** Required header files
 */
 #include "cfe.h"
+#include "cfe_version.h"
 #include "cfe_tbl_internal.h"
 #include "cfe_tbl_events.h"
 #include "cfe_tbl_msg.h"
@@ -327,7 +332,8 @@ int32 CFE_TBL_TaskInit(void)
     /*
     ** Task startup event message
     */
-    Status = CFE_EVS_SendEvent(CFE_TBL_INIT_INF_EID, CFE_EVS_INFORMATION, "cFE TBL Initialized");
+    Status = CFE_EVS_SendEvent(CFE_TBL_INIT_INF_EID, CFE_EVS_INFORMATION, "cFE TBL Initialized.  cFE Version %d.%d.%d.%d",
+                               CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV);
 
     if(Status != CFE_SUCCESS)
     {

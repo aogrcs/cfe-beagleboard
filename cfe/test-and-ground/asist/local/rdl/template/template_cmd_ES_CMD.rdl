@@ -31,6 +31,7 @@
 !       WFM 24SEP07  Added the QueryAllTasks command (FCTN=24)
 !       WFM 28AUG08  Removed LoadAddress argument from ES_StartApp command
 !       WFM 18NOV10  Added argument to StartPerf command
+!       WFM 12JAN12  Added output file name argument to Shell command
 !
 !===============================================================================
 #include "osconfig.h"
@@ -55,6 +56,7 @@ CLASS Pxxxx APID=nnnn, DESC="$sc $cpu Executive Services Commands"
 !
   CMDS   $sc_$cpu_ES_Shell	FCTN=3, DESC="$sc $cpu ES shell command code"
       char CmdString[CFE_ES_MAX_SHELL_CMD] DESC="Shell Command string"
+      char OutputFilename[OS_MAX_PATH_LEN] DESC="Shell output File Name"
   END 
 !
   CMDS  $sc_$cpu_ES_StartApp    FCTN=4,   DESC="$sc $cpu ES load and start single application command code"

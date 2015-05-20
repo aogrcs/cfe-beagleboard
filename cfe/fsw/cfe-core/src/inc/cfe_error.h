@@ -1,9 +1,9 @@
 /*
 **
 **  Filename: cfe_error.h
-**  $Id: cfe_error.h 1.11 2010/10/25 17:49:30EDT jmdagost Exp  $
+**  $Id: cfe_error.h 1.14 2014/05/30 13:23:19GMT-05:00 lwalling Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -21,9 +21,15 @@
 **  References:
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
-**  $Date: 2010/10/25 17:49:30EDT $
-**  $Revision: 1.11 $
+**  $Date: 2014/05/30 13:23:19GMT-05:00 $
+**  $Revision: 1.14 $
 **  $Log: cfe_error.h  $
+**  Revision 1.14 2014/05/30 13:23:19GMT-05:00 lwalling 
+**  Added error code definition for CFE_EVS_EVT_NOT_REGISTERED
+**  Revision 1.13 2011/12/28 13:59:09EST lwalling 
+**  Add definition for CFE_TBL_ERR_BAD_SPACECRAFT_ID and CFE_TBL_ERR_BAD_PROCESSOR_ID
+**  Revision 1.12 2011/11/30 15:42:21EST jmdagost 
+**  Added cFE ES Task Delete Error code to list.
 **  Revision 1.11 2010/10/25 17:49:30EDT jmdagost 
 **  Added FS Filename Length Error code, renumbered subsequent FS codes.
 **  Revision 1.10 2010/10/04 17:06:28EDT jmdagost 
@@ -187,6 +193,14 @@
 **
 */
 #define CFE_EVS_RESET_AREA_POINTER        (0xc2000005L)
+
+
+/**
+**  #CFE_EVS_ResetFilter() EventID argument was not found in
+**  any event filter registered by the calling application.
+**
+*/
+#define CFE_EVS_EVT_NOT_REGISTERED        (0xc2000006L)
 
 
 /**
@@ -457,6 +471,14 @@
 **
 */
 #define CFE_ES_BUFFER_NOT_IN_POOL (0xc4000025L)
+
+
+/**
+**  Occurs when trying to delete a task that ES
+**  is cleaning up.
+**
+*/
+#define CFE_ES_TASK_DELETE_ERR  (0xc4000026L)
 
 
 /**
@@ -1202,6 +1224,26 @@
 **
 */
 #define CFE_TBL_INFO_RECOVERED_TBL (int32)(0x4c000027L)
+
+
+/**
+**  The selected table file failed validation for Spacecraft ID.
+**  The platform configuration file has verification of table files
+**  enabled for Spacecraft ID and an attempt was made to load a table
+**  with an invalid Spacecraft ID in the table file header.
+**
+*/
+#define CFE_TBL_ERR_BAD_SPACECRAFT_ID (int32)(0xcc000028L)
+
+
+/**
+**  The selected table file failed validation for Processor ID.
+**  The platform configuration file has verification of table files
+**  enabled for Processor ID and an attempt was made to load a table
+**  with an invalid Processor ID in the table file header.
+**
+*/
+#define CFE_TBL_ERR_BAD_PROCESSOR_ID (int32)(0xcc000029L)
 
 
 /**

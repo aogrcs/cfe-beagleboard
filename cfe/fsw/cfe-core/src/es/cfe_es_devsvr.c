@@ -1,6 +1,20 @@
 /*
-**  File:  
-**    cfe_es_devsvr.c
+** NOTE:
+**
+**   At the present time (01/18/11) this file is not yet part of the
+**   cFE ES application.  This file contains "in progress" code that
+**   is intended to be integrated into ES as part of a future build.
+**
+**   CFE_ES_RegisterDriver() and CFE_ES_DeviceDriver_t are symbols
+**   currently defined in the ES source code.  To avoid duplicate
+**   name confusion with the new versions of those symbols defined
+**   in this (not yet integrated) file, the symbol names have been
+**   temporarily changed to xCFE_ES_RegisterDriver() and
+**   xCFE_ES_DeviceDriver_t in this file.
+**/
+
+/*
+** $Id: cfe_es_devsvr.c 1.7 2014/08/22 15:50:02GMT-05:00 lwalling Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -9,7 +23,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
 **
 **  Purpose:  
 **    This file implements the cFE Executive Services Device Server functions.
@@ -23,6 +36,14 @@
 **  Modification History:
 **
 ** $Log: cfe_es_devsvr.c  $
+** Revision 1.7 2014/08/22 15:50:02GMT-05:00 lwalling 
+** Changed signed loop counters to unsigned
+** Revision 1.6 2012/01/13 11:50:01EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.5 2012/01/10 14:49:55EST lwalling 
+** Replace inappropriate calls to sprintf() with calls to strncpy()
+** Revision 1.4 2011/01/19 14:21:40EST lwalling 
+** Fix conflicts with cfe_es_devsvr function and structure names
 ** Revision 1.3 2010/09/21 16:06:45EDT jmdagost 
 ** Added declaration for CFE_ES_DevSvrSem.
 ** Added file prolog.
@@ -41,7 +62,7 @@
 uint32  CFE_ES_DevSvrSem;
 
 /* Local function definitions */
-int32 CFE_ES_DeviceDriverValidateParams(CFE_ES_DeviceDriver_t *DriverDescPtr);
+int32 CFE_ES_DeviceDriverValidateParams(xCFE_ES_DeviceDriver_t *DriverDescPtr);
 int32 CFE_ES_FindDeviceDriverByName(char* DriverName);
 
 /****************************************************************************************/
@@ -49,7 +70,7 @@ int32 CFE_ES_DeviceServerInit()
 {
 
     uint32 SemId;
-    int i;
+    uint32 i;
     int32  ReturnCode;
     int32 Status;
     /* Zero out Device registry. */
@@ -79,9 +100,9 @@ int32 CFE_ES_DeviceServerInit()
 }/* end CFE_ES_DeviceServerInit */
 /****************************************************************************************/
 
-int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverDescPtr)
+int32 xCFE_ES_RegisterDriver(uint32 *DriverIdPtr, xCFE_ES_DeviceDriver_t *DriverDescPtr)
 {
-    int     i;
+    uint32  i;
     int32   IntLevel;
     uint32  DriverId, SemId, TaskId;
     char SemName [OS_MAX_API_NAME];
@@ -146,8 +167,10 @@ int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverDe
             /* Create a semaphore and store handle in Driver Registry */
             OS_BinSemGive(CFE_ES_DevSvrSem);
 
-            sprintf(SemName,DriverDescPtr -> Name, OS_MAX_API_NAME - 5);
+            strncpy(SemName, DriverDescPtr->Name, OS_MAX_API_NAME);
+            SemName[OS_MAX_API_NAME - 5] = '\0';
             strcat(SemName,"_sem");
+
             Status = OS_BinSemCreate(&SemId,SemName, OS_SEM_EMPTY, 0);
 
             OS_BinSemTake(CFE_ES_DevSvrSem);
@@ -208,8 +231,8 @@ int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverDe
                     {
 
                         /* Spawn generic Child Task with mangled Device Driver Name */
-                        sprintf(TaskName,DriverDescPtr -> Name, OS_MAX_API_NAME);
-
+                        strncpy(TaskName, DriverDescPtr->Name, OS_MAX_API_NAME);
+                        TaskName[OS_MAX_API_NAME - 1] = '\0';
                         Status = OS_TaskCreate(& TaskId, TaskName, 
                                                (void*) CFE_ES_GenericIntTask(DriverId), 
                                                  NULL,
@@ -258,7 +281,7 @@ int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverDe
 
     return ReturnCode;
    
-}/* end CFE_ES_RegisterDriver */
+}/* end xCFE_ES_RegisterDriver */
 /****************************************************************************************/
 int32 CFE_ES_GenericIntTask(uint32 DeviceDriverHandle)
 {
@@ -288,7 +311,7 @@ int32 CFE_ES_GenericIntTask(uint32 DeviceDriverHandle)
 /****************************************************************************************/
 void  CFE_ES_InterruptHandler(uint32 InterruptId)
 {
-    int i;
+    uint32 i;
 
     /* Allocate Driver Registry Entry */
     for (i = 0; i < CFE_ES_DRIVER_REG_MAX_SIZE; i ++)
@@ -460,7 +483,7 @@ void CFE_ES_DriverUnregister(CFE_SB_MsgPtr_t Msg)
 }
 /****************************************************************************************/
 
-int32 CFE_ES_DeviceDriverValidateParams(CFE_ES_DeviceDriver_t *DriverDescPtr)
+int32 CFE_ES_DeviceDriverValidateParams(xCFE_ES_DeviceDriver_t *DriverDescPtr)
 {
     int32 ReturnCode = CFE_SUCCESS;
     int32 Status;
@@ -479,7 +502,7 @@ int32 CFE_ES_DeviceDriverValidateParams(CFE_ES_DeviceDriver_t *DriverDescPtr)
 int32 CFE_ES_FindDeviceDriverByName(char* DriverName)
 {
     int32 Status;
-    int i;
+    uint32 i;
 
 
     for (i = 0; i < CFE_ES_DRIVER_REG_MAX_SIZE; i++)

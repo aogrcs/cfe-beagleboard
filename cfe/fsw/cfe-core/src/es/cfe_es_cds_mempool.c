@@ -12,8 +12,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 **  Purpose:
 **  Set of services for management of the CDS discrete sized memory pools.
 **
@@ -22,6 +20,8 @@
 **     cFE Flight Software Application Developers Guide
 **
 **  $Log: cfe_es_cds_mempool.c  $
+**  Revision 1.6 2012/01/13 11:50:00GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.5 2010/10/25 15:02:11EDT jmdagost 
 **  Corrected bad apostrophe in prologue.
 **  Revision 1.4 2010/10/04 15:36:29EDT jmdagost 

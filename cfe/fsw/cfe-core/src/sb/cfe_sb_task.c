@@ -17,6 +17,12 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb_task.c  $
+** Revision 1.18 2012/01/18 16:30:29GMT-05:00 jmdagost 
+** Updated no-op event message to include cFE version numbers.
+** Revision 1.17 2012/01/13 12:15:13EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.16 2011/12/20 10:28:02EST rmcgraw 
+** DCR15187:1 Changed MsgIdToPipeErrCnt to MsgLimErrCnt
 ** Revision 1.15 2009/07/17 18:07:33EDT aschoeni 
 ** Updated MsgMap and associated variables to be CFE_SB_MsgId_t
 ** Revision 1.14 2009/06/26 17:02:06EDT aschoeni 
@@ -86,6 +92,7 @@
 #include "cfe_evs.h"
 #include "cfe_sb_priv.h"
 #include "osapi.h"
+#include "cfe_version.h"
 #include "cfe_msgids.h"
 #include "cfe_error.h"
 #include "cfe_es.h"
@@ -364,7 +371,8 @@ void CFE_SB_ProcessCmdPipePkt(void){
          switch (CFE_SB_GetCmdCode(CFE_SB.CmdPipePktPtr)) {
             case CFE_SB_NOOP_CC:
                CFE_EVS_SendEvent(CFE_SB_CMD0_RCVD_EID,CFE_EVS_INFORMATION,
-                                 "No-op Cmd Rcvd");
+                                 "No-op Cmd Rcvd. cFE Version %d.%d.%d.%d",
+                                 CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV);
                CFE_SB.HKTlmMsg.CommandCnt++;
                break;
 
@@ -486,7 +494,7 @@ void CFE_SB_ResetCounters(void){
    CFE_SB.HKTlmMsg.CreatePipeErrCnt    = 0;
    CFE_SB.HKTlmMsg.SubscribeErrCnt     = 0;
    CFE_SB.HKTlmMsg.PipeOverflowErrCnt  = 0;
-   CFE_SB.HKTlmMsg.MsgIdToPipeErrCnt   = 0;
+   CFE_SB.HKTlmMsg.MsgLimErrCnt        = 0;
 
 }/* end CFE_SB_ResetCounters */
 

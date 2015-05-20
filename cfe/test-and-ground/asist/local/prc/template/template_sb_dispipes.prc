@@ -25,110 +25,43 @@ PROC $sc_$cpu_sb_dispipes
 ;	message length equal to one byte, which is an error condition.
 ;
 ;  Requirements Tested
-;	cSB4000  Upon receipt of a NOOP command, the cFE shall increment 
-;	the command counter.
-;
-;	cSB4001  Upon receipt of Command, the cFE shall reset all counters 
-;	in housekeeping telemetry.
-;
-;	cSB4002  Upon receipt of a Command, the cFE shall send an SB 
-;	Message containing the SB statistics. 
-;
-;	cSB4003  Upon receipt of a Command, the cFE shall save the SB 
-;	routing information to a file.
-;	cSB4003.1 If a file is not specified, the cFE shall use the
-;	<PLATFORM_DEFINED> filename. 
-;
-;	cSB4004  Upon receipt of a Command, the cFE shall enable or 
-;	disable routing the command specified message to the command 
-;	specified pipe. 
-;
-;	cSB4005  The cFE shall send an SB Message containing the 
-;	following housekeeping telemetry items: (a) command counter, 
-;	(c) no subscriptions counter, (d) message send error counter, 
-;	(e) message receive error counter (f) pipe overflow 
-;	error counter, (g) msgId-to-pipe limit error counter.
-;
-;	cSB4008  Upon receipt of a Command, the cFE shall save the message map
-;	information to the Command specified file.
-;	cSB4008.1 If a file is not specified, the cFE shall use the
-;	<PLATFORM_DEFINED> filename. 
-;
-;	cSB4300  The cFE shall provide a zero-copy message transfer mode 
-;	for intra-processor communication.
-;
-;	cSB4301  Upon receipt of a Request to create a Pipe, the cFE shall 
-;	create a Pipe with the Request-specified Pipe Depth and the 
-;	Request-specified name.
-;
-;	cSB4302  Upon receipt of a Request to delete a Pipe, the cFE shall 
-;	Unsubscribe all messages to the Request-specified Pipe, then remove 
-;	the Pipe from the Routing Information.
-;
-;	cSB4303  Upon receipt of a Request to Subscribe to an SB message, 
-;	the cFE shall establish a route using the Request-specified Message 
-;	ID, the Request-specified Pipe ID, the Request-specified 
-;	MsgId-to-Pipe limit and the Request-specified QoS.
-;
-;	cSB4304  Upon receipt of a Request to Unsubscribe to an SB Message, 
-;	the cFE shall remove the route corresponding to the Request-specified 
-;	Message Id and the Request-specified Pipe Id from the Routing 
-;	Information.
-;
-;	cSB4305  Upon receipt of a Request to send an SB Message, the cFE 
-;	shall route the SB Message to the Pipes of all Applications that 
-;	have Subscribed to the SB Message.
-;
-;	cSB4305.1  The cFE shall limit the number of messages of a 
-;	particular Message ID that can be sent to an Application s Pipe. 
-;
-;	cSB4305.3  If routing a Message to an Application s Pipe results 
-;	in a Pipe Overflow, the cFE shall abort the send to that pipe, 
-;	issue an event, and continue sending to the remaining pipes.
-;
-;	cSB4305.4  If routing a Message to an Application s Pipe would 
-;	exceed the MsgId-to-Pipe Limit, the cFE shall abort the send to that 
-;	pipe, issue an event, and continue sending to the remaining pipes.
-;
-;	cSB4305.5  Upon receipt of a Request to send a Message, if no 
-;	Application s have Subscribed to the Message, the cFE shall 
-;	increment the No Subscriber s Counter and send an event that 
-;	displays the Message ID.
-;
-;	cSB4306  Upon receipt of a Request to receive a SB Message from a 
-;	Pipe without a timeout, the cFE shall remove the next SB Message 
-;	from the Pipe and provide the message to the Application. 
-;
-;	cSB4307  Upon receipt of a Request to receive a SB Message from 
-;	a Pipe with a pending timeout, the cFE shall suspend execution 
-;	of the Application until a SB Message is present on the Pipe or 
-;	the timeout has expired.
-;
-;	cSB4308  Upon receipt of a Request to receive a SB Message from 
-;	a Pipe with an infinite timeout, the cFE shall suspend execution 
-;	of the Application until a SB Message is present on the Pipe.
-;	Note: The SB command input pipe FSW uses an infinite timeout.
-;
-;	cSB4309  Upon receipt of a Request, the cFE shall provide sender 
-;	information for the last message received on an Application s Pipe.
-;
-;       cSB4500  Upon a Power-on Reset the cFE shall initialize the Routing 
-;       Information and clear all error counters. 
-;
-;       cSB4501  Upon a Processor Reset the cFE shall initialize the Routing 
-;       Information and clear all error counters. 
-;
-;       cSB4700  The cFE shall support a maximum of 256 Message Id's.
-;
-;       cSB4701  The cFE shall support a < PLATFORM_DEFINED > maximum system
-;       packet size.
-;
-;	cSB4704  The cFE shall support a maximum of 16
-;	Destinations for a Message ID.
-;
-;       cSB4705  The cFE shall support a maximum of 64 pipes per processor.
-;
-;	cSB4706  The cFE shall support a maximum Pipe depth of 256 SB Messages.
+;     cSB4001	Upon receipt of Command, the cFE shall reset all counters in
+;		housekeeping telemetry.
+;     cSB4002	Upon receipt of a Command, the cFE shall send an SB Message
+;		containing the SB statistics. 
+;     cSB4003	Upon receipt of a Command, the cFE shall save the SB routing
+;		information to a file.
+;     cSB4003.1	If a file is not specified, the cFE shall use the 
+;		<PLATFORM_DEFINED> filename. 
+;     cSB4005	The cFE shall send an SB Message containing the following
+;		housekeeping telemetry items:
+;		(e) message receive error counter
+;		(f) pipe overflow error counter
+;		(g) msgId-to-pipe limit error counter.
+;     cSB4008	Upon receipt of a Command, the cFE shall save the message map
+;		information to the Command specified file.
+;     cSB4008.1 If a file is not specified, the cFE shall use the
+;		<PLATFORM_DEFINED> filename. 
+;     cSB4301	Upon receipt of a Request to create a Pipe, the cFE shall create
+;		a Pipe with the Request-specified Pipe Depth and the 
+;		Request-specified name.
+;     cSB4303	Upon receipt of a Request to Subscribe to an SB message, the cFE
+;		shall establish a route using the Request-specified Message ID,
+;		the Request-specified Pipe ID, the Request-specified 
+;		MsgId-to-Pipe limit and the Request-specified QoS.
+;     cSB4305.1 The cFE shall limit the number of messages of a particular 
+;		Message ID that can be sent to an Application's Pipe. 
+;     cSB4305.3 If routing a Message to an Application s Pipe results in a Pipe
+;		Overflow, the cFE shall abort the send to that pipe, issue an
+;		event, and continue sending to the remaining pipes.
+;     cSB4305.4 If routing a Message to an Application s Pipe would exceed the
+;		MsgId-to-Pipe Limit, the cFE shall abort the send to that pipe,
+;		issue an event, and continue sending to the remaining pipes.
+;     cSB4500	Upon a Power-on Reset the cFE shall initialize the Routing 
+;		Information and clear all error counters. 
+;     cSB4700	The cFE shall support a maximum of 256 Message Id's.
+;     cSB4705	The cFE shall support a maximum of 64 pipes per processor.
+;     cSB4706	The cFE shall support a maximum Pipe depth of 256 SB Messages.
 ;
 ;  Prerequisite Conditions
 ;	Open event log and telemetry archive files
@@ -174,6 +107,9 @@ write ";  TstSBPipe5-18	 N/A		N/A		10		256"
 ;**********************************************************************
 ;  Define variables
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
+
 #include "ut_statusdefs.h"
 #include "cfe_platform_cfg.h"
 #include "cfe_sb_events.h"
@@ -181,9 +117,12 @@ write ";  TstSBPipe5-18	 N/A		N/A		10		256"
 #include "tst_sb_events.h"
 #include "to_lab_events.h"
 
+%liv (log_procedure) = logging
+
 global ut_req_array_size
 ut_req_array_size = 17
 global ut_requirement[0..ut_req_array_size]
+
 #define cSB4001   0
 #define cSB4002   1
 #define cSB4003   2
@@ -202,17 +141,22 @@ global ut_requirement[0..ut_req_array_size]
 #define cSB4700   15
 #define cSB4705   16
 #define cSB4706   17
+
 %liv (log_procedure) = FALSE
+
 for i=0 to ut_req_array_size do
    ut_requirement[i] = "U"
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
 
 local requirements[0..ut_req_array_size] = ["cSB4001","cSB4002","cSB4003","cSB4003.1", "cSB4005(e)","cSB4005(f)","cSB4005(g)","cSB4008", "cSB4008.1","cSB4301","cSB4303","cSB4305.1","cSB4305.3","cSB4305.4","cSB4500","cSB4700","cSB4705","cSB4706"]
 
 global ing_result
 
-LOCAL errorcounter, errorcounter2, cmdCtr, timeoutcounter, errorcounters[0..6], errorcounternames[0..6], stream, expectedresult[1..4]
+LOCAL errorcounter, errorcounter2, cmdCtr, timeoutcounter, errorcounters[0..5], errorcounternames[0..5], stream, expectedresult[1..4]
+
+local ramDir = "RAM:0"
 
 write ";**********************************************************************"
 write "; Step 1.0:  Initialize the CPU for this test."
@@ -231,12 +175,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
                                                                                 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -248,16 +192,24 @@ endif
 write ";**********************************************************************"
 write ";  Step 1.1.1:  Send a ""Dump Software Bus statistics packet"" command."
 write ";  Requirements: cSB4002"
-write ";  This also tests DCR 21"
 write ";**********************************************************************"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", "step1_1_1", "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", "step1_1_1", "$CPU")
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG, 1
 
 /$SC_$CPU_SB_DumpStats
 
 ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
+
+if ($SC_$CPU_find_event[1].num_found_messages <> 1) then
+   write "<!> Failed (4002) - incorrect number of event messages received."
+   write "*** Expected 1 got ", $SC_$CPU_find_event[1].num_found_messages, "."
+   ut_setrequirements cSB4002, "F"
+else 
+   ut_setrequirements cSB4002, "P"
+   write "<*> Passed (4002) - number of event messages as expected."
+endif
 
 write "*** Dump Stats Results ***"
 write "*** Message Ids"
@@ -284,17 +236,18 @@ write "***  Max Allowed: ", $SC_$CPU_SB_STAT.SB_SMMPDALW
 write "**************************"
 
 local numroutes = 0
+
 %liv (log_procedure) = FALSE
+
 for i=1 to CFE_SB_MAX_MSG_IDS do
    if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME <> "") then
       numroutes = numroutes + 1
    endif
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
 
 write "*** Number of entries in the routing table: ", numroutes, "."
-
-ut_setrequirements cSB4002, "A"
 
 write ";**********************************************************************"
 write ";  Step 1.2:  Start the test application."
@@ -342,7 +295,9 @@ elseif ("$CPU" = "CPU3") then
 endif
 
 start $sc_$CPU_print_sb_pipes("rout_1-3-0", 5)
+
 %liv (log_procedure) = FALSE
+
 for i=1 to CFE_SB_MAX_MSG_IDS do
    if ($sc_$CPU_SB_RouteEntry[i].SB_MSGID = stream) then
       ut_setrequirements cSB4003, "F"
@@ -354,11 +309,12 @@ for i=1 to CFE_SB_MAX_MSG_IDS do
       write "<*> Passed (4003) - part 0 - routing table as expected."
    endif
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
 
 write ";  Add a subscription for the SB Test App housekeeping telemetry packet."
 
-ut_setupevt $SC, $CPU, TO_LAB_APP, TO_ADDPKT_INF_EID, INFO
+ut_setupevents $SC, $CPU, TO_LAB_APP, TO_ADDPKT_INF_EID, INFO, 1
 
 /$sc_$CPU_TO_ADDPACKET Stream=stream Pkt_Size=x'0' Priority=x'0' Reliability=x'0' Buflimit=x'4'
 
@@ -374,7 +330,9 @@ endif
 wait 10
 
 start $sc_$CPU_print_sb_pipes("rout_1-3-1", 5)
+
 %liv (log_procedure) = FALSE
+
 for i=1 to CFE_SB_MAX_MSG_IDS do
    if ($sc_$CPU_SB_RouteEntry[i].SB_MSGID = stream) then
       write "<*> Passed (4003) - part 1.5 - routing table as expected."
@@ -386,7 +344,8 @@ for i=1 to CFE_SB_MAX_MSG_IDS do
       ut_setrequirements cSB4003, "F"
    endif
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
 
 write ";  Add a subscription for the SB Test App telemetry packet."
 
@@ -400,7 +359,7 @@ else
    goto END
 endif
 
-start $sc_$CPU_print_sb_pipes("rout_1-3", 5)
+start $sc_$cpu_print_sb_pipes("rout_1-3", 5)
 
 write ";**********************************************************************"
 write ";  Step 1.4: Send the command to get the Routing Information using the"
@@ -409,7 +368,7 @@ write ";**********************************************************************"
 local work_dir = %env("WORK")
 local filename
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG, 1
 cmdCtr = $SC_$CPU_SB_CMDPC+1
 
 /$SC_$CPU_SB_WRITEROUTING2FILE ROUTINFOFILENAME=""
@@ -429,7 +388,7 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file ("RAM:0","cfe_sb_route.dat","$sc_$cpu_sb_route14.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_sb_route.dat","$sc_$cpu_sb_route14.dat","$CPU","G")
 wait 10
 
 ;; Check if the file above exists and pass the requirement if it does
@@ -446,9 +405,9 @@ write ";**********************************************************************"
 write ";  Step 1.5: Send the command to get the message map information using "
 write ";            a specified file."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG, 1
  
-start get_file_to_cvt("RAM:0", "cfe_sb_msgmap.dat", "$sc_$cpu_sb_msgmap15.dat", "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_msgmap.dat", "$sc_$cpu_sb_msgmap15.dat", "$CPU")
 wait 10
 
 if ($SC_$CPU_find_event[1].num_found_messages = 1) then
@@ -463,7 +422,7 @@ write ";**********************************************************************"
 write ";  Step 1.6: Send the command to get the message map information using "
 write ";            the default file."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_EID, DEBUG, 1
 cmdCtr = $SC_$CPU_SB_CMDPC+1
 
 /$SC_$CPU_SB_WRITEMAP2FILE MAPINFOFILENAME=""
@@ -487,7 +446,7 @@ else
 endif
 
 ;; Get the file to the ground whether or not the event msg was rcv'd
-s ftp_file ("RAM:0","cfe_sb_msgmap.dat","$sc_$cpu_sb_msgmap16.dat","$CPU","G")
+s ftp_file (ramDir,"cfe_sb_msgmap.dat","$sc_$cpu_sb_msgmap16.dat","$CPU","G")
 wait 10
 
 ;; Check if the file above exists and pass the requirement if it does
@@ -504,7 +463,7 @@ write ";**********************************************************************"
 write "; Step 1.7: Send the WRITEMAP2FILE command without a path specification"
 write ";           for the filename."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_ERR1_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_ERR1_EID, ERROR, 1
 local errCtr = $SC_$CPU_SB_CMDEC+1
 
 /$SC_$CPU_SB_WRITEMAP2FILE MAPINFOFILENAME="nopathname"
@@ -527,7 +486,7 @@ write ";**********************************************************************"
 write "; Step 1.8: Send the WRITEROUTING2FILE command without a path "
 write ";           specification for the filename."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_ERR1_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_RTG_ERR1_EID, ERROR, 1
 errCtr = $SC_$CPU_SB_CMDEC+1
 
 /$SC_$CPU_SB_WRITEROUTING2FILE ROUTINFOFILENAME="nopathname"
@@ -550,7 +509,7 @@ write ";**********************************************************************"
 write ";  Step 2.0: Disable Pipe Processing."
 write ";**********************************************************************"
 
-ut_setupevt $SC, $CPU, TST_SB, TST_SB_DISABLEPIPE_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_SB, TST_SB_DISABLEPIPE_INF_EID, INFO, 1
 
 /$SC_$CPU_TST_SB_DisablePipe
 
@@ -684,7 +643,7 @@ write ";**********************************************************************"
 start $sc_$cpu_check_sb_msgcnt("set", "3_4", x'1001')
 expectedresult = [0, 0, 0, 0]
 errorcounter = $SC_$CPU_SB_MsgLimEC+1
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_MSGID_LIM_ERR_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_MSGID_LIM_ERR_EID, ERROR, 1
 /$SC_$CPU_TST_SB_SendMsg1
 wait 10
 
@@ -766,7 +725,7 @@ write ";**********************************************************************"
 start $sc_$cpu_check_sb_msgcnt("set", "4_2", x'1000')
 expectedresult = [0, 0, 1, 0]
 errorcounter = $SC_$CPU_SB_PipeOvrEC+1
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_Q_FULL_ERR_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_Q_FULL_ERR_EID, ERROR, 1
 
 /$SC_$CPU_TST_SB_SendMsg0
 wait 5
@@ -832,20 +791,20 @@ endif
 errorcounter = $SC_$CPU_SB_NewPipeEC+1
 /$SC_$CPU_TST_SB_IncrementNewPipeEC
 ut_tlmwait $SC_$CPU_SB_NewPipeEC {errorcounter} 30
+;;                     $SC_$CPU_SB_NoSubEC,                           ;;
+;;                     "$SC_$CPU_SB_NoSubEC",                         ;;
+local noSubECOld = $SC_$CPU_SB_NoSubEC
 
-; Tested in Walt's test: $SC_$CPU_SB_CMDEC
 errorcounters =     [$SC_$CPU_SB_CMDPC,                             ;;
-                     $SC_$CPU_SB_NoSubEC,                           ;;
                      $SC_$CPU_SB_MsgSndEC,   $SC_$CPU_SB_MsgRecEC,  ;;  
                      $SC_$CPU_SB_NewPipeEC,                         ;;
                      $SC_$CPU_SB_PipeOvrEC,  $SC_$CPU_SB_MsgLimEC]
 errorcounternames = ["$SC_$CPU_SB_CMDPC",                           ;;
-                     "$SC_$CPU_SB_NoSubEC",                         ;;
                      "$SC_$CPU_SB_MsgSndEC", "$SC_$CPU_SB_MsgRecEC",;;
                      "$SC_$CPU_SB_NewPipeEC",                       ;;
                      "$SC_$CPU_SB_PipeOvrEC","$SC_$CPU_SB_MsgLimEC"]
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_CMD1_RCVD_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_CMD1_RCVD_EID, DEBUG, 1
 
 /$SC_$CPU_SB_ResetCtrs
 
@@ -862,7 +821,7 @@ endif
 
 wait 5
 
-for i=0 to 6 do
+for i=0 to 5 do
    if ({errorcounternames[i]} <> 0) then
       write "<!> Failed (4001) - incorrect ", errorcounternames[i], " value."
       write "*** Expected 0 got ", {errorcounternames[i]}, ". Was ", errorcounters[i], " before reset command was sent."
@@ -876,13 +835,20 @@ for i=0 to 6 do
    endif
 enddo
 
+if (noSubECOld > $SC_$CPU_SB_NoSubEC) then
+      write "<*> Passed (4001) - No subscribers error counter was reset. Was ", noSubECOld, " before reset command was sent, is now ", $SC_$CPU_SB_NoSubEC
+      ut_setrequirements cSB4001, "P"
+   else
+      write "<!> Failed (4001) - No subscribers EC was not reset."
+      ut_setrequirements cSB4001, "F"
+endif
+
 write ";**********************************************************************"
 write ";  Step 5.1:  Send a ""Dump Software Bus statistics packet"" command."
 write ";  Requirements: cSB4002"
-write ";  This also tests DCR 21"
 write ";**********************************************************************"
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG, 1
 
 /$SC_$CPU_SB_DumpStats
 
@@ -929,39 +895,14 @@ write "**************************"
 
 wait 5
 
-;write ";**********************************************************************"
-;write ";  Step 5.3: Disable Routing for pipe 50 so that we won't get overflows"
-;write ";            on it."
-;write ";**********************************************************************";
-;local pipe50index
-;%liv (log_procedure) = FALSE
-;for i=1 to CFE_SB_MAX_MSG_IDS do
-;   if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = "TstSBPipe50") then
-;      pipe50index = i
-;   endif
-;enddo
-;%liv (log_procedure) = TRUE
-
-;ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_DSBL_RTE2_EID, DEBUG
-
-;/$SC_$CPU_SB_DisRoute MID=$SC_$CPU_SB_RouteEntry[pipe50index].SB_MSGID PID=$SC_$CPU_SB_RouteEntry[pipe50index].SB_PIPEID
-
-;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
-
 write ";**********************************************************************"
 write ";  Step 6.0: Send a command to the test application to process one "
 write ";            message on each pipe. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, TST_SB, TST_SB_PROCESSONEPIPEMSG_EID, INFO
+ut_setupevents $SC, $CPU, TST_SB, TST_SB_PROCESSONEPIPEMSG_EID, INFO, 1
 
 /$SC_$CPU_TST_SB_ProcessOnePipeMsg
 wait 20
-
-;;if ($SC_$CPU_find_event[1].num_found_messages <> 57) then
-;;   write "<!> Failed - Expected 57 messages, received ", $SC_$CPU_find_event[1].num_found_messages,"."
-;;else 
-   write "Processed ", $SC_$CPU_find_event[1].num_found_messages, " messages."
-;;endif
 
 start $sc_$cpu_print_sb_pipes("6", 3)
 
@@ -1061,9 +1002,11 @@ expectedresult = [0, 0, 1, 0]
 errorcounter = $SC_$CPU_SB_PipeOvrEC+1
 errorcounter2 = $SC_$CPU_SB_MsgLimEC+1
 
-;; Delete the event filter for Pipe Overflow Error
-;; This is needed since this event is filtered and would not be rcv'd
+;; Delete the event filter for Pipe Overflow Error and Msg Limit
+;; This is needed since the events are filtered and would not be rcv'd
 /$SC_$CPU_EVS_DELEVTFLTR APPLICATION="CFE_SB" EVENT_ID=CFE_SB_Q_FULL_ERR_EID
+wait 5
+/$SC_$CPU_EVS_DELEVTFLTR APPLICATION="CFE_SB" EVENT_ID=CFE_SB_MSGID_LIM_ERR_EID
 wait 5
 
 ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_MSGID_LIM_ERR_EID, ERROR, 1
@@ -1151,15 +1094,18 @@ write ";**********************************************************************"
 write ";  Step 9.2: Disable Routing for pipe 1 so that we won't get overflows."
 write ";**********************************************************************"
 local pipe1index=0
+
 %liv (log_procedure) = FALSE
+
 for i=1 to CFE_SB_MAX_MSG_IDS do
    if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = "TstSBPipe1") then
       pipe1index = i
    endif
 enddo
-%liv (log_procedure) = TRUE
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_DSBL_RTE2_EID, DEBUG
+%liv (log_procedure) = logging
+
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_DSBL_RTE2_EID, DEBUG, 1
 
 /$SC_$CPU_SB_DisRoute MID=$SC_$CPU_SB_RouteEntry[pipe1index].SB_MSGID PID=$SC_$CPU_SB_RouteEntry[pipe1index].SB_PIPEID
 
@@ -1171,19 +1117,20 @@ write ";            limits on them."
 write ";**********************************************************************"
 local pipeindex=0
 for j=5 to 18 do
-   %liv (log_procedure) = FALSE
-   for i=1 to CFE_SB_MAX_MSG_IDS do
-      if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = ("TstSBPipe"&j)) then
-         pipeindex = i
-      endif
-   enddo
-   %liv (log_procedure) = TRUE
+  %liv (log_procedure) = FALSE
 
-   ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_DSBL_RTE2_EID, DEBUG
+  for i=1 to CFE_SB_MAX_MSG_IDS do
+    if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = ("TstSBPipe"&j)) then
+      pipeindex = i
+    endif
+  enddo
+  %liv (log_procedure) = logging
 
-   /$SC_$CPU_SB_DisRoute MID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_MSGID PID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_PIPEID
+  ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_DSBL_RTE2_EID, DEBUG, 1
 
-   ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
+  /$SC_$CPU_SB_DisRoute MID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_MSGID PID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_PIPEID
+
+  ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
 enddo
 
 write ";**********************************************************************"
@@ -1202,7 +1149,7 @@ wait 5
 ; 1 for Pipe 4
 errorcounter = $SC_$CPU_SB_PipeOvrEC+1
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_Q_FULL_ERR_EID , ERROR
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_Q_FULL_ERR_EID , ERROR, 1
 
 local logstoppoint = 3
 local logresumepoint = CFE_SB_MAX_PIPE_DEPTH-2
@@ -1216,6 +1163,7 @@ for i=1 to logstoppoint do
 enddo
 
 %liv (log_procedure) = FALSE
+
 for i=(logstoppoint+1) to logresumepoint do
    /$SC_$CPU_TST_SB_SendMsg2
    ut_tlmwait $SC_$CPU_TST_SB_P0CMDPC {sbtstcmdpc+i} 10
@@ -1224,7 +1172,9 @@ for i=(logstoppoint+1) to logresumepoint do
       sbtstcmdpc = 0-i
    endif
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
+
 for i=(logresumepoint+1) to CFE_SB_MAX_PIPE_DEPTH+1 do
    write "*** ",i,"."
    /$SC_$CPU_TST_SB_SendMsg2
@@ -1240,13 +1190,16 @@ write ";  Step 9.5: Check that the routing table shows that the message count"
 write ";            is equal to the max depth."
 write ";**********************************************************************"
 local pipe4index
+
 %liv (log_procedure) = FALSE
+
 for i=1 to CFE_SB_MAX_MSG_IDS do
    if (($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = "TstSBPipe4") AND ($SC_$CPU_SB_RouteEntry[i].SB_MSGID = x'1002')) then
       pipe4index = i
    endif
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
 
 start $sc_$cpu_print_sb_pipes("pipe4after", 4)
 
@@ -1285,19 +1238,20 @@ write ";  Step 9.7: Enable routing for pipes 5-18."
 write ";**********************************************************************"
 local pipeindex=0
 for j=5 to 18 do
-   %liv (log_procedure) = FALSE
-   for i=1 to CFE_SB_MAX_MSG_IDS do
-      if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = ("TstSBPipe"&j)) then
-         pipeindex = i
-      endif
-   enddo
-   %liv (log_procedure) = TRUE
+  %liv (log_procedure) = FALSE
 
-   ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_ENBL_RTE2_EID, DEBUG
+  for i=1 to CFE_SB_MAX_MSG_IDS do
+    if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = ("TstSBPipe"&j)) then
+      pipeindex = i
+    endif
+  enddo
+  %liv (log_procedure) = logging
 
-   /$SC_$CPU_SB_EnaRoute MID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_MSGID PID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_PIPEID
+  ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_ENBL_RTE2_EID, DEBUG, 1
 
-   ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
+  /$SC_$CPU_SB_EnaRoute MID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_MSGID PID=$SC_$CPU_SB_RouteEntry[pipeindex].SB_PIPEID
+
+  ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
 enddo
 
 wait 60
@@ -1308,14 +1262,22 @@ write ";  Requirements: cSB4700"
 write ";**********************************************************************"
 write ";  Step 10.1:  Send a ""Dump Software Bus statistics packet"" command."
 write ";  Requirements: cSB4002"
-write ";  This also tests DCR 21"
 write ";**********************************************************************"
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG, 1
 
 /$SC_$CPU_SB_DumpStats
 
 ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 60
+
+if ($SC_$CPU_find_event[1].num_found_messages <> 1) then
+   write "<!> Failed (4002) - incorrect number of event messages received."
+   write "*** Expected 1 got ", $SC_$CPU_find_event[1].num_found_messages, "."
+   ut_setrequirements cSB4002, "F"
+else 
+   ut_setrequirements cSB4002, "P"
+   write "<*> Passed (4002) - number of event messages as expected."
+endif
 
 write "*** Dump Stats Results ***"
 write "*** Message Ids"
@@ -1341,18 +1303,18 @@ write "*** Pipe Depth"
 write "***  Max Allowed: ", $SC_$CPU_SB_STAT.SB_SMMPDALW
 write "**************************"
 
-ut_setrequirements cSB4002, "A"
-
 write ";**********************************************************************"
 write ";  Step 10.2: Create the max number of message ids."
 write ";  Requirements: cSB4700"
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_MAX_MSGS_MET_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_MAX_MSGS_MET_EID, ERROR, 1
 
 local msgidsleft = CFE_SB_MAX_MSG_IDS
 local prevmsgid = 0
 local lastMsgId = 0
+
 %liv (log_procedure) = FALSE
+
 for i=1 to CFE_SB_MAX_MSG_IDS do
    if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME <> "") then
       if ($SC_$CPU_SB_RouteEntry[i].SB_MSGID <> prevmsgid) then
@@ -1368,7 +1330,8 @@ for i=1 to CFE_SB_MAX_MSG_IDS do
       endif
    endif
 enddo
-%liv (log_procedure) = TRUE
+
+%liv (log_procedure) = logging
 
 write "*** Number of message id's to use to hit the max: ", msgidsleft, "."
 lastMsgId = lastMsgId + 1
@@ -1382,13 +1345,13 @@ enddo
 wait 5
 
 ;; Check that at least 1 error was generated
-if ($SC_$CPU_num_found_messages > 0) then
+if ($SC_$CPU_find_event[1].num_found_messages > 0) then
    ut_setrequirements cSB4700, "P"
    write "<*> Passed (4700) - Max msgid error was generated."
 else
    ut_setrequirements cSB4700, "F"
    write "<!> Failed (4700) - did not find max msgid error."
-   write "*** Found ", $SC_$CPU_num_found_messages, " messages."
+   write "*** Found ", $SC_$CPU_find_event[1].num_found_messages, " messages."
 endif
 
 write ";**********************************************************************"
@@ -1396,7 +1359,7 @@ write ";  Step 10.3:  Send a ""Dump Software Bus statistics packet"" command."
 write ";  Requirements: cSB4002"
 write ";**********************************************************************"
 
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_SND_STATS_EID, DEBUG, 1
 
 /$SC_$CPU_SB_DumpStats
 
@@ -1410,6 +1373,7 @@ else
    ut_setrequirements cSB4002, "P"
    write "<*> Passed (4002) - number of event messages as expected."
 endif
+
 write "*** Dump Stats Results ***"
 write "*** Message Ids"
 write "***  In Use:      ", $SC_$CPU_SB_STAT.SB_SMMIDIU
@@ -1512,15 +1476,6 @@ start $sc_$cpu_print_sb_pipes("reset", 5)
 
 %liv (log_procedure) = FALSE
 for i=1 to CFE_SB_MAX_MSG_IDS do
-   ;if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = "TstSBPipe0") then
-   ;   if ($SC_$CPU_SB_RouteEntry[i].SB_MSGID = x'1885') then
-   ;      numFound=numFound+1
-   ;   elseif ($SC_$CPU_SB_RouteEntry[i].SB_MSGID = x'18A5') then
-   ;      numFound=numFound+1
-   ;   elseif ($SC_$CPU_SB_RouteEntry[i].SB_MSGID = x'18C5') then
-   ;      numFound=numFound+1
-   ;   endif
-   ;endif
    if ($SC_$CPU_SB_RouteEntry[i].SB_PIPENAME = "TstSBPipe1") then
       if ($SC_$CPU_SB_RouteEntry[i].SB_MSGID = x'1000') then
          numFound=numFound+1
@@ -1560,7 +1515,7 @@ for i=1 to CFE_SB_MAX_MSG_IDS do
       endif
    enddo
 enddo
-%liv (log_procedure) = TRUE
+%liv (log_procedure) = logging
 
 if (numFound = (4+CFE_SB_MAX_DEST_PER_PKT)) then
    ut_setrequirements cSB4500, "F"

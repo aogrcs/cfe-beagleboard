@@ -1,6 +1,15 @@
 /*
+**
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement. 
+**
 ** File:
-** $Id: ut_evs_stubs.c 1.3 2009/05/07 15:04:48EDT rmcgraw Exp  $
+** $Id: ut_evs_stubs.c 1.7 2014/05/28 09:21:49GMT-05:00 wmoleski Exp  $
 **
 ** Purpose:
 ** Unit test stubs for Event Service routines
@@ -9,8 +18,16 @@
 ** Minimal work is done, only what is required for unit testing
 **
 ** $Data:$
-** $Revision: 1.3 $
+** $Revision: 1.7 $
 ** $Log: ut_evs_stubs.c  $
+** Revision 1.7 2014/05/28 09:21:49GMT-05:00 wmoleski 
+** Overwriting cFE Unit Test files with the updated JSC files.
+** Revision 1.6 2012/10/01 18:47:27EDT aschoeni 
+** Removed relative paths in includes, this is now done by makefile
+** Revision 1.5 2012/01/13 13:59:30EST acudmore 
+** Added license text
+** Revision 1.4 2011/11/30 15:45:29EST jmdagost 
+** Replaced CFE_EVS_BIG_BUFFER_SIZE with 1024.
 ** Revision 1.3 2009/05/07 15:04:48EDT rmcgraw 
 ** DCRR 7366:1 Moved call to AddEventToHistory
 ** Revision 1.2 2009/04/23 09:27:56EDT rmcgraw 
@@ -37,141 +54,323 @@
 */
 
 /*
-** Include section
+** Includes
 */
-
-#include <stdio.h>
-#include <stdarg.h>
-
+#include <string.h>
 #include "cfe_evs.h"
 #include "common_types.h"
 #include "cfe_error.h"
-#include "../evs/cfe_evs_task.h"
+#include "cfe_evs_task.h"
 #include "ut_stubs.h"
 
 /*
-** Exported Global Data
+** Macro definitions
 */
+#ifdef OSP_ARINC653
+#define UT_OFFSET_CFE_EVS_SENDEVENT 4
+#define UT_OFFSET_CFE_SENDEVENTWITHAPPID 5
 
-extern FILE *UT_logfile;
-extern UT_SetRtn_t  EVS_SendEventRtn;
-extern UT_SetRtn_t  EVS_RegisterRtn;
-extern UT_SetRtn_t EVSCleanUpRtn;
+#define UT_BREAK_CFE_EVS_SENDEVENT 5
+#define UT_BREAK_CFE_SENDEVENTWITHAPPID 4
 
+#define UT_SKIP_CFE_EVS_SENDEVENT 54
+#define UT_SKIP_CFE_SENDEVENTWITHAPPID 56
+#endif
 
 /*
-** Function definitions
+** External global variables
 */
+extern char cMsg[];
 
+extern UT_SetRtn_t EVS_SendEventRtn;
+extern UT_SetRtn_t EVS_RegisterRtn;
+extern UT_SetRtn_t EVSCleanUpRtn;
+extern UT_SetRtn_t SendMsgEventIDRtn;
+
+/*
+** Functions
+*/
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_EarlyInit stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE EVS function
+**        CFE_EVS_EarlyInit.  It always returns CFE_SUCCESS when called.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns CFE_SUCCESS.
+**
+******************************************************************************/
 int32 CFE_EVS_EarlyInit(void)
 {
     return CFE_SUCCESS;
 }
+
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_TaskMain stub function
+**
+** \par Description
+**        This function is used as a placeholder for the cFE EVS function
+**        CFE_EVS_TaskMain.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+**
+******************************************************************************/
 void CFE_EVS_TaskMain(void)
 {
 }
 
-
-int32 CFE_EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ... )
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_SendEvent stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE EVS function
+**        CFE_EVS_SendEvent.  The user can adjust the response by setting
+**        the values in the EVS_SendEventRtn structure prior to this function
+**        being called.  If the value EVS_SendEventRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value EVS_SendEventRtn.value.
+**        CFE_SUCCESS is returned otherwise.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either a user-defined status flag or CFE_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_EVS_SendEvent(uint16 EventID,
+                        uint16 EventType,
+                        const char *Spec,
+                        ...)
 {
+    int32   status = CFE_SUCCESS;
+    boolean flag = FALSE;
+#ifdef UT_VERBOSE
+    char    BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
+    VA_LIST Ptr;
 
-  char     BigBuf[CFE_EVS_BIG_BUFFER_SIZE];
-  va_list  Ptr;
+    VA_START(Ptr, Spec, UT_OFFSET_CFE_EVS_SENDEVENT,
+             UT_BREAK_CFE_EVS_SENDEVENT, UT_SKIP_CFE_EVS_SENDEVENT);
+    VSNPRINTF(BigBuf, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+    VA_END(Ptr);
+#endif
 
-  va_start(Ptr, Spec);
-  vsprintf(BigBuf, Spec, Ptr);
-  va_end(Ptr);
-  
+    if (EVS_SendEventRtn.count > 0)
+    {
+        EVS_SendEventRtn.count--;
 
-  if (EVS_SendEventRtn.count > 0 )
-  {
-      EVS_SendEventRtn.count--;
-      if (EVS_SendEventRtn.count == 0)
-      {
-          /*fprintf(UT_logfile, "  CFE_EVS_SendEvent: called: %d\n", EVS_SendEventRtn.value);*/
-          return EVS_SendEventRtn.value;
-      }
-  }
+        if (EVS_SendEventRtn.count == 0)
+        {
+            status = EVS_SendEventRtn.value;
+            flag = TRUE;
+        }
+    }
 
-  UT_AddEventToHistory(EventID);
+    if (flag == FALSE)
+    {
+        UT_AddEventToHistory(EventID);
+        SendMsgEventIDRtn.value = EventID;
+#ifdef UT_VERBOSE
+        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                 "  CFE_EVS_SendEvent: %u, %u - %s",
+                 EventID, EventType, BigBuf);
+        UT_Text(cMsg);
+#endif
+    }
 
-  fprintf(UT_logfile, "  CFE_EVS_SendEvent: %d, %d - %s\n", EventID, EventType,
-          BigBuf);
-
-  return CFE_SUCCESS;
+    return status;
 }
 
-
-int32 CFE_EVS_SendTimedEvent (CFE_TIME_SysTime_t Time, uint16 EventID, uint16 EventType, const char *Spec, ... )
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_SendTimedEvent stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE EVS function
+**        CFE_EVS_SendTimedEvent.  It always returns CFE_SUCCESS when called.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns CFE_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_EVS_SendTimedEvent(CFE_TIME_SysTime_t Time,
+                             uint16 EventID,
+                             uint16 EventType,
+                             const char *Spec,
+                             ...)
 {
-  char     BigBuf[CFE_EVS_BIG_BUFFER_SIZE];
-  va_list  Ptr;
+    return CFE_SUCCESS;
+}
 
-  va_start(Ptr, Spec);
-  vsprintf(BigBuf, Spec, Ptr);
-  va_end(Ptr);
-  
-  UT_AddEventToHistory(EventID);
-  
-  fprintf(UT_logfile, "  CFE_EVS_SendTimedEvent: %d, %d - %s\n", EventID, EventType,
-          BigBuf);
-
-  return CFE_SUCCESS;
-
-} /* End CFE_EVS_SendTimedEvent */
-
-
-int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterScheme)
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_Register stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE EVS function
+**        CFE_EVS_Register.  The user can adjust the response by setting
+**        the values in the EVS_RegisterRtn structure prior to this function
+**        being called.  If the value EVS_RegisterRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value EVS_RegisterRtn.value.
+**        CFE_SUCCESS is returned otherwise.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either a user-defined status flag or CFE_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_EVS_Register(void *Filters,
+                       uint16 NumEventFilters,
+                       uint16 FilterScheme)
 {
+    int32   status = CFE_SUCCESS;
+#ifdef UT_VERBOSE
+    boolean flag = FALSE;
+#endif
 
-    if (EVS_RegisterRtn.count > 0 )
+    if (EVS_RegisterRtn.count > 0)
     {
         EVS_RegisterRtn.count--;
         if (EVS_RegisterRtn.count == 0)
         {
-            /*fprintf(UT_logfile, "  CFE_EVS_Register: called: %d\n", EVS_RegisterRtn.value);*/
-            return EVS_RegisterRtn.value;
+            status = EVS_RegisterRtn.value;
+#ifdef UT_VERBOSE
+            flag = TRUE;
+            SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                     "  CFE_EVS_Register called: %ld", EVS_RegisterRtn.value);
+            UT_Text(cMsg);
+#endif
         }
     }
-  /*fprintf(UT_logfile, "  CFE_EVS_Register: called\n");*/
-  return CFE_SUCCESS;
+
+#ifdef UT_VERBOSE
+    if (flag == FALSE)
+    {
+        UT_Text("  CFE_EVS_Register called");
+    }
+#endif
+
+    return status;
 }
 
-int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType,uint32 AppID, const char *Spec, ... )
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_SendEventWithAppID stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE EVS function
+**        CFE_EVS_SendEventWithAppID.  The event ID, EventID, is added to the
+**        unit test' event history.  The number of events can be retrieved by
+**        the unit tests for comparison to expected values in order to detect
+**        correct functionality.  The user can adjust the response by setting
+**        the values in the EVS_SendEventRtn structure prior to this function
+**        being called.  If the value EVS_SendEventRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value EVS_SendEventRtn.value.
+**        CFE_SUCCESS is returned otherwise.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either a user-defined status flag or CFE_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_EVS_SendEventWithAppID(uint16 EventID,
+                                 uint16 EventType,
+                                 uint32 AppID,
+                                 const char *Spec,
+                                 ...)
 {
+    int32   status = CFE_SUCCESS;
+#ifdef UT_VERBOSE
+    boolean flag = FALSE;
+    char    BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
+    VA_LIST Ptr;
 
-  char     BigBuf[CFE_EVS_BIG_BUFFER_SIZE];
-  va_list  Ptr;
-
-  va_start(Ptr, Spec);
-  vsprintf(BigBuf, Spec, Ptr);
-  va_end(Ptr);
+    VA_START(Ptr, Spec, UT_OFFSET_CFE_SENDEVENTWITHAPPID,
+             UT_BREAK_CFE_SENDEVENTWITHAPPID, UT_SKIP_CFE_SENDEVENTWITHAPPID);
+    VSNPRINTF(BigBuf, CFE_EVS_MAX_MESSAGE_LENGTH, Spec, Ptr);
+    VA_END(Ptr);
+#endif
+    UT_AddEventToHistory(EventID);
   
-  UT_AddEventToHistory(EventID);
-  
-    if (EVS_SendEventRtn.count > 0 )
+    if (EVS_SendEventRtn.count > 0)
     {
         EVS_SendEventRtn.count--;
+
         if (EVS_SendEventRtn.count == 0)
         {
-            /*fprintf(UT_logfile, "  CFE_EVS_SendEvent: called: %d\n", EVS_SendEventRtn.value);*/
-            return EVS_SendEventRtn.value;
+            status = EVS_SendEventRtn.value;
+#ifdef UT_VERBOSE
+            flag = TRUE;
+#endif
         }
     }
 
-  fprintf(UT_logfile, "  CFE_EVS_SendEvent from app %lu: %d, %d - %s\n",AppID, EventID, EventType, BigBuf);
+#ifdef UT_VERBOSE
+    if (flag == FALSE)
+    {
+        SNPRINTF(cMsg, UT_MAX_MESSAGE_LENGTH,
+                 "  CFE_EVS_SendEvent from app %lu: %u, %u - %s",
+                 AppID, EventID, EventType, BigBuf);
+        UT_Text(cMsg);
+    }
+#endif
 
-  return CFE_SUCCESS;
+    return status;
 }
-int32 CFE_EVS_CleanUpApp (uint32 AppId)
+
+/*****************************************************************************/
+/**
+** \brief CFE_EVS_CleanUpApp stub function
+**
+** \par Description
+**        This function is used to mimic the response of the cFE EVS function
+**        CFE_EVS_CleanUpApp.  The user can adjust the response by setting
+**        the values in the EVSCleanUpRtn structure prior to this function
+**        being called.  If the value EVSCleanUpRtn.count is greater than
+**        zero then the counter is decremented; if it then equals zero the
+**        return value is set to the user-defined value EVSCleanUpRtn.value.
+**        CFE_SUCCESS is returned otherwise.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        Returns either a user-defined status flag or CFE_SUCCESS.
+**
+******************************************************************************/
+int32 CFE_EVS_CleanUpApp(uint32 AppId)
 {
-    if(EVSCleanUpRtn.count > 0)
+    int32 status = CFE_SUCCESS;
+
+    if (EVSCleanUpRtn.count > 0)
     {
       EVSCleanUpRtn.count--;
-      if(EVSCleanUpRtn.count == 0)
-        return EVSCleanUpRtn.value;
+
+      if (EVSCleanUpRtn.count == 0)
+      {
+          status = EVSCleanUpRtn.value;
+      }
     }
 
-
-    return CFE_SUCCESS;
+    return status;
 }

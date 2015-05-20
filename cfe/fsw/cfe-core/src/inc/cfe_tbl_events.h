@@ -1,8 +1,8 @@
 /*
 **
-**  $Id: cfe_tbl_events.h 1.5 2010/10/27 13:53:54EDT dkobe Exp  $
+**  $Id: cfe_tbl_events.h 1.9 2014/08/19 13:38:15GMT-05:00 sstrege Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -23,6 +23,14 @@
 **  Notes:
 **
 **  $Log: cfe_tbl_events.h  $
+**  Revision 1.9 2014/08/19 13:38:15GMT-05:00 sstrege 
+**  Fixed doxygen warning
+**  Revision 1.8 2011/12/28 14:00:18EST lwalling 
+**  Add definition for CFE_TBL_SPACECRAFT_ID_ERR_EID and CFE_TBL_PROCESSOR_ID_ERR_EID
+**  Revision 1.7 2011/11/14 17:58:05EST lwalling 
+**  Event EID mentioned in previous log entry should have been CFE_TBL_LOAD_EXCEEDS_SIZE_ERR_EID
+**  Revision 1.6 2011/11/14 17:42:30EST lwalling 
+**  Modified event text and argument list for CFE_TBL_FILE_INCOMPLETE_ERR_EID
 **  Revision 1.5 2010/10/27 13:53:54EDT dkobe 
 **  Added error event for Notification Message send failure
 **  Revision 1.4 2010/10/25 15:01:12EDT jmdagost 
@@ -608,8 +616,8 @@
 **/
 #define CFE_TBL_FILE_INCOMPLETE_ERR_EID        71  
 
-/** \brief <tt> 'Tbl Hdr in '\%s' indicates data beyond size of '\%s' (\%d)' </tt>
-**  \event <tt> 'Tbl Hdr in '\%s' indicates data beyond size of '\%s' (\%d)' </tt>
+/** \brief <tt> 'Cannot load '\%s' (\%d) at offset \%d in '\%s' (\%d)' </tt>
+**  \event <tt> 'Cannot load '\%s' (\%d) at offset \%d in '\%s' (\%d)' </tt>
 **
 **  \par Type: ERROR
 **
@@ -621,7 +629,8 @@
 **  the Table Header indicated that the Table Image in the file contains 7 bytes that starts at
 **  offset 5, then the data content would have exceeded the 10 byte limit of the table.
 **
-**  The number in parenthesis in the Event Message is the registered size of the specified table.
+**  The numbers in parenthesis in the event message text indicate the data size (in bytes) for
+**  the specified load file and the registered size for the specified table.
 **/
 #define CFE_TBL_LOAD_EXCEEDS_SIZE_ERR_EID      72  
 
@@ -846,7 +855,7 @@
 **
 **  The \c MsgId is the message ID of the table management notification message that was attempted to be sent,
 **  the \c CC is the command code, the \c Param is the application specified command parameter and the \c Status
-**  is the error code returned by the #CFE_SB_SendMSg API call. 
+**  is the error code returned by the #CFE_SB_SendMsg API call. 
 **/
 #define CFE_TBL_FAIL_NOTIFY_SEND_ERR_EID       89
 /** \} */
@@ -1005,6 +1014,63 @@
 **  Validation function as defined by the owning Application when the Table was Registered.
 **/
 #define CFE_TBL_VALIDATION_ERR_EID             96  
+
+/** \brief <tt> 'Unable to verify Spacecraft ID for '\%s', ID = 0x\%08X' </tt>
+**  \event <tt> 'Unable to verify Spacecraft ID for '\%s', ID = 0x\%08X' </tt>
+**
+**  \par Type: ERROR
+**
+**  \par Cause:
+**
+**  This event message is generated when either an Application calls the #CFE_TBL_Load API or a Table
+**  Load command has been received and the specified table file has failed Spacecraft ID validation.
+**  Verification of Spacecraft ID in table files is enabled/disabled via #CFE_TBL_VALID_SCID_COUNT,
+**  defined in the platform configuration header file.  This event message can only be generated if
+**  #CFE_TBL_VALID_SCID_COUNT has a non-zero value and the table file has a \link #CFE_FS_Header_t
+**  cFE Standard File Header \endlink whose \link #CFE_FS_Header_t::SpacecraftID Spacecraft ID \endlink 
+**  does not match one of the values defined for Spacecraft ID verification in the platform config file.
+**  The most likely causes for this error are:
+**   -# The specified table file is not intended for this spacecraft.
+**   -# The specified table file has been created with bad "endianess" (headers should always conform to
+**      a big endian format).
+**   -# The specified table file has become corrupted.
+**   -# The definition for #CFE_TBL_VALID_SCID_COUNT is not large enough to include all of the valid
+**      Spacecraft ID entries in the platform config file.
+**   -# There is no entry for this Spacecraft ID in the platform config file list of valid Spacecraft ID's.
+**
+**  The \c ID field specified in the event message contains the Spacecraft ID that was found
+**  in the specified table file.
+**/
+#define CFE_TBL_SPACECRAFT_ID_ERR_EID          97  
+
+/** \brief <tt> 'Unable to verify Processor ID for '\%s', ID = 0x\%08X' </tt>
+**  \event <tt> 'Unable to verify Processor ID for '\%s', ID = 0x\%08X' </tt>
+**
+**  \par Type: ERROR
+**
+**  \par Cause:
+**
+**  This event message is generated when either an Application calls the #CFE_TBL_Load API or a Table
+**  Load command has been received and the specified table file has failed Processor ID validation.
+**  Verification of Processor ID in table files is enabled/disabled via #CFE_TBL_VALID_PRID_COUNT,
+**  defined in the platform configuration header file.  This event message can only be generated if
+**  #CFE_TBL_VALID_PRID_COUNT has a non-zero value and the table file has a \link #CFE_FS_Header_t
+**  cFE Standard File Header \endlink whose \link #CFE_FS_Header_t::ProcessorID Processor ID \endlink 
+**  does not match one of the values defined for Processor ID verification in the platform config file.
+**  The most likely causes for this error are:
+**   -# The specified table file is not intended for this processor.
+**   -# The specified table file has been created with bad "endianess" (headers should always conform to
+**      a big endian format).
+**   -# The specified table file has become corrupted.
+**   -# The definition for #CFE_TBL_VALID_PRID_COUNT is not large enough to include all of the valid
+**      Processor ID entries in the platform config file.
+**   -# There is no entry for this Processor ID in the platform config file list of valid Processor ID's.
+**
+**  The \c ID field specified in the event message contains the Processor ID that was found
+**  in the specified table file.
+**/
+#define CFE_TBL_PROCESSOR_ID_ERR_EID           98  
+
 /** \} */
 
 

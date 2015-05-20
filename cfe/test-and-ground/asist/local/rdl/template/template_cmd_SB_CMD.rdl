@@ -37,11 +37,13 @@ CLASS Pxxxx APID=nnnn, DESC="$sc $cpu SB Command"
   CMDS  $sc_$cpu_SB_EnaRoute     FCTN=4, DESC="$sc $cpu SB enable routing command code"
     UI   MID            DYNAMIC, DESC="Message ID of packets"
     UB   PID            DYNAMIC, DESC="Pipeline ID of destination" 
+    UB   pad            INVISIBLE, DEFAULT=0
   END
 !
   CMDS  $sc_$cpu_SB_DisRoute	FCTN=5, DESC="$sc $cpu SB disable routing command code"
     UI   MID            DYNAMIC, DESC="Message ID of packets"
     UB   PID            DYNAMIC, DESC="Pipeline ID of destination"
+    UB   pad            INVISIBLE, DEFAULT=0
   END
 !
 !  CMD   $sc_$cpu_SB_DumpNetwork 	FCTN=6, DESC="$sc $cpu SB save network info command code"

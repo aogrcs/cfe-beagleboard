@@ -12,8 +12,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
 ** 
-**
-**
 **  Purpose:  
 **    This file contains definitions needed for the cFE ES Logs. The 
 **    logs include the Mode Transition log, the System Log, and the
@@ -26,6 +24,8 @@
 **  Notes:
 ** 
 ** $Log: cfe_es_log.h  $
+** Revision 1.2 2012/01/13 11:50:02GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.1 2008/04/17 08:05:06EDT ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/es/project.pj

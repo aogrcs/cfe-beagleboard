@@ -12,145 +12,132 @@ PROC $sc_$cpu_evs_app_unreg
 ;   Application Filtered Event IDs
 ;   Application Binary Filter Masks (one per registered Event ID)
 ;   Application Binary Filter Counters (one per registered Event ID) 
-;
 ;   
 write"*************************************************************"
-;
+ 
 #include "cfe_evs_gen_reqts.h"
-;
-
+ 
 FOR i = 0 to ut_req_array_size DO
-write "Requirement at [",i,"] = ", ut_requirement[i]
+  write "Requirement at [",i,"] = ", ut_requirement[i]
 ENDDO 
-;
+ 
 write"  _________"   
 write   "        |  Request generation of DEBUG type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
-                    wait 3
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, DEBUG
-                    wait 3
+/$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="1" Milliseconds="100"
+wait 5
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Debug event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Debug event message for ID=1 generated for an unregistered application" 
+endif
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, DEBUG, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId = "7" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
+/$sc_$cpu_TST_EVS_SendEvtMsg DEBUG EventId="7" Iters="1" Milliseconds="100"
+wait 5
+
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Debug event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Debug event message for ID=7 generated for an unregistered application" 
+endif
+ 
 write"*************************************************************"
-
 write"  _________"
 write   "        |  Request generation of INFO type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1, INFO
-                    wait 3
-;                
-                    /$sc_$cpu_TST_EVS_SendEvtMsg INFO  EventId = "1" Iters = "1" Milliseconds = "100"
-                    wait 4
-;                
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, INFO
-                    wait 3
-;
-                    /$sc_$cpu_TST_EVS_SendEvtMsg INFO EventId = "7" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, INFO, 1
+                 
+/$sc_$cpu_TST_EVS_SendEvtMsg INFO  EventId="1" Iters="1" Milliseconds="100"
+wait 5
+
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Info event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Info event message for ID=1 generated for an unregistered application" 
+endif
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, INFO, 1
+ 
+/$sc_$cpu_TST_EVS_SendEvtMsg INFO EventId="7" Iters="1" Milliseconds="100"
+wait 5
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Info event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Info event message for ID=7 generated for an unregistered application" 
+endif
+ 
 write"*************************************************************"
-;
 write"  _________"   
 write   "        |  Request generation of ERROR type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1, ERROR
-                    wait 3
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, ERROR, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId = "1" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7, ERROR
-                    wait 3
+/$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId="1" Iters="1" Milliseconds="100"
+wait 5
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Error event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Error event message for ID=1 generated for an unregistered application" 
+endif
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, ERROR, 1
 
-                    /$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId = "7" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
+/$sc_$cpu_TST_EVS_SendEvtMsg ERROR EventId="7" Iters="1" Milliseconds="100"
+wait 5
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Error event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Error event message for ID=7 generated for an unregistered application" 
+endif
+ 
 write"*************************************************************"
-;
 write"  _________"
 write   "        |  Request generation of CRITICAL type event messages"
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 1,  CRIT
-                    wait 3
-;
-                    /$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId = "1" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                       ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
-                    ut_setupevt $sc, $cpu, TST_EVS, 7,  CRIT
-                    wait 3
-;
-                    /$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId = "7" Iters = "1" Milliseconds = "100"
-                    wait 4
-;
-                    if ($sc_$cpu_num_found_messages = 0) then
-                      ut_setrequirements cEVS3101, "P"
-write "cEVS3101 passed " 
-                    else
-                      ut_setrequirements cEVS3101, "F"
-write "cEVS3101 failed " 
-                    endif             
-;
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, CRIT, 1
+ 
+/$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId="1" Iters="1" Milliseconds="100"
+wait 5
+ 
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Critical event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Critical event message for ID=1 generated for an unregistered application" 
+endif             
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 7, CRIT, 1
+
+/$sc_$cpu_TST_EVS_SendEvtMsg CRIT EventId="7" Iters="1" Milliseconds="100"
+wait 5
+
+if ($sc_$cpu_find_event[1].num_found_messages = 0) then
+  ut_setrequirements cEVS3101, "P"
+  write "<*> Passed (3101) - No Critical event message generated." 
+else
+  ut_setrequirements cEVS3101, "F"
+  write "<!> Failed (3101) - Critical event message for ID=7 generated for an unregistered application" 
+endif             
+ 
 ENDPROC ; $sc_$cpu_evs_app_unreg

@@ -1,8 +1,8 @@
 /*
 **
-**  $Id: cfe_tbl_filedef.h 1.4 2010/11/15 10:00:47EST dkobe Exp  $
+**  $Id: cfe_tbl_filedef.h 1.6 2014/08/26 16:41:40GMT-05:00 sstrege Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -31,6 +31,10 @@
 **  Notes:
 **
 **  $Log: cfe_tbl_filedef.h  $
+**  Revision 1.6 2014/08/26 16:41:40GMT-05:00 sstrege 
+**  Updated CFE_TBL_FILDEF_MAX_NAME_LEN to be set equal to CFE_TBL_MAX_FULL_NAME_LEN
+**  Revision 1.5 2014/06/03 10:35:05EDT lwalling 
+**  Updated CFE_TBL_FILEDEF macro to include reference to OS_USED macro
 **  Revision 1.4 2010/11/15 10:00:47EST dkobe 
 **  Modified definition of CFE_TBL_FileDef_t to ensure longword alignment
 **  Revision 1.3 2010/10/25 15:01:11EDT jmdagost 
@@ -52,12 +56,8 @@
 
 #include "cfe.h"
 
-/* Compute number of additional bytes needed to make                 */
-/* CFE_TBL_MAX_FULL_NAME_LEN rounded up to nearest longword boundary */
-#define CFE_TBL_FILEDEF_MAX_NAME_ALIGN32  (CFE_TBL_MAX_FULL_NAME_LEN - ((CFE_TBL_MAX_FULL_NAME_LEN/4)*4))
-
-/* Allocate enough space for maximum table name length plus alignment bytes */
-#define CFE_TBL_FILDEF_MAX_NAME_LEN       (CFE_TBL_MAX_FULL_NAME_LEN + CFE_TBL_FILEDEF_MAX_NAME_ALIGN32)
+/* CFE_TBL_MAX_FULL_NAME_LEN is defined in cfe_tbl.h and includes alignment bytes */
+#define CFE_TBL_FILDEF_MAX_NAME_LEN       (CFE_TBL_MAX_FULL_NAME_LEN)
 
 /* Compute number of additional bytes needed to make               */
 /* CFE_FS_HDR_DESC_MAX_LEN rounded up to nearest longword boundary */
@@ -102,8 +102,7 @@ typedef struct
 \endcode
 */
   
-#define CFE_TBL_FILEDEF(ObjName, TblName, Desc, Filename) static CFE_TBL_FileDef_t CFE_TBL_FileDef={#ObjName, #TblName, #Desc, #Filename, sizeof(ObjName)};
-
+#define CFE_TBL_FILEDEF(ObjName, TblName, Desc, Filename) static OS_USED CFE_TBL_FileDef_t CFE_TBL_FileDef={#ObjName, #TblName, #Desc, #Filename, sizeof(ObjName)};
 
 /*************************************************************************/
 

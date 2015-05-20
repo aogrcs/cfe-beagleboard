@@ -1,4 +1,3 @@
-
 /*
 ** File:  cfe_es_perf.h
 **
@@ -10,8 +9,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 ** Purpose: Performance Analyzer data structures
 **
 ** Design Notes:
@@ -19,6 +16,8 @@
 ** References:
 **
 ** $Log: cfe_es_perf.h  $
+** Revision 1.5 2012/01/13 11:50:03GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.4 2010/11/04 17:18:30EDT jmdagost 
 ** Forced enumerations to start at zero.
 ** Revision 1.3 2009/07/28 17:15:27EDT jmdagost 

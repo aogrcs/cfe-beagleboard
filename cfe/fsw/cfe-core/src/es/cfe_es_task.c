@@ -1,7 +1,7 @@
 /*
 **  File:
 **  cfe_es_task.c
-**  $Id: cfe_es_task.c 1.11 2010/11/23 15:30:54EST jmdagost Exp  $
+**  $Id: cfe_es_task.c 1.16 2014/07/07 10:56:17GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the
 **      administrator of the National Aeronautics Space Administration.
@@ -10,8 +10,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
-**
-**
 **
 **  Purpose:
 **  cFE Executive Services (ES) task
@@ -23,6 +21,17 @@
 **  Notes:
 **
 ** $Log: cfe_es_task.c  $
+** Revision 1.16 2014/07/07 10:56:17GMT-05:00 acudmore 
+** Added comment to note that Mempool info has an unused parameter
+** Revision 1.15 2012/01/18 16:27:14GMT-05:00 jmdagost 
+** Modified init and no-op event messages to include OSAL revision and mission revision numbers, also added
+** those numbers to the ES HK tlm pkt.
+** Revision 1.14 2012/01/13 11:50:05EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.13 2012/01/10 13:35:47EST lwalling 
+** Add output filename to shell command packet structure
+** Revision 1.12 2011/11/30 14:11:19EST jmdagost 
+** Corrected CFE_MISSION_REV to CFE_PSP_MISSION_REV, as it should be.
 ** Revision 1.11 2010/11/23 15:30:54EST jmdagost 
 ** Added cFE Mission Rev to init message and telemetry, added PSP Mission Rev to init message.
 ** Revision 1.10 2009/08/04 13:34:05EDT aschoeni 
@@ -125,7 +134,7 @@
 */
 #include "cfe.h"
 #include "cfe_platform_cfg.h"
-#include "cfe_es_version.h"
+#include "cfe_version.h"
 #include "cfe_es_global.h"
 #include "cfe_es_apps.h"
 #include "cfe_es_events.h"
@@ -393,12 +402,14 @@ int32 CFE_ES_TaskInit(void)
     /*
     ** Initialize the version numbers in the ES Housekeeping pkt
     */
-    CFE_ES_TaskData.HkPacket.CFEMajorVersion    = CFE_MAJOR_VERSION;
-    CFE_ES_TaskData.HkPacket.CFEMinorVersion    = CFE_MINOR_VERSION;
-    CFE_ES_TaskData.HkPacket.CFERevision        = CFE_REVISION;
-    CFE_ES_TaskData.HkPacket.CFEMissionRevision = CFE_MISSION_REV;
-    CFE_ES_TaskData.HkPacket.OSALMajorVersion   = OS_MAJOR_VERSION;
-    CFE_ES_TaskData.HkPacket.OSALMinorVersion   = OS_MINOR_VERSION;
+    CFE_ES_TaskData.HkPacket.CFEMajorVersion     = CFE_MAJOR_VERSION;
+    CFE_ES_TaskData.HkPacket.CFEMinorVersion     = CFE_MINOR_VERSION;
+    CFE_ES_TaskData.HkPacket.CFERevision         = CFE_REVISION;
+    CFE_ES_TaskData.HkPacket.CFEMissionRevision  = CFE_MISSION_REV;
+    CFE_ES_TaskData.HkPacket.OSALMajorVersion    = OS_MAJOR_VERSION;
+    CFE_ES_TaskData.HkPacket.OSALMinorVersion    = OS_MINOR_VERSION;
+    CFE_ES_TaskData.HkPacket.OSALRevision        = OS_REVISION;
+    CFE_ES_TaskData.HkPacket.OSALMissionRevision = OS_MISSION_REV;
 
     /*
     ** Task startup event message.
@@ -414,11 +425,10 @@ int32 CFE_ES_TaskInit(void)
 
     Status = CFE_EVS_SendEvent(CFE_ES_INITSTATS_INF_EID,
                       CFE_EVS_INFORMATION,
-                      "Versions:cFE %d.%d.%d.%d, OSAL %d.%d, PSP %d.%d.%d.%d, chksm %d",
+                      "Versions:cFE %d.%d.%d.%d, OSAL %d.%d.%d.%d, PSP %d.%d.%d.%d, chksm %d",
                       CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV,                      
-                      CFE_ES_TaskData.HkPacket.OSALMajorVersion,
-                      CFE_ES_TaskData.HkPacket.OSALMinorVersion,
-                      CFE_PSP_MAJOR_VERSION,CFE_PSP_MINOR_VERSION,CFE_PSP_REVISION,CFE_MISSION_REV,
+                      OS_MAJOR_VERSION,OS_MINOR_VERSION,OS_REVISION,OS_MISSION_REV,
+                      CFE_PSP_MAJOR_VERSION,CFE_PSP_MINOR_VERSION,CFE_PSP_REVISION,CFE_PSP_MISSION_REV,
                       CFE_ES_TaskData.HkPacket.CFECoreChecksum);
     if ( Status != CFE_SUCCESS )
     {
@@ -679,9 +689,12 @@ void CFE_ES_NoopCmd(CFE_SB_MsgPtr_t Msg)
         */
         CFE_ES_TaskData.CmdCounter++;
         CFE_EVS_SendEvent(CFE_ES_NOOP_INF_EID, CFE_EVS_INFORMATION,
-                         "No-op command");
-    }
-
+                         "No-op command. Versions:cFE %d.%d.%d.%d, OSAL %d.%d.%d.%d, PSP %d.%d.%d.%d",
+                         CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV,                      
+                         OS_MAJOR_VERSION,OS_MINOR_VERSION,OS_REVISION,OS_MISSION_REV,
+                         CFE_PSP_MAJOR_VERSION,CFE_PSP_MINOR_VERSION,CFE_PSP_REVISION,CFE_PSP_MISSION_REV);
+    };
+        
 } /* End of CFE_ES_NoopCmd() */
 
 
@@ -771,8 +784,8 @@ void CFE_ES_ShellCmd(CFE_SB_MsgPtr_t Msg)
         /*
         ** Call the Shell command API
         */
-        Result = CFE_ES_ShellOutputCommand((char*)(cmd->CmdString));
-
+        Result = CFE_ES_ShellOutputCommand((char *) cmd->CmdString,
+                                           (char *) cmd->OutputFilename);
         /*
         ** Send appropriate event message.
         */
@@ -1955,6 +1968,9 @@ void CFE_ES_DeleteCDSCmd(CFE_SB_MsgPtr_t Msg)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */              
 /*                                                                 */              
 /* CFE_ES_TlmPoolStatsCmd() -- Telemeter Memory Pool Statistics    */              
+/*                                                                 */
+/* Note: The "Application" parameter of the                        */ 
+/*       CFE_ES_TlmPoolSatatsCmd_t structure is not used.          */
 /*                                                                 */              
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */              
                                                                                    

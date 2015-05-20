@@ -1,5 +1,13 @@
 /*
-** $Id: cfe_fs_api.c 1.6 2010/11/03 15:09:41EDT jmdagost Exp  $
+** $Id: cfe_fs_api.c 1.8 2014/08/22 17:06:20GMT-05:00 lwalling Exp  $
+**
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement.
 **
 ** Purpose:  cFE File Services (FS) library API source file
 **
@@ -8,6 +16,10 @@
 ** Notes:
 **
 ** $Log: cfe_fs_api.c  $
+** Revision 1.8 2014/08/22 17:06:20GMT-05:00 lwalling 
+** Change signed loop counters to unsigned
+** Revision 1.7 2012/01/13 12:11:28EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.6 2010/11/03 15:09:41EDT jmdagost 
 ** Added cfe.h include file.
 ** Revision 1.5 2010/10/25 17:51:05EDT jmdagost 
@@ -266,7 +278,7 @@ void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
 {
-   int    i,j;
+   uint32 i,j;
    int    StringLength;
    int    DirMarkIdx;
    int32  ReturnCode;

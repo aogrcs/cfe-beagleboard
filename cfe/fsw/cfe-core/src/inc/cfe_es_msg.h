@@ -1,18 +1,15 @@
 /*
 **  File: 
 **  cfe_es_msg.h
-**  $Id: cfe_es_msg.h 1.8 2010/11/24 09:18:25EST jmdagost Exp  $
-**
-**
+**  $Id: cfe_es_msg.h 1.13 2014/08/19 13:30:55GMT-05:00 sstrege Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
 **
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-** 
+**      This is governed by the NASA Open Source Agreement and may be used,
+**      distributed and modified only pursuant to the terms of that agreement. 
 **
 **
 **  Purpose:
@@ -26,6 +23,16 @@
 **
 **
 ** $Log: cfe_es_msg.h  $
+** Revision 1.13 2014/08/19 13:30:55GMT-05:00 sstrege 
+** Fixed doxygen warning - updated reference to OS_MAX_PRIORITY to MAX_PRIORITY
+** Revision 1.12 2012/01/18 16:28:56EST jmdagost 
+** Replaced Padding HK telemetry points with OSAL revision and mission revision.
+** Revision 1.11 2012/01/13 12:32:14EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.10 2012/01/10 13:35:13EST lwalling 
+** Add output filename to shell command packet structure
+** Revision 1.9 2011/01/18 13:42:37EST lwalling 
+** Fix incorrect structure name in Doxygen comment
 ** Revision 1.8 2010/11/24 09:18:25EST jmdagost 
 ** Removed unneeded padding byte from housekeeping packet.
 ** Revision 1.7 2010/11/23 15:29:23EST jmdagost 
@@ -211,7 +218,11 @@
 **  \par Description
 **       This command passes an ASCII string as a command line to the
 **       underlying realtime operating system shell.  Any response to
-**       the command is captured and echoed to the ground in telemetry.
+**       the command is both written to the shell command output file
+**       and sent as a series of shell command output telemetry packets.
+**
+**       If the shell command output filename argument is empty, then
+**       #CFE_ES_DEFAULT_SHELL_FILENAME will be used as the filename.
 **
 **  \cfecmdmnemonic \ES_SHELL
 **
@@ -229,16 +240,16 @@
 **  \par Error Conditions
 **       This command may fail for the following reason(s):
 **       - The command packet length is incorrect
-**       - Failure to create the <tt> CFE_ES_RAM_DISK_MOUNT_STRING/CFE_ES_ShellCmd.out </tt> temporary file
+**       - Failure to create the shell command output file
 **       - The shell command started with <tt> ES_ </tt> but was not one of the
 **         recognized cFE shell commands
-**       - There was an error while performing a #OS_lseek on the <tt> CFE_ES_RAM_DISK_MOUNT_STRING
+**       - There was an error while performing a #OS_lseek on the shell command output file
 **       - There was an error while redirecting the shell command response to the
-**         <tt> CFE_ES_RAM_DISK_MOUNT_STRING/CFE_ES_ShellCmd.out </tt> file
+**         shell command output file
 **
 **       Evidence of failure may be found in the following telemetry:
 **       - \b \c \ES_CMDEC - command error counter will increment
-**       - the #CFE_ES_BOOT_ERR_EID error event message will be generated
+**       - the #CFE_ES_SHELL_ERR_EID error event message will be generated
 **       - Additional information on the error should be found in the System Log
 **
 **  \par Criticality
@@ -277,7 +288,7 @@
 **       - The specified application entry point is a NULL string
 **       - The specified application name is a NULL string
 **       - The specified stack size is less than #CFE_ES_DEFAULT_STACK_SIZE
-**       - The specified priority is greater than #OS_MAX_PRIORITY
+**       - The specified priority is greater than MAX_PRIORITY (as defined in osapi.c)
 **       - The specified exception action is neither #CFE_ES_APP_EXCEPTION_RESTART_APP (0) or
 **         #CFE_ES_APP_EXCEPTION_PROC_RESTART (1)
 **       - The Operating System was unable to load the specified application file
@@ -562,7 +573,7 @@
 **  \cfecmdmnemonic \ES_WRITESYSLOG2FILE
 **
 **  \par Command Structure
-**       #CFE_ES_OverWriteSysLogCmd_t
+**       #CFE_ES_WriteSyslogCmd_t
 **
 **  \par Command Verification
 **       Successful execution of this command may be verified with 
@@ -1177,8 +1188,9 @@ typedef struct
 {
   uint8                 CmdHeader[CFE_SB_CMD_HDR_SIZE];    /**< \brief cFE Software Bus Command Message Header */
   uint8                 CmdString[CFE_ES_MAX_SHELL_CMD];   /**< \brief ASCII text string containing shell command
-                                                                to be executed. */
-
+                                                                to be executed */
+  uint8                 OutputFilename[OS_MAX_PATH_LEN];   /**< \brief Filename where shell command output is to
+                                                                be written */
 } CFE_ES_ShellCmd_t;
 
 /**
@@ -1483,10 +1495,10 @@ typedef struct
                                                  \brief OS Abstraction Layer Major Version Number */
   uint8                 OSALMinorVersion;   /**< \cfetlmmnemonic \ES_OSMINORVER 
                                                  \brief OS Abstraction Layer Minor Version Number */
-  uint8                 Padding1;           /**< \cfetlmmnemonic \ES_PAD1 
-                                                 \brief Byte Alignment Padding */
-  uint8                 Padding2;           /**< \cfetlmmnemonic \ES_PAD2 
-                                                 \brief Byte Alignment Padding */
+  uint8                 OSALRevision;       /**< \cfetlmmnemonic \ES_OSREVISION 
+                                                 \brief OS Abstraction Layer Revision Number */
+  uint8                 OSALMissionRevision;/**< \cfetlmmnemonic \ES_OSMISSIONREV 
+                                                 \brief OS Abstraction Layer MissionRevision Number */
 
   uint32                SysLogBytesUsed; /**< \cfetlmmnemonic \ES_SYSLOGBYTEUSED 
                                               \brief Total number of bytes used in system log */

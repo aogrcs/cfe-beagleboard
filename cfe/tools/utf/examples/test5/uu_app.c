@@ -9,7 +9,7 @@
 ** Notes:
 **
 ** $Log: uu_app.c  $
-** Revision 1.1 2008/04/17 08:09:20EDT ruperera 
+** Revision 1.1 2008/04/17 07:09:20GMT-05:00 ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/tools/utf/examples/test5/project.pj
 ** Revision 1.3 2007/06/05 08:24:50EDT wfmoleski 

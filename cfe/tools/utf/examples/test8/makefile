@@ -1,9 +1,9 @@
 ##############################################################################
 ## GNU Makefile for building UTF unit test utf_test8.
-##     ** $Date: 2009/10/20 13:36:56EDT $
+##     ** $Date: 2009/10/20 12:36:56GMT-05:00 $
 ##     ** $Revision: 1.4 $
 ##     ** $Log: makefile  $
-##     ** Revision 1.4 2009/10/20 13:36:56EDT wmoleski 
+##     ** Revision 1.4 2009/10/20 12:36:56GMT-05:00 wmoleski 
 ##     ** Updates to each example makefile to include the new cfe_psp filenames and remove the old utf_psp_support.c
 ##     ** file. Update to utf_test15.c to correct a typo. Updates to ActualOutput and ExpectedOutput where needed.
 ##     ** Revision 1.3 2009/10/13 15:23:38EDT wmoleski 

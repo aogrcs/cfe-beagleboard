@@ -7,10 +7,10 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2008/09/08 09:57:08EDT $
+** $Date: 2008/09/08 08:57:08GMT-05:00 $
 ** $Revision: 1.4 $
 ** $Log: utf_test12.c  $
-** Revision 1.4 2008/09/08 09:57:08EDT wfmoleski 
+** Revision 1.4 2008/09/08 08:57:08GMT-05:00 wfmoleski 
 ** Tests for the CFE_TIME function hooks and UTF return code capabilities were added.
 ** Revision 1.3 2008/09/04 15:19:15EDT wfmoleski 
 ** Source, output and makefile updates for the OS_Timer API tests.

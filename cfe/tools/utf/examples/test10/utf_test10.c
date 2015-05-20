@@ -7,10 +7,10 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2009/10/13 15:23:44EDT $
+** $Date: 2009/10/13 14:23:44GMT-05:00 $
 ** $Revision: 1.2 $
 ** $Log: utf_test10.c  $
-** Revision 1.2 2009/10/13 15:23:44EDT wmoleski 
+** Revision 1.2 2009/10/13 14:23:44GMT-05:00 wmoleski 
 ** 
 ** Revision 1.1 2008/04/17 08:08:57EDT ruperera 
 ** Initial revision

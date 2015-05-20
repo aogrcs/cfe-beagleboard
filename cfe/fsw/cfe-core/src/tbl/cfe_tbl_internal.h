@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_internal.h 1.6 2010/10/27 13:56:54EDT dkobe Exp  $
+** $Id: cfe_tbl_internal.h 1.8 2012/01/13 12:17:40GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,10 @@
 ** Notes:    
 **
 ** $Log: cfe_tbl_internal.h  $
+** Revision 1.8 2012/01/13 12:17:40GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.7 2011/12/28 14:02:59EST lwalling 
+** Add validation tests for spacecraft ID and processor ID to CFE_TBL_ReadHeaders()
 ** Revision 1.6 2010/10/27 13:56:54EDT dkobe 
 ** Added internal function prototype for sending notification messages
 ** Revision 1.5 2010/10/25 15:00:34EDT jmdagost 
@@ -509,6 +513,8 @@ void   CFE_TBL_NotifyTblUsersOfUpdate( CFE_TBL_RegistryRec_t *RegRecPtr );
 ** \retval #CFE_TBL_ERR_NO_TBL_HEADER       \copydoc CFE_TBL_ERR_NO_TBL_HEADER 
 ** \retval #CFE_TBL_ERR_BAD_CONTENT_ID      \copydoc CFE_TBL_ERR_BAD_CONTENT_ID
 ** \retval #CFE_TBL_ERR_BAD_SUBTYPE_ID      \copydoc CFE_TBL_ERR_BAD_SUBTYPE_ID
+** \retval #CFE_TBL_ERR_BAD_SPACECRAFT_ID   \copydoc CFE_TBL_ERR_BAD_SPACECRAFT_ID
+** \retval #CFE_TBL_ERR_BAD_PROCESSOR_ID    \copydoc CFE_TBL_ERR_BAD_PROCESSOR_ID
 **                     
 ******************************************************************************/
 int32 CFE_TBL_ReadHeaders( int32 FileDescriptor, 

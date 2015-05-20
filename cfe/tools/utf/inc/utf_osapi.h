@@ -1,8 +1,8 @@
 /*
 ** File: utf_osapi.h
-**  $Id: utf_osapi.h 1.5 2010/10/25 15:09:30EDT jmdagost Exp  $
+**  $Id: utf_osapi.h 1.6 2012/02/28 10:32:59GMT-05:00 wmoleski Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -16,9 +16,11 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:09:30EDT $
-** $Revision: 1.5 $
+** $Date: 2012/02/28 10:32:59GMT-05:00 $
+** $Revision: 1.6 $
 ** $Log: utf_osapi.h  $
+** Revision 1.6 2012/02/28 10:32:59GMT-05:00 wmoleski 
+** Added function hooks and Return Code handling and updated the examples to test these changes.
 ** Revision 1.5 2010/10/25 15:09:30EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 15:04:59EDT jmdagost 
@@ -62,10 +64,12 @@
 #define OS_QUEUEPUT_HOOK                 6
 #define OS_TASKDELETE_HOOK               7
 #define OS_BINSEMGIVE_HOOK               8
+#define OS_BINSEMCREATE_HOOK             9
 
 /* Return Code Stuff */
 #define CFE_OSAPI_BINSEMTIMEDWAIT_PROC   0
-#define NUM_OF_CFE_OSAPI_PROCS           1
+#define CFE_OSAPI_BINSEMCREATE_PROC      1
+#define NUM_OF_CFE_OSAPI_PROCS           2
 
 #define UTF_CFE_USE_DEFAULT_RETURN_CODE -500
 
@@ -129,5 +133,23 @@ OS_time_t UTF_double_to_hwtime(double time);
 **    This function prints the UTF Version being used.
 */
 void UTF_version(void);
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/* UTF_CFE_OSAPI_Set_Api_Return_Code() --                                     */
+/*  Set a return code for an api to a specified value.                     */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+int32 UTF_CFE_OSAPI_Set_Api_Return_Code(int32 ApiIndex, uint32 ReturnCode);
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/* UTF_CFE_OSAPI_Use_Default_Api_Return_Code() --                             */
+/* Use to return to default return code for an api.                        */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+int32 UTF_CFE_OSAPI_Use_Default_Api_Return_Code(int32 ApiIndex);
+
 
 #endif

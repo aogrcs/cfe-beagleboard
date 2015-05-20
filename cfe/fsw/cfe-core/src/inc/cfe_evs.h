@@ -2,7 +2,7 @@
 **
 **  Filename: cfe_evs.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -11,7 +11,7 @@
 **      distributed and modified only pursuant to the terms of that agreement. 
 **
 *
-**  $Id: cfe_evs.h 1.4 2010/10/26 17:01:08EDT jmdagost Exp  $
+**  $Id: cfe_evs.h 1.4 2010/10/26 16:01:08GMT-05:00 jmdagost Exp  $
 **
 **  Title:    Event Services API Application Library Header File
 **
@@ -23,10 +23,10 @@
 **  References:
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
-**  $Date: 2010/10/26 17:01:08EDT $
+**  $Date: 2010/10/26 16:01:08GMT-05:00 $
 **  $Revision: 1.4 $
 **  $Log: cfe_evs.h  $
-**  Revision 1.4 2010/10/26 17:01:08EDT jmdagost 
+**  Revision 1.4 2010/10/26 16:01:08GMT-05:00 jmdagost 
 **  Made CFE_EVS_ResetFilter() argument a signed int.
 **  Revision 1.3 2010/10/04 17:06:06EDT jmdagost 
 **  Cleaned up copyright symbol.

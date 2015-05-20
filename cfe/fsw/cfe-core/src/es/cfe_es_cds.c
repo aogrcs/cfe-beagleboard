@@ -11,8 +11,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:  
 **    This file implements the cFE Executive Services Critical Data Store functions.
@@ -26,6 +24,16 @@
 **  Modification History:
 **
 ** $Log: cfe_es_cds.c  $
+** Revision 1.7 2014/08/22 15:50:11GMT-05:00 lwalling 
+** Changed signed loop counters to unsigned
+** Revision 1.6 2014/05/05 13:21:40EDT acudmore 
+** Changed strncpy call to use correct define ( CFE_ES_CDS_MAX_FULL_NAME_LEN )
+** Revision 1.5 2014/04/23 15:25:52GMT-05:00 acudmore 
+** Reversed "if" clause order to check if array index is out of bounds before using it.
+** Revision 1.4 2012/02/08 16:24:11GMT-05:00 lwalling 
+** Added test for function result
+** Revision 1.3 2012/01/13 11:50:00EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.2 2009/06/10 09:08:53EDT acudmore 
 ** Converted OS_Mem* and OS_BSP* API to CFE_PSP_* API
 ** Revision 1.1 2008/04/17 08:05:03EDT ruperera 
@@ -327,7 +335,7 @@ int32 CFE_ES_RegisterCDSEx(CFE_ES_CDSHandle_t *HandlePtr, int32 BlockSize, const
            RegRecPtr->Table = CriticalTbl;
 
            /* Save CDS Name in Registry */
-           strncpy(RegRecPtr->Name, Name, CFE_TBL_MAX_FULL_NAME_LEN);
+           strncpy(RegRecPtr->Name, Name, CFE_ES_CDS_MAX_FULL_NAME_LEN);
                
            /* Return the index into the registry as the handle to the CDS */
            *HandlePtr = RegIndx;
@@ -496,7 +504,7 @@ int32 CFE_ES_InitializeCDS(uint32 CDSSize)
 int32 CFE_ES_InitCDSRegistry(void)
 {
     int32 Status = CFE_SUCCESS;
-    int32 i = 0;
+    uint32 i = 0;
     
     /* Initialize the local CDS Registry */
     CFE_ES_Global.CDSVars.MaxNumRegEntries = CFE_ES_CDS_MAX_NUM_ENTRIES;
@@ -729,7 +737,8 @@ int32 CFE_ES_RebuildCDS(void)
                                CDS_REG_SIZE_OFFSET, 
                                sizeof(CFE_ES_Global.CDSVars.MaxNumRegEntries));
                                
-    if (CFE_ES_Global.CDSVars.MaxNumRegEntries <= CFE_ES_CDS_MAX_NUM_ENTRIES)
+    if ((Status == OS_SUCCESS)  &&
+        (CFE_ES_Global.CDSVars.MaxNumRegEntries <= CFE_ES_CDS_MAX_NUM_ENTRIES))
     {
         Status = CFE_PSP_ReadFromCDS(&CFE_ES_Global.CDSVars.Registry,
                                    CDS_REG_OFFSET,
@@ -804,7 +813,7 @@ int32 CFE_ES_DeleteCDS(const char *CDSName, boolean CalledByTblServices)
             /* Check to see if the owning application is still active */
             /* First, extract the owning application name */
             i=0;
-            while ((RegRecPtr->Name[i] != '.') && (i < (OS_MAX_API_NAME-1)))
+            while ((i < (OS_MAX_API_NAME-1) && (RegRecPtr->Name[i] != '.')))
             {
                 OwnerName[i] = RegRecPtr->Name[i];
                 i++;

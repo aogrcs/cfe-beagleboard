@@ -1,8 +1,20 @@
 /*
-**  File:  
-**    cfe_es_devsvr.h
+** NOTE:
 **
+**   At the present time (01/18/11) this file is not part of the
+**   cFE ES application.  This file contains "in progress" code
+**   intended to be integrated into ES as part of a future build.
 **
+**   CFE_ES_RegisterDriver() and CFE_ES_DeviceDriver_t are symbols
+**   currently defined in the ES source code.  To avoid duplicate
+**   name confusion with the new versions of those symbols defined
+**   in this (not yet integrated) file, the symbol names have been
+**   temporarily changed to xCFE_ES_RegisterDriver() and
+**   xCFE_ES_DeviceDriver_t in this file.
+**/
+
+/*
+** $Id: cfe_es_devsvr.h 1.4 2012/01/13 11:50:01GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -11,8 +23,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:  
 **    This file contains definitions needed for the cFE ES Device Servers.
@@ -24,6 +34,10 @@
 **  Notes:
 ** 
 ** $Log: cfe_es_devsvr.h  $
+** Revision 1.4 2012/01/13 11:50:01GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.3 2011/01/19 14:21:41EST lwalling 
+** Fix conflicts with cfe_es_devsvr function and structure names
 ** Revision 1.2 2010/09/21 16:07:13EDT jmdagost 
 ** Removed declaration for CFE_ES_DevSvrSem (moved to source file).
 ** Added file prolog.
@@ -32,6 +46,17 @@
 
 #ifndef _cfe_es_devsvr_
 #define _cfe_es_devsvr_
+
+
+
+
+
+
+
+
+
+
+
 
 #include "cfe.h"
 #include "cfe_es_task.h"
@@ -73,7 +98,7 @@ typedef struct
     uint32                      TaskPriority;
     uint32                      StackSize;
     char                        Name[CFE_ES_MAX_DEVDVR_NAME_LEN];
-} CFE_ES_DeviceDriver_t;
+} xCFE_ES_DeviceDriver_t;
 
 /* struct for Driver Registry Table */
 typedef struct
@@ -101,7 +126,7 @@ CFE_ES_DriverRegistry_t CFE_ES_DeviceDriverRegistry [CFE_ES_DRIVER_REG_MAX_SIZE]
 
 int32 CFE_ES_DeviceServerInit(void); 
 
-int32 CFE_ES_RegisterDriver(uint32 *DriverIdPtr, CFE_ES_DeviceDriver_t *DriverDescPtr);
+int32 xCFE_ES_RegisterDriver(uint32 *DriverIdPtr, xCFE_ES_DeviceDriver_t *DriverDescPtr);
 
 int32 CFE_ES_GenericIntTask(uint32 DeviceDriverHandle);
 

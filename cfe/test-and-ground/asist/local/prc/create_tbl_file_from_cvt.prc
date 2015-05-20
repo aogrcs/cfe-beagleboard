@@ -1,4 +1,4 @@
-proc create_tbl_file_from_cvt (processor_id, application_id, fdescription, filename, tblname, start_mnemonic, end_mnemonic)
+proc create_tbl_file_from_cvt (processor_id, application_id, fdescription, filename, tblname, start_mnemonic, end_mnemonic, spacecraft_id)
 ;
 local logging = %liv(log_procedure)
 %liv (log_procedure) = FALSE
@@ -21,12 +21,15 @@ local logging = %liv(log_procedure)
 ;                  check.                                  
 ; 08JAN08          Removed the _BETA from Get_File_to_CVT     WFM
 ;		   since the new ASIST version is not a BETA.
+; 08JAN08          Added spacecraft_id argument.              WFM
 ;
 ON ERROR RESUME
 
 if (%nargs < 7) then
-  error "USAGE : CREATE_TBL_FILE_FROM_CVT processor_id, application_id, fdescription, filename, tblname, start_mnemonic, end_mnemonic"
+  error "USAGE : CREATE_TBL_FILE_FROM_CVT processor_id, application_id, fdescription, filename, tblname, start_mnemonic, end_mnemonic, spacecraft_id"
   goto ERROR_RETURN
+elseif (%nargs = 7) then
+  spacecraft_id="66"
 endif
 
 local supress
@@ -37,10 +40,10 @@ local tbl_appid = "P" & %hex(telemetry_attr(start_mnemonic, "APID"),4)
 local content_type="1665549617"
 local sub_type=8
 local length=12
-local spacecraft_id="66"
-local processor_id
-local application_id
-local fdescription
+;;local spacecraft_id="66"
+;;local processor_id
+;;local application_id
+;;local fdescription
 local tdescription
 local temp_filename = %lower(filename) & ".tmp"
 local start_offset =  (telemetry_attr(start_mnemonic, "packet_offset"))

@@ -1,5 +1,5 @@
 /******************************************************************************
-**  $Id: cfe_tbl_verify.h 1.4 2010/10/25 15:00:30EDT jmdagost Exp  $
+**  $Id: cfe_tbl_verify.h 1.6 2012/01/13 12:17:41GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,10 @@
 **    parameters.
 **
 **  $Log: cfe_tbl_verify.h  $
+**  Revision 1.6 2012/01/13 12:17:41GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.5 2012/01/04 13:48:15EST lwalling 
+**  Add verification of CFE_TBL_VALID_SCID_COUNT and CFE_TBL_VALID_PRID_COUNT
 **  Revision 1.4 2010/10/25 15:00:30EDT jmdagost 
 **  Corrected bad apostrophe in prologue.
 **  Revision 1.3 2010/10/04 15:19:37EDT jmdagost 
@@ -56,6 +60,23 @@
 #if CFE_TBL_MAX_CRITICAL_TABLES > CFE_ES_CDS_MAX_NUM_ENTRIES
     #error CFE_TBL_MAX_CRITICAL_TABLES cannot be greater than CFE_ES_CDS_MAX_NUM_ENTRIES!
 #endif
+
+/*
+** Any modifications to the "_VALID_" limits defined below must match
+** source code changes made to the function CFE_TBL_ReadHeaders() in
+** the file "cfe_tbl_internal.c".
+*/
+#if CFE_TBL_VALID_SCID_COUNT < 0    
+    #error CFE_TBL_VALID_SCID_COUNT must be greater than or equal to zero
+#elif CFE_TBL_VALID_SCID_COUNT > 2    
+    #error CFE_TBL_VALID_SCID_COUNT must be less than or equal to 2
+#endif    
+
+#if CFE_TBL_VALID_PRID_COUNT < 0    
+    #error CFE_TBL_VALID_PRID_COUNT must be greater than or equal to zero
+#elif CFE_TBL_VALID_PRID_COUNT > 4    
+    #error CFE_TBL_VALID_PRID_COUNT must be less than or equal to 4
+#endif    
 
 /* the following check is removed because some compilers cannot handle the sizeof operator in a #if statement */
 /*

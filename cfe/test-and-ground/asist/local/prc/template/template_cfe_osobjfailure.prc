@@ -23,12 +23,10 @@ PROC $sc_$cpu_cfe_osobjfailure
 ;	      in the "delivered" cFE Core fsw.
 ;
 ;  Requirements Tested
-;  	Based on Core Flight Executive Software Requirements 
-;
-;	cES1515:	Upon Processor Reset, the cFE shall create all operating
-;			system objects required by the cFE.
-;	cES1515.1:	If the creation of the operating system object fails,
-;			the cFE shal perform a power-on reset.
+;    cES1515	Upon Processor Reset, the cFE shall create all operating system
+;		objects required by the cFE.
+;    cES1515.1	If the creation of the operating system object fails, the cFE
+;		shall perform a power-on reset.
 ;
 ;  Assumptions and Constraints
 ;
@@ -43,15 +41,12 @@ PROC $sc_$cpu_cfe_osobjfailure
 ;	Name					Description
 ;  	ut_pfindicate		Directive to print the pass fail status
 ;				of a particular requirement number.
-;  	ut_setupevt		Directive to look for a particular event
-;				and increment a value in the CVT to
-;				indicate receipt.
 ;  	ut_setrequirements	Directive to status cfe requirements.
-;	ut_sendcmd     		Directive to send EVS commands Verifies command
-;				processed and command error counters.
 ;
 ;  Expected Test Results and Analysis
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
 #include "ut_statusdefs.h"
@@ -59,6 +54,8 @@ PROC $sc_$cpu_cfe_osobjfailure
 #include "cfe_es_resetTypes.h"
 #include "cfe_evs_events.h"
 #include "cfe_time_events.h"
+
+%liv (log_procedure) = logging
 
 ;**********************************************************************
 ; Setup requirements checking
@@ -89,7 +86,6 @@ local cfe_requirements[0 .. ut_req_array_size] = ["ES1515.1"]
 
 write ";*********************************************************************"
 write "; Step 1.0: cFE Image verification "
-write ";*********************************************************************"
 write ";*********************************************************************"
 write "; Step 1.1: Load the test image and restart $CPU"
 write ";*********************************************************************"

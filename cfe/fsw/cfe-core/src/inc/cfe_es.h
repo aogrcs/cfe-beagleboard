@@ -2,10 +2,10 @@
 **
 **  File: 
 **  cfe_es.h
-**  $Id: cfe_es.h 1.12 2010/11/05 15:54:27EDT aschoeni Exp  $
+**  $Id: cfe_es.h 1.14 2014/08/19 13:32:01GMT-05:00 sstrege Exp  $
 **
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -23,9 +23,13 @@
 **
 **	Notes:
 **
-**  $Date: 2010/11/05 15:54:27EDT $
-**  $Revision: 1.12 $
+**  $Date: 2014/08/19 13:32:01GMT-05:00 $
+**  $Revision: 1.14 $
 **  $Log: cfe_es.h  $
+**  Revision 1.14 2014/08/19 13:32:01GMT-05:00 sstrege 
+**  Fixed doxygen warnings
+**  Revision 1.13 2011/07/15 14:28:34EDT lwalling 
+**  Removed const qualifier from CounterName argument to CFE_ES_RegisterGenCounter()
 **  Revision 1.12 2010/11/05 15:54:27EDT aschoeni 
 **  Added Generic Counter API to ES
 **  Revision 1.11 2010/11/01 16:03:10EDT jmdagost 
@@ -1426,7 +1430,7 @@ void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit);
 ** \sa #CFE_ES_IncrementGenCounter, #CFE_ES_DeleteGenCounter, #CFE_ES_SetGenCount, #CFE_ES_GetGenCount, #CFE_ES_GetGenCounterIDByName
 **
 ******************************************************************************/
-int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, const char *CounterName);
+int32 CFE_ES_RegisterGenCounter(uint32 *CounterIdPtr, char *CounterName);
 
 /*****************************************************************************/
 /**
@@ -1484,7 +1488,7 @@ int32 CFE_ES_IncrementGenCounter(uint32 CounterId);
 **
 ** \param[in]   CounterId    The Counter to be set.
 **
-** \param[in]   Counter      The new value of the Counter.
+** \param[in]   Count        The new value of the Counter.
 **
 ** \returns
 ** \retcode #CFE_SUCCESS                \retdesc \copydoc CFE_SUCCESS            \endcode
@@ -1508,7 +1512,7 @@ int32 CFE_ES_SetGenCount(uint32 CounterId, uint32 Count);
 **
 ** \param[in]   CounterId    The Counter to get the value from.
 **
-** \param[in]   *Counter     The value of the Counter.
+** \param[in]   *Count     The value of the Counter.
 **
 ** \returns
 ** \retcode #CFE_SUCCESS                \retdesc \copydoc CFE_SUCCESS            \endcode

@@ -12,8 +12,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
 ** 
-**
-**
 **  Purpose:
 **  This file contains the Internal interface for the cFE Critical Data Store 
 **  memory pool functions.
@@ -24,6 +22,8 @@
 **
 **  Notes:
 **  $Log: cfe_es_cds_mempool.h  $
+**  Revision 1.4 2012/01/13 11:50:00GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.3 2010/10/04 17:00:56EDT jmdagost 
 **  Cleaned up copyright symbol.
 **  Revision 1.2 2010/10/04 15:36:30EDT jmdagost 

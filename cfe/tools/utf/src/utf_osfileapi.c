@@ -1,6 +1,6 @@
 /*
 ** File: utf_osfileapi.c
-** $Id: utf_osfileapi.c 1.10 2010/10/25 15:06:38EDT jmdagost Exp  $
+** $Id: utf_osfileapi.c 1.12 2014/04/17 08:14:46GMT-05:00 wmoleski Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,9 +18,13 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:38EDT $
-** $Revision: 1.10 $
+** $Date: 2014/04/17 08:14:46GMT-05:00 $
+** $Revision: 1.12 $
 ** $Log: utf_osfileapi.c  $
+** Revision 1.12 2014/04/17 08:14:46GMT-05:00 wmoleski 
+** Added the OS_rewidDir and OS_fsBytesFree functions to the UTF source
+** Revision 1.11 2012/01/13 12:52:01EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.10 2010/10/25 15:06:38EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.9 2010/10/04 14:57:52EDT jmdagost 
@@ -1182,6 +1186,20 @@ os_dirent_t *  OS_readdir (os_dirp_t directory)
 
 } /* end OS_readdir */
 
+/*--------------------------------------------------------------------------------------
+    Name: OS_rewinddir
+
+    Purpose: Rewinds the directory pointer
+
+    Returns: N/A
+---------------------------------------------------------------------------------------*/
+void  OS_rewinddir (os_dirp_t directory )
+{
+    if (directory != NULL)
+    {
+       rewinddir( directory);
+    }
+}
 
 /*--------------------------------------------------------------------------------------
     Name: OS_rmdir

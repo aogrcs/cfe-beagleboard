@@ -26,6 +26,8 @@
 **  Modification History:
 **
 ** $Log: utf_cfe_es_cds.c  $
+** Revision 1.7 2012/01/13 12:51:56GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.6 2010/10/25 15:06:42EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.5 2010/10/04 14:57:05EDT jmdagost 

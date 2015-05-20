@@ -11,8 +11,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:  
 **    This file contains definitions needed for the internal shell functions.
@@ -25,6 +23,10 @@
 ** 
 **  Modification History:
 **  $Log: cfe_es_shell.h  $
+**  Revision 1.5 2012/01/13 11:50:04GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.4 2012/01/10 13:36:02EST lwalling 
+**  Add output filename to shell command packet structure
 **  Revision 1.3 2010/10/04 17:02:03EDT jmdagost 
 **  Cleaned up copyright symbol.
 **  Revision 1.2 2010/10/04 15:37:03EDT jmdagost 
@@ -65,7 +67,7 @@
 ** Operating System Shell function
 */
 
-int32 CFE_ES_ShellOutputCommand(char * CmdString);
+int32 CFE_ES_ShellOutputCommand(char * CmdString, char *Filename);
 
 int32 CFE_ES_ListApplications(int32 fd);
 int32 CFE_ES_ListTasks(int32 fd);

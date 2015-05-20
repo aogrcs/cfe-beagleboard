@@ -138,7 +138,6 @@ PROC $sc_$cpu_evs_bin_fltr
 ;			     registered Event ID)
 ;			f)   Application Binary Filter Counters (one per   
 ;    			     registered Event
-;
 ;   cEVS3009	Upon receipt of Command, the cFE shall set the Command-specified
 ;		Application's Event Message Sent Counter to zero. 
 ;   cEVS3010	Upon receipt of Command, the cFE shall set an Application's
@@ -261,6 +260,10 @@ PROC $sc_$cpu_evs_bin_fltr
 ;     06/20/07   Walt Moleski	    Updated for cFE Build 4.1.0.
 ;     08/12/09   Walt Moleski	    Updated to use the event definitions for
 ;				    each application rather than hard-coded IDs
+;     10/13/11   Walt Moleski	    Updated to use variables for RAM disk and
+;				    some general clean-up
+;     09/17/14   Walt Moleski	    Updated to work with cFE6.4.0.0 and the fact
+;				    that the SCH application is running.
 ;
 ;******************************************************************************
 ;     Procedures/Utilities called
@@ -271,7 +274,7 @@ PROC $sc_$cpu_evs_bin_fltr
 ;				capture the log file.
 ;      ut_pfindicate       	Directive to print the pass fail status of a
 ;				particular requirement number.
-;      ut_setupevt         	Directive to look for a particular event and
+;      ut_setupevents         	Directive to look for a particular event and
 ;				increment a value in the CVT to indicate receipt
 ;      ut_tlmupdate        	Procedure to wait for a specified telemetry
 ;				point to update.
@@ -287,9 +290,9 @@ PROC $sc_$cpu_evs_bin_fltr
 ;      ut_setrequirements  	Directive to set cfe requirements.
 ;
 ;******************************************************************************
-;
-;   Variables Definition:
-;    
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
+
 #include "cfe_platform_cfg.h"
 #include "cfe_mission_cfg.h"
 #include "ut_statusdefs.h"       
@@ -299,18 +302,51 @@ PROC $sc_$cpu_evs_bin_fltr
 #include "cfe_sb_events.h"
 #include "cfe_time_events.h"
 #include "cfe_tbl_events.h"
+ 
+%liv (log_procedure) = logging
+
+;;#include "cfe_evs_bin_fltr_reqts.h" 
+;; all the defines below were moved from the cfe_evs_bin_fltr_reqts.h
+#define cEVS3003	0
+#define cEVS3004 	1
+#define cEVS3009 	2
+#define cEVS3010 	3
+#define cEVS3011 	4
+#define cEVS3012 	5
+#define cEVS3019 	6
+#define cEVS3019_1 	7
+#define cEVS3019_2 	8
+#define cEVS3020 	9
+#define cEVS3020_1 	10
+#define cEVS3100 	11
+#define cEVS3100_1 	12
+#define cEVS3103 	13
+#define cEVS3103_3 	14
+#define cEVS3103_3_1 	15
+#define cEVS3104 	16
+#define cEVS3104_1 	17
+#define cEVS3105 	18
+#define cEVS3105_1 	19
+#define cEVS3106 	20
+#define cEVS3107 	21
+#define cEVS3302 	22
+
+global ut_req_array_size = 22
+global ut_requirement[0 .. ut_req_array_size]
+ 
 ;
-#include "cfe_evs_bin_fltr_reqts.h" 
-;
+;   Variables Definition:
+;    
 FOR i = 0 to ut_req_array_size DO
    ut_requirement[i] = "U"
 ENDDO 
-;
-local cfe_requirements[0..ut_req_array_size] = ["cEVS3003", "cEVS3004", "cEVS3009", "cEVS3010", "cEVS3011", ;;
-"cEVS3012", "cEVS3019", "cEVS3019_1", "cEVS3019_2", "cEVS3020", "cEVS3020_1", "cEVS3100", "cEVS3100_1", ;;
-"cEVS3103", "cEVS3103_3", "cEVS3103_3_1", "cEVS3104", "cEVS3104_1", ;;
-"cEVS3105", "cEVS3105_1", "cEVS3106", "cEVS3107", "cEVS3302"]
-;
+ 
+local cfe_requirements[0..ut_req_array_size] = ["cEVS3003","cEVS3004", ;;
+"cEVS3009","cEVS3010","cEVS3011","cEVS3012","cEVS3019","cEVS3019_1", ;;
+"cEVS3019_2","cEVS3020","cEVS3020_1","cEVS3100","cEVS3100_1","cEVS3103", ;;
+"cEVS3103_3","cEVS3103_3_1","cEVS3104","cEVS3104_1","cEVS3105","cEVS3105_1", ;;
+"cEVS3106","cEVS3107","cEVS3302"]
+ 
 local i = 0 
 local j = 0
 local cfe_apps = 0
@@ -340,25 +376,27 @@ local TSTEVSevtmsgsentctr = 0
 local evs_cmdcnt 
 local evs_errcnt
 local dest_pathname 
-;
-write "************************************************************************"
-write "Step 1.0:    Setup/Initialization"
-write "************************************************************************"
-write "Step 1.1:    Power On"
-;                    Expect the following defaults
-;                    Evt Msg Format = LONG
-;                    Output Port Enable = 1
-;                    Logging Mode = OVERWRITE
-;                    Evt Msg Generation Status = ENABLE
-;                    Evt Msg Types
-;                    DEBUG DISABLE 
-;                    INFO ENABLE
-;                    ERROR  ENABLE
-;                    CRITICAL ENABLE and 
-;                    all requirements set to their initial value of "U" 
-;                    for undefined.
-write "************************************************************************"
-;
+
+local ramDir = "RAM:0"
+ 
+write ";***********************************************************************"
+write "; Step 1.0: Setup/Initialization"
+write ";***********************************************************************"
+write "; Step 1.1: Power On"
+;                  Expect the following defaults
+;                  Evt Msg Format = LONG
+;                  Output Port Enable = 1
+;                  Logging Mode = OVERWRITE
+;                  Evt Msg Generation Status = ENABLE
+;                  Evt Msg Types
+;                  DEBUG DISABLE 
+;                  INFO ENABLE
+;                  ERROR  ENABLE
+;                  CRITICAL ENABLE and 
+;                  all requirements set to their initial value of "U" 
+;                  for undefined.
+write ";***********************************************************************"
+ 
 /$SC_$CPU_ES_POWERONRESET
 wait 10
                                                                                 
@@ -386,8 +424,8 @@ for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 ;
-write "************************************************************************"
-write "Step 1.2:  Retrieve application data"
+write ";***********************************************************************"
+write "; Step 1.2: Retrieve application data"
 ;         Assign the, "A" value to requirement cEVS3004 which indicates that
 ;         further analysis of the output from the app data file is required
 ;         Expect default apps, but no test application registered.
@@ -396,10 +434,10 @@ write "Step 1.2:  Retrieve application data"
 ;             INFO ENABLE
 ;             ERROR  ENABLE
 ;             CRITICAL ENABLE
-write "************************************************************************"
+write ";***********************************************************************"
 cmdexctr =$SC_$CPU_EVS_CMDPC + 1
 
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_1_2.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_1_2.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
 
@@ -418,7 +456,7 @@ if (ut_tw_status = UT_TW_Success) then
     endif
   enddo
 else
-  write " >>> ALERT: Error result from 'Write evs app file' cmd."
+  write " <!> Failed - Did not write the evs app file"
 endif
 
 write " TEMSC Total Evt Msg Sent Ctr = ", $SC_$CPU_EVS_MSGSENTC
@@ -463,6 +501,8 @@ enddo
 
 write " >>> Default Event Msg Types Statuses"
 
+;; This logic assumes that the CFE_ applications are reported first.
+;; If this is not true, this test will fail
 for i = 1 to cfe_apps do 
   write " >>> ", $SC_$CPU_EVS_AppData[i].AppName
   write  " DEBUG  ",  p@$SC_$CPU_EVS_AppData[i].EvtTypeAF.Debug  
@@ -471,83 +511,99 @@ for i = 1 to cfe_apps do
   write  " CRIT   ",  p@$SC_$CPU_EVS_AppData[i].EvtTypeAF.Crit   
 enddo
 
-;
-write "************************************************************************"
-write "Step 1.3:    Set up initial condition"
-write "************************************************************************"
-write "Step 1.3.1:  Enable DEBUG event msg type for registered applications"
-write "             with only one command"
-write "************************************************************************"
-; 
-lclevtmsgsentctr = lclevtmsgsentctr + 1
+write ";***********************************************************************"
+write "; Step 1.3: Set up initial condition"
+write ";***********************************************************************"
+write "; Step 1.3.1: Enable DEBUG event msg type for registered applications"
+write ";             with only one command"
+write ";***********************************************************************"
+ 
+;; cFE6.4.0.0: With SCH sending ID=16 events, the total cannot be verified here
+;; The checks are made in other steps and commented out here
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC + 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC {lclevtmsgsentctr}
 
-if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-else
-  write " ALERT: failure at ENABLE DEBUG evt msg type "
-endif
+;;EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
-;      the counters increment because execution of ENAAPPEVTTYPE generates an evt msg "
+; the counters increment because execution of ENAAPPEVTTYPE generates an evt msg
+;;if ($SC_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;;  write "<*> Passed (3105) - Message sent counters are correct."
+;;  ut_setrequirements cEVS3105, "P"
+;;else 
+;;  ut_setrequirements cEVS3105, "F"
+;;  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+;;  lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+;;endif
+;;
+;;if ($SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+;;  write "<*> Passed (3104) - Message counters are correct."
+;;  ut_setrequirements cEVS3104, "P"
+;;else 
+;;  ut_setrequirements cEVS3104, "F"
+;;  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+;;endif
 
-if ($SC_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check " , $SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
-endif
+;; Disable SCH Debug Events if SCH is running
+local SCHisRunning = FALSE
+for i = 1 to CFE_ES_MAX_APPLICATIONS do
+  if ($SC_$CPU_EVS_AppData[i].AppName = "SCH") then 
+    SCHisRunning = TRUE
+  endif
+enddo
 
-if ($SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ", $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+if (SCHisRunning = TRUE) then
+  cmdexctr =$SC_$CPU_EVS_CMDPC + 1
+
+  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
+
+  ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr} 
 endif
 
 write " >>> EVS evt msg sent ctr = ", $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 write " >>> TEMSC Total Evt Msg Sent Ctr = ", $SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 1.3.2:  Retrieve application data"
+write ";***********************************************************************"
+write "; Step 1.3.2: Retrieve application data"
 ;         Expect Event Msg Type DEBUG status ENABLE for registered apps
 ;         Until otherwise stated, expect total evt msg sent and CFE_EVS app evt 
 ;         msg sent ctr to increment by two when retrieving application data.
 ;
 ;         Note: the evt msg type must be enabled for an evt msg of such type to
 ;               be generated
-write "************************************************************************"
+write ";***********************************************************************"
 
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+;;lclevtmsgsentctr = lclevtmsgsentctr + 1
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC + 1
+EVSevtmsgsentctr =  $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_132.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_132.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  write "<!> Failed at tlm wait at get file to CVT"
 endif   
 
 if ($SC_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Message sent counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - Message counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
 write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
@@ -558,20 +614,19 @@ for i = 1 to cfe_apps do
   write " >>> For App name ",$SC_$CPU_EVS_AppData[i].AppName
   write " >>> DEBUG evt msg type status is ", p@$SC_$CPU_EVS_AppData[i].EvtTypeAF.Debug
   if ($sc_$CPU_EVS_AppData[i].EvtTypeAF.Debug <> 1) then
-    write " <<< ALERT: Incorrect Evt Msg type DEBUG status"
+    write "<!> Failed - Incorrect Evt Msg type DEBUG status"
   endif
 enddo
-;
+ 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
+ 
 write" >>> Initial Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
-;
+ 
 ;-------------------------------------------------------------------------------
-;
 ;                   APP    No-op Evt ID 
 ;                ------------------------
 ;                   EVS       N/REG
@@ -579,7 +634,7 @@ enddo
 ;                   ES        3
 ;                   TIME      N/REG
 ;                   TBL       N/REG
-;
+ 
 write ";***********************************************************************"
 write "; Step 1.3.3: For the CFE_SB app, check if there are any filters "
 write ";	     registered for EID=0. If so, delete them."
@@ -588,12 +643,12 @@ write ";***********************************************************************"
 for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[j].EvtId = 0) then
     write "CFE_SB invalid filter found. Removing it."
-    ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG
+    ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1
 
     /$SC_$CPU_EVS_DELEVTFLTR APPLICATION="CFE_SB" EVENT_ID=0
     wait 5
 
-    ut_tlmwait $SC_$CPU_num_found_messages, 1
+    ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
     if (ut_tw_status = UT_TW_Success) then
       write "<*> Passed - Removed CFE_SB Event Filter for EID =0"
       EVSevtmsgsentctr = EVSevtmsgsentctr + 1
@@ -603,217 +658,227 @@ for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   endif
 enddo
 
-write "************************************************************************"
-write "Step 2.0:    Test Binary Filter Behavior for Registered Applications"
-write "************************************************************************"
-write "Step 2.1:    Add filters for no-op evt msgs"
-write"              for apps that do not have them registered for filtering"
-write "************************************************************************"
-;
+write ";***********************************************************************"
+write "; Step 2.0: Test Binary Filter Behavior for Registered Applications"
+write ";***********************************************************************"
+write "; Step 2.1: Add filters for no-op evt msgs for apps that do not have "
+write ";           them registered for filtering"
+write ";***********************************************************************"
+ 
 lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
-wait 4
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 local evtID = CFE_EVS_NOOP_EID
-Ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_EVS"" EVENT_ID=evtID EVENT_MASK=0"
+ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_EVS"" EVENT_ID=evtID EVENT_MASK=0"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-IF (ut_sc_status = UT_SC_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+IF (ut_tw_status = UT_Success) THEN
+  lclevtmsgsentctr = lclevtmsgsentctr + 1
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
-    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-      ut_setrequirements cEVS3105, "P"
-    else 
-      ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC 
-      lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
-    endif
-
-    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check"
-    endif 
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Message sent counters are correct."
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
+
+  if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counters are correct."
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif 
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - EVS Add Filter command."
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed at evt msg for EVS add filter check" 
+  write "<!> Failed (3019) - EVS add Filter command" 
 endif 
 
 write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+ 
+;; Set the values to the actuals in order to avoid accumulating errors
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
-wait 4
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 evtID = CFE_SB_CMD0_RCVD_EID
 Ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=evtID EVENT_MASK=0"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-IF (ut_sc_status = UT_SC_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+IF (ut_tw_status = UT_Success) THEN
+  lclevtmsgsentctr = lclevtmsgsentctr + 1
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
-    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-      ut_setrequirements cEVS3105, "P"
-    else 
-      ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC 
-      lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
-    endif
-
-    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check"
-    endif 
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Message sent counters are correct."
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
+
+  if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counters are correct."
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif  
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - SB Add Filter command."
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed at evt msg for SB add filter check" 
+  write "<!> Failed (3019) - SB add Filter command" 
 endif 
 
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+ 
+;; Set the values to the actuals in order to avoid accumulating errors
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $SC, $CPU, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
-wait 4
+ut_setupevents $SC, $CPU, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 evtID = CFE_ES_NOOP_INF_EID
 Ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_ES"" EVENT_ID=evtID EVENT_MASK=0"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-IF (ut_sc_status = UT_SC_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+IF (ut_tw_status = UT_Success) THEN
+  lclevtmsgsentctr = lclevtmsgsentctr + 1
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
-    if ($SC_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-      ut_setrequirements cEVS3105, "P"
-    else 
-      ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC 
-      lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
-    endif
-
-    if ($SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check"
-    endif 
+  if ($SC_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Message sent counters are correct."
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
+
+  if ($SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counters are correct."
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif 
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - ES Add Filter command."
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed at evt msg for ES add filter check" 
+  write "<!> Failed (3019) - ES add Filter command" 
 endif 
 
 write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
-;
+;; Set the values to the actuals in order to avoid accumulating errors
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
-wait 4
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 evtID = CFE_TIME_NOOP_EID
 Ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_TIME"" EVENT_ID=evtID EVENT_MASK=0"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-IF (ut_sc_status = UT_SC_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+IF (ut_tw_status = UT_Success) THEN
+  lclevtmsgsentctr = lclevtmsgsentctr + 1
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
-    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-      ut_setrequirements cEVS3105, "P"
-    else 
-      ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC 
-      lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
-    endif
-
-    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check"
-    endif 
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Message sent counters are correct."
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
+
+  if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counters are correct."
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif 
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - TIME Add Filter command."
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed at evt msg for TBL add filter check" 
+  write "<!> Failed (3019) - TIME add Filter command" 
 endif 
 
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+ 
+;; Set the values to the actuals in order to avoid accumulating errors
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
-wait 4
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 evtID = CFE_TBL_NOOP_INF_EID
 Ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_TBL"" EVENT_ID=evtID EVENT_MASK=0"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-IF (ut_sc_status = UT_SC_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+IF (ut_tw_status = UT_Success) THEN
+  lclevtmsgsentctr = lclevtmsgsentctr + 1
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
-    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-      ut_setrequirements cEVS3105, "P"
-    else 
-      ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC 
-      lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
-    endif
-
-    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check"
-    endif 
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Message sent counters are correct."
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
+
+  if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counters are correct."
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif 
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - TBL Add Filter command."
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed at evt msg for TBL add filter check" 
+  write "<!> Failed (3019) - TIME add Filter command" 
 endif 
 
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
-;
-write "************************************************************************"
-write "Step 2.1.1: Retrieve applications data"
+;; Set the values to the actuals in order to avoid accumulating errors
+lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+
+write ";***********************************************************************"
+write "; Step 2.1.1: Retrieve applications data"
 ;
 ;                  Expect: for registered apps: their No-op event messages 
 ;                  are registered for filtering as follows
@@ -832,43 +897,40 @@ write "Step 2.1.1: Retrieve applications data"
 ;            cEVS3104d, cEVS3104e and 
 ;	     cEVS3104f (this is the first part of their test, 
 ;                     they are fully verified later)
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_211.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_211.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
-endif   
+  write "<!> Failed -  Could not retrieve evs app data file"
+endif
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Message sent counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+  write "<*> Passed (3104) - Message counts correct"
   ut_setrequirements cEVS3104, "P"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
 write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
-;
-; NOTE: cEVS3004 is set to "A" indicating further analysis required 
-;       
-           
 local j
 local foundEVSEvt = FALSE
 local foundSBEvt = FALSE
@@ -945,14 +1007,19 @@ for i = 1 to cfe_apps do
   endif
 enddo
 
+; NOTE: cEVS3004 is set to "A" indicating further analysis required 
+; Setting this to "P" because if all the filters are found above, that verifies
+; the file was written since the CVT holds the contents of the file      
+           
 if (foundEVSEvt = TRUE AND foundSBEvt = TRUE AND foundESEvt = TRUE AND ;;
     foundTIMEEvt = TRUE AND foundTBLEvt = TRUE) then
-  ut_setrequirements cEVS3004, "A"
+  ut_setrequirements cEVS3004, "P"
   ut_setrequirements cEVS3019, "P" 
+  write "<*> Passed (3004;3019) - All NOOP events found"
 else
   ut_setrequirements cEVS3004, "F"
   ut_setrequirements cEVS3019, "F"
-  write "ALERT: invalid values found while verifying added NO-OP command filter"
+  write "<!> Failed (3004;3019) - invalid values found while verifying added NO-OP command filter"
 endif
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -963,28 +1030,29 @@ for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
    
-write "************************************************************************"
-write "Step 2.2: Send 10 No-op commands to cause generation of their event"
-write "          messages for registered applications"
+write ";***********************************************************************"
+write "; Step 2.2: Send 10 No-op commands to cause generation of their event"
+write ";           messages for registered applications"
 ;
 ;             Expect 10 Noop Evt Msgs generated per app
 ;             Expect total evt msg sent counter to increment by 10/app
 ;             Expect for every registered app, evt msg sent ctr incrments by 10
 ;                     
 ;             cEVS3103 (bin fltr algorithm indicates SEND message)
-write "************************************************************************"
-;                     
-; increment local app counters
-EVSevtmsgsentctr  = EVSevtmsgsentctr  + 10
-ESevtmsgsentctr   = ESevtmsgsentctr   + 10
-SBevtmsgsentctr   = SBevtmsgsentctr   + 10
-TIMEevtmsgsentctr = TIMEevtmsgsentctr + 10
-TBLevtmsgsentctr  = TBLevtmsgsentctr  + 10
-;
-;      send no-op commands
-;                     
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_NOOP_EID, INFO
-;
+write ";***********************************************************************"
+
+
+; increment app counters
+lclevtmsgsentctr  = $SC_$CPU_EVS_MSGSENTC
+EVSevtmsgsentctr   = $SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC + 10
+ESevtmsgsentctr   = $SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC + 10
+SBevtmsgsentctr   = $SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC + 10
+TIMEevtmsgsentctr = $SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC + 10
+TBLevtmsgsentctr  = $SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC + 10
+ 
+;;;;   send no-op commands
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_NOOP_EID, INFO, 1
+ 
 write "; BEFORE EVS_NOOP cmds: "
 write ";      lclevtmsgsentctr = ",lclevtmsgsentctr 
 write ";      EVSevtmsgsentctr = ",EVSevtmsgsentctr 
@@ -993,39 +1061,36 @@ for i = 1 to 10 do
   /$SC_$CPU_EVS_NOOP
   wait 3 
 enddo
-wait 10
+wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3103;3105) - All NOOP events found"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC 
-    write " Local evt msg sent ctr = ",lclevtmsgsentctr 
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
 
   if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counts correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-    write "            Expected ctr = ",EVSevtmsgsentctr
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
   endif 
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at EVS check" 
+  write "<!> Failed (3103) - EVS NOOP events generated = ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 10"
 endif  
 
-;
 ;------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO
+ut_setupevents $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO, 1
 
 write "; BEFORE SB_NOOP cmds: "
 write ";      lclevtmsgsentctr = ",lclevtmsgsentctr 
@@ -1035,41 +1100,37 @@ for i = 1 to 10 do
   /$SC_$CPU_SB_NOOP
   wait 3
 enddo
-wait 10
+wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10
 write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
-  write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC                 
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3103;3105) - All NOOP events found"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    write " Local evt msg sent ctr = ",lclevtmsgsentctr 
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
 
   if ($sc_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC = SBevtmsgsentctr) then
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counts correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at SB app evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC
-    write "            Expected ctr = ",SBevtmsgsentctr
+    write "<!> Failed (3104) - SB app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC,"; Expected ",SBevtmsgsentctr
   endif
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at SB check" 
+  write "<!> Failed (3103) - SB NOOP events generated = ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 10"
 endif                     
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_ES, CFE_ES_NOOP_INF_EID, INFO
+ut_setupevents $sc, $cpu, CFE_ES, CFE_ES_NOOP_INF_EID, INFO, 1
 
 write "; BEFORE ES_NOOP cmds: "
 write ";      lclevtmsgsentctr = ",lclevtmsgsentctr 
@@ -1079,41 +1140,37 @@ for i = 1 to 10 do
   /$SC_$CPU_ES_NOOP
   wait 3
 enddo
-wait 10
+wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 10 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10 
 write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
-  write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC     
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3103;3105) - All NOOP events found"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    write " Local evt msg sent ctr = ",lclevtmsgsentctr
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
  
   if ($sc_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC = ESevtmsgsentctr) then
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counts correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at ES app evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC
-    write " >>>        Expected ",ESevtmsgsentctr
+    write "<!> Failed (3104) - ES app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC,"; Expected ",ESevtmsgsentctr
   endif
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at ES check" 
+  write "<!> Failed (3103) - ES NOOP events generated = ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 10"
 endif                     
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_TIME, CFE_TIME_NOOP_EID, INFO
+ut_setupevents $sc, $cpu, CFE_TIME, CFE_TIME_NOOP_EID, INFO, 1
 
 write "; BEFORE TIME_NOOP cmds: "
 write ";      lclevtmsgsentctr = ",lclevtmsgsentctr 
@@ -1125,39 +1182,36 @@ for i = 1 to 10 do
 enddo                      
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10
 write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
   write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC         
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3103;3105) - All NOOP events found"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    write " Local evt msg sent ctr = ",lclevtmsgsentctr
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
 
   if ($sc_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC = TIMEevtmsgsentctr) then
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counts correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at TIME app evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC 
-    write " >>>        Expected ",TIMEevtmsgsentctr
+    write "<!> Failed (3104) - TIME app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC,"; Expected ",TIMEevtmsgsentctr
   endif   
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at TIME check" 
+  write "<!> Failed (3103) - TIME NOOP events generated = ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 10"
 endif
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO
+ut_setupevents $sc, $cpu, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO, 1
 
 write "; BEFORE TBL_NOOP cmds: "
 write ";      lclevtmsgsentctr = ",lclevtmsgsentctr 
@@ -1169,84 +1223,80 @@ for i = 1 to 10 do
 enddo                      
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10
 write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
                      
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
   write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC         
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3103;3105) - All NOOP events found"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    write " Local evt msg sent ctr = ",lclevtmsgsentctr
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
   endif
 
   if ($sc_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC = TBLevtmsgsentctr) then
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - Message counts correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at TBL App evt msg sent ctr check = ", $SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC
-    write " >>>        Expected ",TBLevtmsgsentctr
+    write "<!> Failed (3104) - TIME app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC,"; Expected ",TBLevtmsgsentctr
   endif       
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at TBL check" 
+  write "<!> Failed (3103) - TBL NOOP events generated = ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 10"
 endif                   
-;
+ 
 ;-------------------------------------------------------------------------------
-;
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
 write " ========================================="
 for i = 1 to cfe_apps do
-  write " >>> ",$SC_$CPU_EVS_AppData[i].AppName, " App Evt msg sent ctr = ",$SC_$CPU_EVS_APP[i].APPMSGSENTC 
+  write ">>> ",$SC_$CPU_EVS_AppData[i].AppName, " App Evt msg sent ctr = ",$SC_$CPU_EVS_APP[i].APPMSGSENTC 
 enddo
 write " ========================================="
-;                    
-write "************************************************************************"
-write "Step 2.2.1:  Retrieve applications data "
+
+write ";***********************************************************************"
+write "; Step 2.2.1:  Retrieve applications data "
 ;           Expect app bin fltr ctr for no-op evt msg increment by 10 per app 
 ;              cEVS3103_3
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_221.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_221.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
-  write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 endif   
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $SC_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
 ;                     
 ;      increment local app bin fltr ctrs
@@ -1261,620 +1311,593 @@ for i = 1 to cfe_apps do
   if ($SC_$CPU_EVS_AppData[i].AppName = "CFE_EVS") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr = 10) then 
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - EVS NOOP Binary Filter count = 10"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at no-op bin fltr ctr check"
-      write " >>>        for registered app ", $SC_$CPU_EVS_AppData[i].AppName
+      write "<!> Failed (3103.3) - EVS NOOP Binary Filter count = ", $SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr, "; Expected 10"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_SB") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr = 10) then 
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - SB NOOP Binary Filter count = 10"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at no-op bin fltr ctr check"
-      write " >>>        for registered app ", $SC_$CPU_EVS_AppData[i].AppName
+      write "<!> Failed (3103.3) - SB NOOP Binary Filter count = ", $SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr, "; Expected 10"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_ES") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr = 10) then 
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - ES NOOP Binary Filter count = 10"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at no-op bin fltr ctr check"
-      write " >>>        for registered app ", $SC_$CPU_EVS_AppData[i].AppName
+      write "<!> Failed (3103.3) - ES NOOP Binary Filter count = ", $SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr, "; Expected 10"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TIME") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr = 10) then 
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - TIME NOOP Binary Filter count = 10"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at no-op bin fltr ctr check"
-      write " >>>        for registered app ", $SC_$CPU_EVS_AppData[i].AppName
+      write "<!> Failed (3103.3) - TIME NOOP Binary Filter count = ", $SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr, "; Expected 10"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TBL") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr = 10) then 
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - TBL NOOP Binary Filter count = 10"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at no-op bin fltr ctr check"
-      write " >>>        for registered app ", $SC_$CPU_EVS_AppData[i].AppName
+      write "<!> Failed (3103.3) - TBL NOOP Binary Filter count = ", $SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr, "; Expected 10"
     endif
   endif
 enddo
 
-write "************************************************************************"
-write "Step 2.3:    Change Binary Filter Masks"
-write "************************************************************************"
-write "Step 2.3.1:  Change binary filter masks to X'ffff' for the no-op evt "
-write "             message for registered apps. Mask x'ffff' indicates "
-write "             generation of only one instance of the message and then stop"
-;                     cEVS3012
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID DEBUG
+write ";***********************************************************************"
+write "; Step 2.3: Change Binary Filter Masks"
+write ";***********************************************************************"
+write "; Step 2.3.1: Change binary filter masks to X'ffff' for the no-op evt "
+write ";           message for registered apps. Mask x'ffff' indicates "
+write ";           generation of only one instance of the message and then stop"
+;                  cEVS3012
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID, DEBUG, 1
 
 evtID = CFE_EVS_NOOP_EID
 ut_sendcmd "$SC_$CPU_EVS_SETBINFLTRMASK APPLICATION=""CFE_EVS"" EVENT_ID=evtID FILTERMASK=X'ffff'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3012, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3012;3105) - Set EVS Binary Filter mask successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC 
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
     if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
       ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - EVS Message counts are correct"
     else 
       ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",EVSevtmsgsentctr
-   endif
- else  
-   ut_setrequirements cEVS3012, "F"
-   write " >>> ALERT: failure at set bin fltr mask for EVS no-op"
- endif
+      write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+    endif
+  else  
+    ut_setrequirements cEVS3012, "F"
+    write "<!> Failed (3012) - Set EVS Binary Filter mask failed to generate expected event message"
+  endif
 endif                     
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID, DEBUG, 1
 
 evtID = CFE_SB_CMD0_RCVD_EID
 ut_sendcmd "$SC_$CPU_EVS_SETBINFLTRMASK APPLICATION=""CFE_SB"" EVENT_ID=evtID FILTERMASK=X'ffff'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3012, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3012;3105) - Set SB Binary Filter mask successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
     if ($sc_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC = SBevtmsgsentctr) then
       ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - SB Message counts are correct"
     else 
       ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at SB App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",SBevtmsgsentctr
+      write "<!> Failed (3104) - SB app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC,"; Expected ",SBevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3012, "F"
-    write " >>> ALERT: failure at set bin fltr mask for SB no-op"
+    write "<!> Failed (3012) - Set SB Binary Filter mask failed to generate expected event message"
   endif                     
 endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;  
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID, DEBUG, 1
 
 evtID = CFE_ES_NOOP_INF_EID
 ut_sendcmd "$SC_$CPU_EVS_SETBINFLTRMASK APPLICATION=""CFE_ES"" EVENT_ID=evtID FILTERMASK=X'ffff'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3012, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3012;3105) - Set ES Binary Filter mask successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
     if ($sc_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC = ESevtmsgsentctr) then
       ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - ES Message counts are correct"
     else 
       ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at ES App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",ESevtmsgsentctr
+      write "<!> Failed (3104) - ES app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC,"; Expected ",ESevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3012, "F"
-    write " >>> ALERT: failure at set bin fltr mask for ES no-op"
+    write "<!> Failed (3012) - Set ES Binary Filter mask failed to generate expected event message"
   endif
 endif                     
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 ;
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID, DEBUG, 1
 
 evtID = CFE_TIME_NOOP_EID
 ut_sendcmd "$SC_$CPU_EVS_SETBINFLTRMASK APPLICATION=""CFE_TIME"" EVENT_ID=evtID FILTERMASK=X'ffff'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3012, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3012;3105) - Set TIME Binary Filter mask successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
     if ($sc_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC = TIMEevtmsgsentctr) then
       ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - TIME Message counts are correct"
     else 
       ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at TIME App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC  
-      write " >>>        Expected ",TIMEevtmsgsentctr
+      write "<!> Failed (3104) - TIME app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC,"; Expected ",TIMEevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3012, "F"
-    write " >>> ALERT: failure at set bin fltr mask for TIME no-op"
+    write "<!> Failed (3012) - Set TIME Binary Filter mask failed to generate expected event message"
   endif                     
 endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID DEBUG   
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID, DEBUG, 1
 
 evtID = CFE_TBL_NOOP_INF_EID
 ut_sendcmd "$SC_$CPU_EVS_SETBINFLTRMASK APPLICATION=""CFE_TBL"" EVENT_ID=evtID FILTERMASK=X'ffff'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3012, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3012;3105) - Set TBL Binary Filter mask successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC 
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
     if ($sc_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC = TBLevtmsgsentctr) then
       ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - TBL Message counts are correct"
     else 
       ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at TBL App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",TBLevtmsgsentctr
+      write "<!> Failed (3104) - TBL app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC,"; Expected ",TBLevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3012, "F"
-    write " >>> ALERT: failure at set bin fltr mask for TBL no-op"
+    write "<!> Failed (3012) - Set TBL Binary Filter mask failed to generate expected event message"
   endif  
 endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;                   
-write "************************************************************************"
-write "Step 2.3.1.1:  Retrieve applications data "
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+
+write ";***********************************************************************"
+write "; Step 2.3.1.1: Retrieve applications data "
 ;           Expect for registered apps that their no-op evt msgs have masks = "
 ;	    x'ffff'
 ;              cEVS3012 (Initial ver. Fully verified after correct evt msg gen)
-write "************************************************************************"
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_2311.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2311.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
-  write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 endif   
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;
 ;           for all registered apps
 ;
 
-
 for i = 1 to cfe_apps do
   if ($sc_$CPU_EVS_AppData[i].AppName = "CFE_EVS") then
-    write " >>> Mask for CFE_EVS no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Msk, 4)
     if ($sc_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Msk = X'ffff') then
       ut_setrequirements cEVS3012, "P"
+      write "<*> Passed (3012) - EVS Binary Filter mask set correctly"
     else 
       ut_setrequirements cEVS3012, "F"
-      write " >>> ALERT: cEVS3012 fails. Bin fltr mask not 'ffff'."
+      write "<!> Failed (3012) - Mask for CFE_EVS no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Msk, 4), "; Expected 'FFFF'"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_SB") then
-    write " >>> Mask for CFE_SB no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Msk, 4)
     if ($sc_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Msk = X'ffff') then
       ut_setrequirements cEVS3012, "P"
+      write "<*> Passed (3012) - SB Binary Filter mask set correctly"
     else 
       ut_setrequirements cEVS3012, "F"
-      write " >>> ALERT: cEVS3012 fails. Bin fltr mask not 'ffff'."
+      write "<!> Failed (3012) - Mask for CFE_SB no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Msk, 4), "; Expected 'FFFF'"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_ES") then
-    write " >>> Mask for CFE_ES no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Msk, 4)
     if ($sc_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Msk = X'ffff') then
       ut_setrequirements cEVS3012, "P"
+      write "<*> Passed (3012) - ES Binary Filter mask set correctly"
     else 
       ut_setrequirements cEVS3012, "F"
-      write " >>> ALERT: cEVS3012 fails. Bin fltr mask not 'ffff'."
+      write "<!> Failed (3012) - Mask for CFE_ES no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Msk, 4), "; Expected 'FFFF'"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_TIME") then
-    write " >>> Mask for CFE_TIME no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Msk, 4)
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Msk = X'ffff') then
       ut_setrequirements cEVS3012, "P"
+      write "<*> Passed (3012) - TIME Binary Filter mask set correctly"
     else 
       ut_setrequirements cEVS3012, "F"
-      write " >>> ALERT: cEVS3012 fails. Bin fltr mask not 'ffff'."
+      write "<!> Failed (3012) - Mask for CFE_TIME no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Msk, 4), "; Expected 'FFFF'"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_TBL") then
-    write " >>> Mask for CFE_TBL no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Msk, 4)
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Msk = X'ffff') then
       ut_setrequirements cEVS3012, "P"
+      write "<*> Passed (3012) - TBL Binary Filter mask set correctly"
     else 
       ut_setrequirements cEVS3012, "F"
-      write " >>> ALERT: cEVS3012 fails. Bin fltr mask not 'ffff'."
+      write "<!> Failed (3012) - Mask for CFE_TBL no-op = ", %hex($SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Msk, 4), "; Expected 'FFFF'"
     endif
   endif
 enddo
-;
-write "************************************************************************"
-write "Step 2.3.1.2:  Clear for registered apps bin fltr ctrs for no-op evt "
-write "               messages."
-;                     cEVS3010 (partial, command to clear bin flt ctr)
-write "************************************************************************"
-;                     
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID DEBUG
+ 
+write ";***********************************************************************"
+write "; Step 2.3.1.2: Clear for registered apps bin fltr ctrs for no-op evt "
+write ";               messages."
+;                     cEVS3010 (partial, command to clear bin fltr ctr)
+write ";***********************************************************************"
+
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG, 1
 
 evtID = CFE_EVS_NOOP_EID
 ut_sendcmd "$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION =""CFE_EVS"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3010, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3010;3105) - EVS Reset Binary Filter counter sent successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
   else
     ut_setrequirements cEVS3010, "F"
-    write " >>> ALERT: cEVS3010 failed at clear bin fltr ctrs for EVS"
+    write "<!> Failed (3010) - EVS Reset Binary Filter counter did generate expected event message"
   endif     
+else
+  ut_setrequirements cEVS3010, "F"
+  write "<!> Failed (3010) - EVS Reset Binary Filter counter command"
 endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG, 1
 
 evtID = CFE_SB_CMD0_RCVD_EID
 ut_sendcmd "$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION = ""CFE_SB"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
-if ($SC_$CPU_num_found_messages = 1) then
-  lclevtmsgsentctr = lclevtmsgsentctr + 1
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-  ut_setrequirements cEVS3010, "P"
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-  if ($sc_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC = SBevtmsgsentctr) then
-    ut_setrequirements cEVS3104, "P"
-  else 
-    ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at SB App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC
-    write " >>>        Expected ",SBevtmsgsentctr
-  endif
+if (ut_sc_status = UT_SC_Success) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+    lclevtmsgsentctr = lclevtmsgsentctr + 1
+    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+    ut_setrequirements cEVS3010, "P"
+    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+      ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3010;3105) - SB Reset Binary Filter counter sent successfully"
+    else 
+      ut_setrequirements cEVS3105, "F"
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+    endif
+  else
+    ut_setrequirements cEVS3010, "F"
+    write "<!> Failed (3010) - SB Reset Binary Filter counter did generate expected event message"
+  endif                     
 else
   ut_setrequirements cEVS3010, "F"
-  write " >>> ALERT: cEVS3010 failed at clear bin fltr ctrs for SB"
-endif                     
+  write "<!> Failed (3010) - SB Reset Binary Filter counter command"
+endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG, 1
 
 evtID = CFE_ES_NOOP_INF_EID
 ut_sendcmd "$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION = ""CFE_ES"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3010, "P"
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
-      write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+      write "<*> Passed (3010;3105) - ES Reset Binary Filter counter sent successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-    endif
-    if ($sc_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC = ESevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at ES App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",ESevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3010, "F"
-    write " >>> ALERT: cEVS3010 failed at clear bin fltr ctrs for ES"
+    write "<!> Failed (3010) - ES Reset Binary Filter counter did generate expected event message"
   endif                     
+else
+  ut_setrequirements cEVS3010, "F"
+  write "<!> Failed (3010) - ES Reset Binary Filter counter command"
 endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG, 1
 
 evtID = CFE_TIME_NOOP_EID
 ut_sendcmd "$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION =""CFE_TIME"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3010, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3010;3105) - TIME Reset Binary Filter counter sent successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-    endif
-    if ($sc_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC = TIMEevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at Time App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",TIMEevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3010, "F"
-    write " >>> ALERT: cEVS3010 failed at clear bin fltr ctrs for TIME"
+    write "<!> Failed (3010) - TIME Reset Binary Filter counter did generate expected event message"
   endif   
+else
+  ut_setrequirements cEVS3010, "F"
+  write "<!> Failed (3010) - TIME Reset Binary Filter counter command"
 endif                  
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG, 1
 
 evtID = CFE_TBL_NOOP_INF_EID
 ut_sendcmd "$SC_$CPU_EVS_RSTBINFLTRCTR APPLICATION = ""CFE_TBL"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3010, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3010;3105) - TBL Reset Binary Filter counter sent successfully"
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-    endif
-    if ($sc_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC = TBLevtmsgsentctr) then
-      ut_setrequirements cEVS3104, "P"
-    else 
-      ut_setrequirements cEVS3104, "F"
-      write " >>> ALERT: cEVS3104 failed at TBL App evt msg sent ctr check = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC
-      write " >>>        Expected ",TBLevtmsgsentctr
     endif
   else
     ut_setrequirements cEVS3010, "F"
-    write " >>> ALERT: cEVS3010 failed at clear bin fltr ctrs for TBL"
+    write "<!> Failed (3010) - TBL Reset Binary Filter counter did generate expected event message"
   endif 
+else
+  ut_setrequirements cEVS3010, "F"
+  write "<!> Failed (3010) - TBL Reset Binary Filter counter command"
 endif                    
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
-write "************************************************************************"
-write "Step 2.3.1.3:  Retrieve applications data "
-;           Expect for registered apps that their bin fltr ctrs for
-;	    no-op evt msgs are all set to zero
-;           Upon verification of values for bin fltr ctrs set req
+write ";***********************************************************************"
+write "; Step 2.3.1.3: Retrieve applications data "
+;		Expect for registered apps that their bin fltr ctrs for
+;		no-op evt msgs are all set to zero
+;		Upon verification of values for bin fltr ctrs set req
 ;		cEVS3010 (full ver)                    
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_2313.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2313.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr} 60
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
-else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 endif   
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 for i = 1 to cfe_apps do
   if ($sc_$CPU_EVS_AppData[i].AppName = "CFE_EVS") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3010, "P"
+      write "<*> Passed (3010) - EVS NOOP Binary Filter Count is set to 0"
     else 
       ut_setrequirements cEVS3010, "F"
-      write " >>> ALERT: cEVS3010 failed at check of bin fltr ctrs for no-ops"
-      write " >>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-      write " >>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr
+      write "<!> Failed (3010) - EVS NOOP Binary Filter Count was ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_SB") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3010, "P"
+      write "<*> Passed (3010) - SB NOOP Binary Filter Count is set to 0"
     else 
       ut_setrequirements cEVS3010, "F"
-      write " >>> ALERT: cEVS3010 failed at check of bin fltr ctrs for no-ops"
-      write " >>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-      write " >>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr
+      write "<!> Failed (3010) - SB NOOP Binary Filter Count was ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_ES") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3010, "P"
+      write "<*> Passed (3010) - ES NOOP Binary Filter Count is set to 0"
     else 
       ut_setrequirements cEVS3010, "F"
-      write " >>> ALERT: cEVS3010 failed at check of bin fltr ctrs for no-ops"
-      write " >>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-      write " >>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr
+      write "<!> Failed (3010) - ES NOOP Binary Filter Count was ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_TIME") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3010, "P"
+      write "<*> Passed (3010) - TIME NOOP Binary Filter Count is set to 0"
     else 
       ut_setrequirements cEVS3010, "F"
-      write " >>> ALERT: cEVS3010 failed at check of bin fltr ctrs for no-ops"
-      write " >>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-      write " >>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr
+      write "<!> Failed (3010) - TIME NOOP Binary Filter Count was ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($sc_$CPU_EVS_AppData[i].AppName = "CFE_TBL") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3010, "P"
+      write "<*> Passed (3010) - TBL NOOP Binary Filter Count is set to 0"
     else 
       ut_setrequirements cEVS3010, "F"
-      write " >>> ALERT: cEVS3010 failed at check of bin fltr ctrs for no-ops"
-      write " >>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-      write " >>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr
+      write "<!> Failed (3010) - TBL NOOP Binary Filter Count was ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr,"; Expected 0"
     endif
   endif
 enddo
 
-;
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Initial Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
-;
-write "************************************************************************"
-write "Step 2.3.2:    Send 5 No-op commands for each registered application."
+ 
+write ";***********************************************************************"
+write "; Step 2.3.2: Send 5 No-op commands for each registered application."
 ;           Expect 1 no-op evt msg per registered app
 ;           Expect each app evt msg sent ctr to increment by 1 per event 
 ;           Expect total evt msg sent ctr to increment by 1 per event generated
 ;           Upon verification of ctr increments set reqs cEVS3104 and cEVS3105 
 ;	    to their correct values Also set cEVS3103 indicating verification of
 ;	    bin fltr algorithm function
-write "************************************************************************"
-;                      
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_NOOP_EID, INFO
+write ";***********************************************************************"
+                       
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_NOOP_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_EVS_NOOP 
@@ -1882,37 +1905,35 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   EVSevtmsgsentctr = EVSevtmsgsentctr + 1
   if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3103;3104) - EVS Event counters are correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at EVS evt msg sent ctrs check = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-    write " >>>        Expected ",EVSevtmsgsentctr
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
   endif
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
-    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+    write "<*> Passed (3105) - Counters are correct"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at EVS check"
-endif                     
+  write "<!> Failed (3103) - Sent 5 EVS NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 1"
+endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO
+ut_setupevents $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_SB_NOOP 
@@ -1920,28 +1941,28 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   SBevtmsgsentctr = SBevtmsgsentctr + 1
   if ($sc_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC = SBevtmsgsentctr)  then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3103;3104) - SB Event counters are correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at SB evt msg sent ctrs check"
-    write " >>>        Expected ",SBevtmsgsentctr
+    write "<!> Failed (3104) - SB app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC,"; Expected ",SBevtmsgsentctr
   endif 
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
-    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+    write "<*> Passed (3105) - Counters are correct"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check= ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at SB check"
+  write "<!> Failed (3103) - Sent 5 SB NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 1"
 endif                     
 
 write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
@@ -1950,7 +1971,7 @@ write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ;------------------------------------------------------------------------------
 ;
-ut_setupevt $sc, $cpu, CFE_ES, CFE_ES_NOOP_INF_EID, INFO
+ut_setupevents $sc, $cpu, CFE_ES, CFE_ES_NOOP_INF_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_ES_NOOP 
@@ -1958,36 +1979,36 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ESevtmsgsentctr = ESevtmsgsentctr + 1 
   if ($sc_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC = ESevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3103;3104) - ES Event counters are correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at ES evt msg sent ctrs check = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC
-    write " >>>        Expected ",ESevtmsgsentctr
+    write "<!> Failed (3104) - ES app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC,"; Expected ",ESevtmsgsentctr
   endif
       
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check= ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif             
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at ES check"
+  write "<!> Failed (3103) - Sent 5 ES NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 1"
 endif   
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
 ;------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_TIME, CFE_TIME_NOOP_EID, INFO
+ut_setupevents $sc, $cpu, CFE_TIME, CFE_TIME_NOOP_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_TIME_NOOP 
@@ -1995,35 +2016,35 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   TIMEevtmsgsentctr = TIMEevtmsgsentctr + 1
   if ($sc_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC = TIMEevtmsgsentctr) then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3103;3104) - TIME Event counters are correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at TIME evt msg sent ctrs check ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC
-    write " >>>        Expected ",TIMEevtmsgsentctr
+    write "<!> Failed (3104) - TIME app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC,"; Expected ",TIMEevtmsgsentctr
   endif                
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check= ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif  
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at TIME check"
+  write "<!> Failed (3103) - Sent 5 TIME NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 1"
 endif     
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO
+ut_setupevents $sc, $cpu, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_TBL_NOOP 
@@ -2031,452 +2052,467 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   TBLevtmsgsentctr = TBLevtmsgsentctr + 1
   if ($sc_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC = TBLevtmsgsentctr)  then
     ut_setrequirements cEVS3103, "P"
     ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3103;3104) - TBL Event counters are correct"
   else 
     ut_setrequirements cEVS3104, "F"
-    write " >>> ALERT: cEVS3104 failed at TBL evt msg sent ctrs check ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC 
-    write " >>>        Expected ",TBLevtmsgsentctr
+    write "<!> Failed (3104) - TBL app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC,"; Expected ",TBLevtmsgsentctr
   endif
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct"
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check= ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif               
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at TBL check"
+  write "<!> Failed (3103) - Sent 5 TBL NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 1"
 endif                     
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
 ;-------------------------------------------------------------------------------
-;
 for i = 1 to cfe_apps do
   write ">>> ",$SC_$CPU_EVS_AppData[i].AppName, " - evt msg sent ctr ",$SC_$CPU_EVS_APP[i].APPMSGSENTC
 enddo
 
-;
-write "************************************************************************"
-write "Step 2.3.2.1:  Retrieve applications data" 
+write ";***********************************************************************"
+write "; Step 2.3.2.1: Retrieve applications data" 
 ;      Expect an increment by 5 for each app bin flt ctr for each no-op evt msg
 ;      upon verification of ctrs set cEVS3103_3 accordingly.
 ;      Upon correct gneration of evt msgs and counter increments, set cEVS3012
 ;      accordingly, because this fully proves this req.
-write "************************************************************************"
-;
-
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_2321.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_2321.dat", "$CPU")
   
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
  
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
-  write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 endif   
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  write " Local evt msg sent ctr = ",lclevtmsgsentctr
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write "            Expected app ctr = ",EVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+ 
 ;# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ;      
 ;      for apps
-;
 for i = 1 to cfe_apps do
   if ($SC_$CPU_EVS_AppData[i].AppName = "CFE_EVS") then
-    write ">>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-    write ">>> no-op bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr
     if ($sc_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr = 5) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - EVS NOOP Binary Filter counter set to 5"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at check of apps bin fltr ctrs"
+      write "<!> Failed (3103.3) - EVS NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr,"; Expected 5"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_SB") then
-    write ">>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-    write ">>> no-op bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr
     if ($sc_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr = 5) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - SB NOOP Binary Filter counter set to 5"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at check of apps bin fltr ctrs"
+      write "<!> Failed (3103.3) - SB NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr,"; Expected 5"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_ES") then
-    write ">>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-    write ">>> no-op bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr
     if ($sc_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr = 5) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - ES NOOP Binary Filter counter set to 5"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at check of apps bin fltr ctrs"
+      write "<!> Failed (3103.3) - ES NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr,"; Expected 5"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TIME") then
-    write ">>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-    write ">>> no-op bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr = 5) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - TIME NOOP Binary Filter counter set to 5"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at check of apps bin fltr ctrs"
+      write "<!> Failed (3103.3) - TIME NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr,"; Expected 5"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TBL") then
-    write ">>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-    write ">>> no-op bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr = 5) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - TBL NOOP Binary Filter counter set to 5"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at check of apps bin fltr ctrs"
+      write "<!> Failed (3103.3) - TBL NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr,"; Expected 5"
     endif
   endif
 enddo
-;
-;-------------------------------------------------------------------------------
-
-write "************************************************************************"
-write "Step 2.4       Delete Filters for No-ops"
-write "************************************************************************"
-write "Step 2.4.1     For all registered apps "
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG
+ 
+write ";***********************************************************************"
+write "; Step 2.4: Delete Filters for No-ops"
+write ";***********************************************************************"
+write "; Step 2.4.1: For all registered apps "
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1
 
 evtID = CFE_EVS_NOOP_EID
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_EVS"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 10
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - EVS NOOP Delete Filter successful."
+
+    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+      ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3105) - Counters are correct"
+    else 
+      ut_setrequirements cEVS3105, "F"
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+    endif
+
+    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+      ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - EVS Message counts are correct"
+    else 
+      ut_setrequirements cEVS3104, "F"
+      write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+    endif 
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVS3020 failed at send cmd to del EVS no-op filter " 
+    write "<!> Failed (3020) - EVS NOOP Delete Filter did not generate the expected event message."
   endif
+else 
+  ut_setrequirements cEVS3020, "F"
+  write "<!> Failed (3020) - EVS NOOP Filter Delete Filter command."
 endif
 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-
-if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write "            Expected app ctr = ",EVSevtmsgsentctr
-endif 
-
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1
 
 evtID = CFE_SB_CMD0_RCVD_EID
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 10
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - SB NOOP Delete Filter successful."
+
+    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+      ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3105) - Counters are correct"
+    else 
+      ut_setrequirements cEVS3105, "F"
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+    endif
+
+    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+      ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - EVS Message counts are correct"
+    else 
+      ut_setrequirements cEVS3104, "F"
+      write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+    endif 
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del SB no-op filter" 
+    write "<!> Failed (3020) - SB NOOP Delete Filter did not generate the expected event message."
   endif
+else 
+  ut_setrequirements cEVS3020, "F"
+  write "<!> Failed (3020) - SB NOOP Filter Delete Filter command."
 endif
 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-
-if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-endif 
-
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+ 
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1
 
 evtID = CFE_ES_NOOP_INF_EID
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_ES"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages 1 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages 1 10
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - ES NOOP Delete Filter successful."
+
+    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+      ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3105) - Counters are correct"
+    else 
+      ut_setrequirements cEVS3105, "F"
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+    endif
+
+    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+      ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - EVS Message counts are correct"
+    else 
+      ut_setrequirements cEVS3104, "F"
+      write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+    endif 
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del ES no-op filter" 
+    write "<!> Failed (3020) - ES NOOP Delete Filter did not generate the expected event message."
   endif
+else 
+  ut_setrequirements cEVS3020, "F"
+  write "<!> Failed (3020) - ES NOOP Filter Delete Filter command."
 endif
 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-endif 
-
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-
-;
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1
 
 evtID = CFE_TIME_NOOP_EID
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_TIME"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 10
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - TIME NOOP Delete Filter successful."
+
+    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+      ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3105) - Counters are correct"
+    else 
+      ut_setrequirements cEVS3105, "F"
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+    endif
+
+    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+      ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - EVS Message counts are correct"
+    else 
+      ut_setrequirements cEVS3104, "F"
+      write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+    endif 
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del TIME no-op filter" 
+    write "<!> Failed (3020) - TIME NOOP Delete Filter did not generate the expected event message."
   endif
+else 
+  ut_setrequirements cEVS3020, "F"
+  write "<!> Failed (3020) - TIME NOOP Filter Delete Filter command."
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1
 
 evtID = CFE_TBL_NOOP_INF_EID
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_TBL"" EVENT_ID=evtID"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 10
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 10
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - TBL NOOP Delete Filter successful."
+
+    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+      ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3105) - Counters are correct"
+    else 
+      ut_setrequirements cEVS3105, "F"
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+    endif
+
+    if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+      ut_setrequirements cEVS3104, "P"
+      write "<*> Passed (3104) - EVS Message counts are correct"
+    else 
+      ut_setrequirements cEVS3104, "F"
+      write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+    endif 
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del TBL no-op filter" 
+    write "<!> Failed (3020) - TBL NOOP Delete Filter did not generate the expected event message."
   endif
+else 
+  ut_setrequirements cEVS3020, "F"
+  write "<!> Failed (3020) - TBL NOOP Filter Delete Filter command."
 endif
 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
 
-if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
-endif 
-
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-
-;
-;-------------------------------------------------------------------------------
-;
-if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
-endif 
-
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;
-write "************************************************************************"
-write "Step 2.4.2:    Retrieve data for registered applications "
+write ";***********************************************************************"
+write "; Step 2.4.2: Retrieve data for registered applications "
 ;      Expect for no-op evt msgs IDs the value 65535, bin fltr ctrs & masks = 0
 ;            cEVS3020
-write "************************************************************************"
-; 
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+  
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_242.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_242.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
-  write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 endif   
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
 ;-------------------------------------------------------------------------------
-;
 ;     for apps
 ;
 ;; Check the No-op Command 
 for i = 1 to cfe_apps do
-  write " >>> For Task ", $SC_$CPU_EVS_AppData[i].AppName
-  write " >>> no-op bin fltr ctr = ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr
   if ($SC_$CPU_EVS_AppData[i].AppName = "CFE_EVS") then
     if ($SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].EvtId = 65535) AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Msk = 0)       AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3020, "P"
+      write "<*> Passed (3020) - EVS NOOP Filter parameters are correct"
     else
       ut_setrequirements cEVS3020, "F"
-      write " >>> ALERT cEVS3020 failed at check"
+      write "<!> Failed (3020) - EVS NOOP Filter parameters are not correct"
+      write ">>> Event ID = ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].EvtId,"; Expected 65535"
+      write ">>> Mask     = ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Msk,"; Expected 0"
+      write ">>> Counter  = ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_SB") then
     if ($SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].EvtId = 65535) AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Msk = 0)       AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3020, "P"
+      write "<*> Passed (3020) - SB NOOP Filter parameters are correct"
     else
       ut_setrequirements cEVS3020, "F"
-      write " >>> ALERT cEVS3020 failed at check"
+      write "<!> Failed (3020) - SB NOOP Filter parameters are not correct"
+      write ">>> Event ID = ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].EvtId,"; Expected 65535"
+      write ">>> Mask     = ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Msk,"; Expected 0"
+      write ">>> Counter  = ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_ES") then
     if ($SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].EvtId = 65535) AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Msk = 0)       AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3020, "P"
+      write "<*> Passed (3020) - ES NOOP Filter parameters are correct"
     else
       ut_setrequirements cEVS3020, "F"
-      write " >>> ALERT cEVS3020 failed at check"
+      write "<!> Failed (3020) - ES NOOP Filter parameters are not correct"
+      write ">>> Event ID = ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].EvtId,"; Expected 65535"
+      write ">>> Mask     = ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Msk,"; Expected 0"
+      write ">>> Counter  = ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TIME") then
     if ($SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].EvtId = 65535) AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Msk = 0)       AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3020, "P"
+      write "<*> Passed (3020) - TIME NOOP Filter parameters are correct"
     else
       ut_setrequirements cEVS3020, "F"
-      write " >>> ALERT cEVS3020 failed at check"
+      write "<!> Failed (3020) - TIME NOOP Filter parameters are not correct"
+      write ">>> Event ID = ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].EvtId,"; Expected 65535"
+      write ">>> Mask     = ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Msk,"; Expected 0"
+      write ">>> Counter  = ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TBL") then
     if ($SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].EvtId = 65535) AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Msk = 0)       AND ;;
        ($SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3020, "P"
+      write "<*> Passed (3020) - TBL NOOP Filter parameters are correct"
     else
       ut_setrequirements cEVS3020, "F"
-      write " >>> ALERT cEVS3020 failed at check"
+      write "<!> Failed (3020) - TBL NOOP Filter parameters are not correct"
+      write ">>> Event ID = ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].EvtId,"; Expected 65535"
+      write ">>> Mask     = ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Msk,"; Expected 0"
+      write ">>> Counter  = ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr,"; Expected 0"
     endif
   endif
 enddo
-;
+ 
 ;-------------------------------------------------------------------------------
-
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
-;
-write "************************************************************************"
-write "Step 2.4.3:    Send 5 No-op commands for each registered application "
+ 
+write ";***********************************************************************"
+write "; Step 2.4.3: Send 5 No-op commands for each registered application "
 ;           Expect 5 evt msgs are generated per registered app
 ;           Expect Total Evt msg sent ctr to increment 5 x number of apps
 ;           cEVS3103
 ;           Upon verification of ctr increments set reqs cEVS3104 and
 ;           cEVS3105 to their correct values and cDELFltr (full ver)
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_NOOP_EID, INFO
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_NOOP_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_EVS_NOOP 
@@ -2484,42 +2520,40 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 5
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 5
 
-if ($SC_$CPU_num_found_messages = 5) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 5) then              
   ut_setrequirements cEVS3020, "P"
   lclevtmsgsentctr = lclevtmsgsentctr + 5
   EVSevtmsgsentctr = EVSevtmsgsentctr + 5
+
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3020;3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
+
+  if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - EVS Message counts are correct"
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif  
 else
   ut_setrequirements cEVS3020, "F"
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check gen of 5 EVS no-op evts "
+  write "<!> Failed (3020;3103) - Sent 5 EVS NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 5"
 endif                        
  
-if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctrs "
-  write " >>>        Expected ",EVSevtmsgsentctr
-endif
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-  write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-
-;
 ;--------------------------------------------------------------------- 
-;
-ut_setupevt $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO
+ut_setupevents $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_SB_NOOP 
@@ -2527,41 +2561,40 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 5
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 5
 
-if ($SC_$CPU_num_found_messages = 5) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 5) then              
   ut_setrequirements cEVS3020, "P"
   lclevtmsgsentctr = lclevtmsgsentctr + 5
   SBevtmsgsentctr  = SBevtmsgsentctr  + 5
+
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3020;3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
+
+  if ($sc_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC = SBevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - SB Message counts are correct"
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - SB app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC,"; Expected ",SBevtmsgsentctr
+  endif
 else
   ut_setrequirements cEVS3020, "F"
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check gen of 5 SB no-op evts "
+  write "<!> Failed (3020;3103) - Sent 5 SB NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 5"
 endif  
 
-if ($sc_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC = SBevtmsgsentctr) then
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctrs = ",$SC_$CPU_EVS_APP[cfe_sb_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",SBevtmsgsentctr
-endif
-
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-  write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+ 
 ;------------------------------------------------------------------------------ 
-;
-ut_setupevt $sc, $cpu, CFE_ES, CFE_ES_NOOP_INF_EID, INFO
+ut_setupevents $sc, $cpu, CFE_ES, CFE_ES_NOOP_INF_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_ES_NOOP 
@@ -2569,41 +2602,40 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 5
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 5
             
-if ($SC_$CPU_num_found_messages = 5) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 5) then              
   ut_setrequirements cEVS3020, "P"
   lclevtmsgsentctr = lclevtmsgsentctr + 5
   ESevtmsgsentctr  = ESevtmsgsentctr  + 5
+
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3020;3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
+
+  if ($sc_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC = ESevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - ES Message counts are correct"
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - ES app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC,"; Expected ",ESevtmsgsentctr
+  endif
 else
   ut_setrequirements cEVS3020, "F"
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check gen of 5 ES no-op evts "
+  write "<!> Failed (3020;3103) - Sent 5 ES NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 5"
 endif    
 
-if ($sc_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC = ESevtmsgsentctr) then 
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctrs = ",$SC_$CPU_EVS_APP[cfe_es_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",ESevtmsgsentctr
-endif
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
  
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-  write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-              
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
 ;------------------------------------------------------------------------------
-
-ut_setupevt $sc, $cpu, CFE_TIME, CFE_TIME_NOOP_EID, INFO
+ut_setupevents $sc, $cpu, CFE_TIME, CFE_TIME_NOOP_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_TIME_NOOP 
@@ -2611,41 +2643,40 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 5
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 5
                      
-if ($SC_$CPU_num_found_messages = 5) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 5) then              
   ut_setrequirements cEVS3020, "P"
   lclevtmsgsentctr = lclevtmsgsentctr + 5
   TIMEevtmsgsentctr = TIMEevtmsgsentctr + 5
+
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3020;3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
+
+  if ($sc_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC = TIMEevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - TIME Message counts are correct"
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - TIME app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC,"; Expected ",TIMEevtmsgsentctr
+  endif
 else
   ut_setrequirements cEVS3020, "F"
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check gen of 5 TIME no-op evts "
+  write "<!> Failed (3020;3103) - Sent 5 TIME NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 5"
 endif                        
 
-if ($sc_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC = TIMEevtmsgsentctr) then 
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctrs = ",$SC_$CPU_EVS_APP[cfe_time_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",TIMEevtmsgsentctr
-endif
-
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-  write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+ 
 ;-------------------------------------------------------------------------------
-;
-ut_setupevt $sc, $cpu, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO
+ut_setupevents $sc, $cpu, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO, 1
 
 for i = 1 to 5 do
   /$SC_$CPU_TBL_NOOP 
@@ -2653,144 +2684,135 @@ for i = 1 to 5 do
 enddo
 wait 5
 
-ut_tlmwait $SC_$CPU_num_found_messages, 5
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 5
 
-if ($SC_$CPU_num_found_messages = 5) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 5) then              
   ut_setrequirements cEVS3020, "P"
   lclevtmsgsentctr = lclevtmsgsentctr + 5
   TBLevtmsgsentctr  = TBLevtmsgsentctr  + 5
+
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3020;3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
+
+  if ($sc_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC = TBLevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - TBL Message counts are correct"
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - TBL app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC,"; Expected ",TBLevtmsgsentctr
+  endif
 else
   ut_setrequirements cEVS3020, "F"
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check gen of 5 TBL no-op evts "
+  write "<!> Failed (3020;3103) - Sent 5 TBL NOOP commands that generated ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 5"
 endif   
 
-if ($sc_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC = TBLevtmsgsentctr) then  
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctrs = ",$SC_$CPU_EVS_APP[cfe_tbl_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",TBLevtmsgsentctr
-endif
-
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-  write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
  
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-;
-;------------------------------------------------------------------------------
-;
 for i = 1 to cfe_apps do
-  write ">>> ",$SC_$CPU_EVS_AppData[i].AppName, "   - evt msg sent ctr ",$SC_$CPU_EVS_APP[i].APPMSGSENTC
+  write ">>> ",$SC_$CPU_EVS_AppData[i].AppName, " - evt msg sent ctr ",$SC_$CPU_EVS_APP[i].APPMSGSENTC
 enddo
-;
-write "************************************************************************"
-write "Step 2.4.4:    Retrieve applications data"
-;                     Upon verification of apps binary filter ctr for no-op evt
-;		      msg ctr = 0 set req cEVS3020 to correct value
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+ 
+write ";***********************************************************************"
+write "; Step 2.4.4: Retrieve applications data"
+;                   Upon verification of apps binary filter ctr for no-op evt
+;		    msg ctr = 0 set req cEVS3020 to correct value
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_244.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_244.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 2
-  write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-else
-  write " >>> ALERT: Failure at tlm wait at get file to CVT"
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 endif   
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at EVS app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-  write " >>>        Expected ",EVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
 write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
 ;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;
 ;      for all registered apps 
 ;
 for i = 1 to cfe_apps do
   if ($SC_$CPU_EVS_AppData[i].AppName = "CFE_EVS") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - EVS NOOP Binary Filter counter set to 0"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed while checking bin fltr ctr"
-      write " >>>        for ", $SC_$CPU_EVS_AppData[i].AppName 
+      write "<!> Failed (3103.3) - EVS NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[EVSNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_SB") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - SB NOOP Binary Filter counter set to 0"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed while checking bin fltr ctr"
-      write " >>>        for ", $SC_$CPU_EVS_AppData[i].AppName 
+      write "<!> Failed (3103.3) - SB NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[SBNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_ES") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - ES NOOP Binary Filter counter set to 0"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed while checking bin fltr ctr"
-      write " >>>        for ", $SC_$CPU_EVS_AppData[i].AppName 
+      write "<!> Failed (3103.3) - ES NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[ESNoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TIME") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - TIME NOOP Binary Filter counter set to 0"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed while checking bin fltr ctr"
-      write " >>>        for ", $SC_$CPU_EVS_AppData[i].AppName 
+      write "<!> Failed (3103.3) - TIME NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[TIMENoopIdx].Ctr,"; Expected 0"
     endif
   elseif ($SC_$CPU_EVS_AppData[i].AppName = "CFE_TBL") then
     if ($sc_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr = 0) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - TBL NOOP Binary Filter counter set to 0"
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed while checking bin fltr ctr"
-      write " >>>        for ", $SC_$CPU_EVS_AppData[i].AppName 
+      write "<!> Failed (3103.3) - TBL NOOP Binary Filter counter set to ",$SC_$CPU_EVS_AppData[i].BinFltr[TBLNoopIdx].Ctr,"; Expected 0"
     endif
   endif
 enddo
-;
-;-------------------------------------------------------------------------------
-;
-write "************************************************************************"
-write "Step 2.5: Attempt to add filter for events which are already registered "
-write "          via IPC. This tests cEVS3019_1."
-write "		 Expected outcome: Should receive an error message and error "
-write "          counter should increment."
-write "************************************************************************"
+ 
+write ";***********************************************************************"
+write "; Step 2.5: Attempt to add filter for events which are already "
+write ";           registered via IPC. This tests cEVS3019_1."
+write ";	   Expected outcome: Should receive an error message and error "
+write ";           counter should increment."
+write ";***********************************************************************"
 ; Case: Attempt to add a filter for CI App Noop Event (#5)
 ; Expected outcome: Error since event was already registered via IPC.
 
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_EVT_FILTERED_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_EVT_FILTERED_EID, ERROR, 1
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CI_LAB_APP"" EVENT_ID=5 EVENT_MASK=x'bead'"
@@ -2798,66 +2820,75 @@ ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CI_LAB_APP"" EVENT_ID=5 EVENT_
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3019_1, "P"
+  write "<*> Passed (3019.1) - Add Event Filter command failed as expected."
 else
   ut_setrequirements cEVS3019_1, "F"
-  write " >>> ALERT: cEVS3019_1 failed because ADDEVTFLTR command was not rejected."
+  write "<!> Failed (3019.1) - Add Event Filter command passed when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
-
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
+  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
   ut_setrequirements cEVS3019_1, "P"
+  write "<*> Passed (3019.1) - Expected Error Event Message received."
 else
   ut_setrequirements cEVS3019_1, "F"
-  write " >>> ALERT: cEVS3019_1 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3019.1) - Expected Error Event Message ",CFE_EVS_EVT_FILTERED_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
 ; Case: Attempt to add a filter for SB Noop Event.
 ; Expected outcome: Expect event and its filter to be added since the event isn't registered in flight code.
 
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
 
 ; Send command
 evtID = CFE_SB_CMD0_RCVD_EID
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=evtID EVENT_MASK=x'abba'"
 
 ; Wait for event
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 ; Check for acceptance of command
 if (ut_sc_status = UT_SC_Success) then
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019.1) - Add Event Filter command."
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed because ADDEVTFLTR command was rejected."
+  write "<!> Passed (3019.1) - Add Event Filter command."
 endif
 
 ; Update local 'Sent Message Count' values
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-endif
 
-; Test 'Sent Message Count' values 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Received sent msg cnt  = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected sent msg cnt  = ", lclevtmsgsentctr
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  ;; Test 'Sent Message Count' values 
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
+
+  if ($sc_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC = EVSevtmsgsentctr) then
+    ut_setrequirements cEVS3104, "P"
+    write "<*> Passed (3104) - EVS Message counts are correct"
+  else 
+    ut_setrequirements cEVS3104, "F"
+    write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
+  endif  
 endif
 
 ; Case: Repeat command to add a filter for SB Noop Event.
 ; Expected outcome: Error since event has now been added to EVS.
 
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_EVT_FILTERED_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_EVT_FILTERED_EID, ERROR, 1
 
 ; Send command
 evtID = CFE_SB_CMD0_RCVD_EID
@@ -2866,78 +2897,78 @@ ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=evtID EVENT_
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3019_1, "P"
+  write "<*> Passed (3019.1) - Add Event Filter command failed as expected."
 else
   ut_setrequirements cEVS3019_1, "F"
-  write " >>> ALERT: cEVS3019_1 failed because ADDEVTFLTR command was not rejected."
+  write "<!> Failed (3019.1) - Add Event Filter command passed when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3019_1, "P"
+  write "<*> Passed (3019.1) - Expected Error Event Message received."
 else
   ut_setrequirements cEVS3019_1, "F"
-  write " >>> ALERT: cEVS3019_1 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3019.1) - Expected Error Event Message ",CFE_EVS_EVT_FILTERED_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
-write "************************************************************************"
-write "Step 2.6  Attempt to register more events for SB task with EVS."
-write "          Register maximum number and then one more. "
-write "		 This tests cEVS3019_2."
-write "		 Expected outcome: Should receive an error message and error "
-write "		 counter should increment when attempt is made to exceed max "
-write "		 number of events for task."
-write "************************************************************************"
-;**************************************
-; Add max # of event filters to CFE_SB
-;**************************************
+write ";***********************************************************************"
+write "; Step 2.6:  Attempt to register more events for SB task with EVS."
+write ";	    Register maximum number and then one more. "
+write ";	    This tests cEVS3019_2."
+write ";	    Expected outcome: Should receive an error message and error"
+write ";	    counter should increment when attempt is made to exceed max"
+write ";	    number of events for task."
+write ";***********************************************************************"
 ; Set up to capture event
 ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
 ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR, 2
+
+;; Start with EID=2 and increment until the error is generated
 local eventToFltr = 2, eventMask = x'abba'
 
-;******** Add filter for event id 2 ********************
 while ($SC_$CPU_find_event[2].num_found_messages = 0) do
   ; Set up to capture event
   ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
   ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR, 2
 
   ; Send Add Event Filter command
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=eventToFltr EVENT_MASK=eventMask"
+  ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=eventToFltr EVENT_MASK=eventMask"
 
-  ; Wait for event
-  ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-  lclevtmsgsentctr = lclevtmsgsentctr + 1
-  EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+  ; Wait for the event message
+  ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
   ; Check if the success message was rcv'd
-  if ($SC_$CPU_num_found_messages = 1) then
-
-    ; Test 'Sent Message Count' values 
-    if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-      ut_setrequirements cEVS3105, "P"
-    else 
-      ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-      write " Received sent msg cnt  = ",$SC_$CPU_EVS_MSGSENTC
-      write " Expected sent msg cnt  = ", lclevtmsgsentctr
-      lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-    endif
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+    lclevtmsgsentctr = lclevtmsgsentctr + 1
+    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
   endif
 
   ;; Setup for the next Event ID
   eventToFltr = eventToFltr + 1
 enddo
 
+;; If we get here, event message 2 was rcv'd
+lclevtmsgsentctr = lclevtmsgsentctr + 1
+
+; Test 'Sent Message Count' values 
+if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+  ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct"
+else 
+  ut_setrequirements cEVS3105, "F"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+endif
+
 ;****************************
 ; Attempt to add one more
 ;****************************
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR, 1
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=55 EVENT_MASK=x'c1d2'"
@@ -2945,40 +2976,40 @@ ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=55 EVENT_MAS
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3019_2, "P"
+  write "<*> Passed (3019.2) - Add Event Filter command failed as expected."
 else
   ut_setrequirements cEVS3019_2, "F"
-  write " >>> ALERT: cEVS3019_2 failed because ADDEVTFLTR command was not rejected."
+  write "<!> Failed (3019.2) - Add Event Filter command passed when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3019_2, "P"
+  write "<*> Passed (3019.2) - Expected Error Event Message received."
 else
   ut_setrequirements cEVS3019_2, "F"
-  write " >>> ALERT: cEVS3019_2 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3019.2) - Expected Error Event Message ",CFE_EVS_ERR_MAXREGSFILTER_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
 ; Test 'Sent Message Count' values 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Received sent msg cnt  = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected sent msg cnt  = ", lclevtmsgsentctr
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write "************************************************************************"
-write "Step 2.7: Attempt to add event filter to CI_APP. This should fail since "
-write "          CI registers for 8 events in flight software."
-write "************************************************************************"
+write ";***********************************************************************"
+write "; Step 2.7: Attempt to add event filter to CI_APP. This should fail "
+write ";           since CI registers for 8 events in flight software."
+write ";***********************************************************************"
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR, 1
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CI_LAB_APP"" EVENT_ID=23 EVENT_MASK=x'3d3d'"
@@ -2986,37 +3017,37 @@ ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""CI_LAB_APP"" EVENT_ID=23 EVENT
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3019_2, "P"
+  write "<*> Passed (3019.2) - Add Event Filter command failed as expected."
 else
   ut_setrequirements cEVS3019_2, "F"
-  write " >>> ALERT: cEVS3019_2 failed because ADDEVTFLTR command was not rejected."
+  write "<!> Failed (3019.2) - Add Event Filter command passed when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3019_2, "P"
+  write "<*> Passed (3019.2) - Expected Error Event Message received."
 else
   ut_setrequirements cEVS3019_2, "F"
-  write " >>> ALERT: cEVS3019_2 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3019.2) - Expected Error Event Message ",CFE_EVS_ERR_MAXREGSFILTER_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
 ; Test 'Sent Message Count' values 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Received sent msg cnt  = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected sent msg cnt  = ", lclevtmsgsentctr
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write "************************************************************************"
-write "Step 2.7.1:  Check Application Data File to confirm SB and CI tasks are "
-write "             registered for 8 events each."
+write ";***********************************************************************"
+write "; Step 2.7.1: Check Application Data File to confirm SB and CI tasks are"
+write ";             registered for 8 events each."
 ; "Expect these values for CI task:"
 ;       Event Ids are 1..8
 ;       Event Masks are all 0x0000.
@@ -3027,7 +3058,7 @@ write "             registered for 8 events each."
 ;      EVENT_ID=4 EVENT_MASK=x'feed'
 ;      EVENT_ID=5 EVENT_MASK=x'789e'
 ;      EVENT_ID=6 EVENT_MASK=x'3d3d'
-write "************************************************************************"
+write ";***********************************************************************"
 
 local goodfile = 0;
 
@@ -3035,13 +3066,13 @@ local goodfile = 0;
 cmdexctr = $SC_$CPU_EVS_CMDPC + 1
 
 ; Write Application Data to File
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_271.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_271.dat", "$CPU")
 
 ; Check for correct completion
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
 
 if (ut_tw_status = UT_TW_Success) then
-  lclevtmsgsentctr = lclevtmsgsentctr + 2
+  lclevtmsgsentctr = lclevtmsgsentctr + 1
   goodfile = 1;
 endif
 
@@ -3050,11 +3081,10 @@ ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct"
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Received sent msg cnt  = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected sent msg cnt  = ", lclevtmsgsentctr
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
@@ -3070,15 +3100,23 @@ if (goodfile = 1) then
     endif
   enddo
 
-  ;**************************
-  ; Record filter data for CI
-  ;**************************
+  ;*************************************
+  ; Record and check filter data for CI
+  ;*************************************
+  local badMasks = ""
   if (cfe_ci_task_ndx <> 0) then
     write "CI_LAB_APP"
     for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
       write "Evt Msg ID ",$SC_$CPU_EVS_AppData[cfe_ci_task_ndx].BinFltr[i].EvtId, ;;
       " ------ mask ", %hex($SC_$CPU_EVS_AppData[cfe_ci_task_ndx].BinFltr[i].Msk, 5),;;
       " ------------ ctr " ,$SC_$CPU_EVS_AppData[cfe_ci_task_ndx].BinFltr[i].Ctr
+      if ($SC_$CPU_EVS_AppData[cfe_ci_task_ndx].BinFltr[i].Msk <> x'0000') then
+        if (badMasks = "") then
+          badMasks = i
+	else
+	  badMasks = badMasks & "," & i
+        endif
+      endif
     enddo
   endif
 
@@ -3086,41 +3124,35 @@ if (goodfile = 1) then
   ; Check filter mask values for CI task.
   ;***************************************
   if (cfe_ci_task_ndx <> 0) then
-    for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-      if ($SC_$CPU_EVS_AppData[cfe_ci_task_ndx].BinFltr[i].Msk = x'0000') then
-        ut_setrequirements cEVS3302, "P"
-      else
-        ut_setrequirements cEVS3302, "F"
-        write "Invalid mask value for CI Task"
-      endif
-    enddo
+;;    for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
+;;      if ($SC_$CPU_EVS_AppData[cfe_ci_task_ndx].BinFltr[i].Msk = x'0000') then
+    if (badMasks = "") then
+      ut_setrequirements cEVS3302, "P"
+      write "<*> Passed (3302) - All CI Masks are correct"
+    else
+      ut_setrequirements cEVS3302, "F"
+      write "<!> Failed (3302) - CI Masks that were not set to 0 are '",badMasks,"'"
+    endif
+;;    enddo
   endif
 
   ;**************************
   ; Record filter data for SB
   ;**************************
+  local valid_evt_ID_noop_ndx = 0
+  local valid_evt_ID_2_ndx = 0
+  local valid_evt_ID_3_ndx = 0
+  local valid_evt_ID_4_ndx = 0
+  local valid_evt_ID_5_ndx = 0
+  local valid_evt_ID_6_ndx = 0
+
   if (cfe_sb_task_ndx <> 0) then
     write "CFE_SB"
     for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
       write "Evt Msg ID ",$SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[i].EvtId, ;;
       " ------ mask ", %hex($SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[i].Msk, 5),;;
       " ------------ ctr " ,$SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[i].Ctr
-    enddo
-  endif
 
-  ;***************************************
-  ; Check filter mask values for SB task.
-  ;***************************************
-  if (cfe_sb_task_ndx <> 0) then
-    ; Find event indexes
-    local valid_evt_ID_noop_ndx = 0
-    local valid_evt_ID_2_ndx = 0
-    local valid_evt_ID_3_ndx = 0
-    local valid_evt_ID_4_ndx = 0
-    local valid_evt_ID_5_ndx = 0
-    local valid_evt_ID_6_ndx = 0
-
-    for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
       if ($sc_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[i].EvtId = CFE_SB_CMD0_RCVD_EID) then
         valid_evt_ID_noop_ndx = i
       elseif ($sc_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[i].EvtId = 2) then
@@ -3135,112 +3167,117 @@ if (goodfile = 1) then
         valid_evt_ID_6_ndx = i
       endif
     enddo
+  endif
 
+  ;***************************************
+  ; Check filter mask values for SB task.
+  ;***************************************
+  if (cfe_sb_task_ndx <> 0) then
     ; Check mask value for SB NOOP event
     if (valid_evt_ID_noop_ndx <> 0) then
       if ($SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_noop_ndx].Msk = x'abba') then
         ut_setrequirements cEVS3302, "P"
+        write "<*> Passed (3302) - SB NOOP Mask is correct"
       else
         ut_setrequirements cEVS3302, "F"
-        write "Invalid mask value for SB NOOP Evt" 
+        write "<!> Failed (3302) - SB NOOP Mask = ",$SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_noop_ndx].Msk,"; Expected x'abba'"
       endif
     else
       ut_setrequirements cEVS3302, "F"
-      write "Event data not found for SB NOOP EVT"
+      write "<!> Failed (3302) - Binary Filter data not found for SB NOOP"
     endif
 
     ; Check mask value for SB event #2
     if (valid_evt_ID_2_ndx <> 0) then
       if ($SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_2_ndx].Msk = x'abba') then
         ut_setrequirements cEVS3302, "P"
+        write "<*> Passed (3302) - SB Mask for EID 2 is correct"
       else
         ut_setrequirements cEVS3302, "F"
-        write "Invalid mask value for SB Evt 2"
+        write "<!> Failed (3302) - SB EID=2 Mask = ",$SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_2_ndx].Msk,"; Expected x'abba'"
       endif
     else
       ut_setrequirements cEVS3302, "F"
-      write "Event data not found for SB EVT 2"
+      write "<!> Failed (3302) - Binary Filter data not found for SB EID=2"
     endif
 
     ; Check mask value for SB event #3
     if (valid_evt_ID_3_ndx <> 0) then
       if ($SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_3_ndx].Msk = x'abba') then
         ut_setrequirements cEVS3302, "P"
+        write "<*> Passed (3302) - SB Mask for EID 3 is correct"
       else
         ut_setrequirements cEVS3302, "F"
-        write "Invalid mask value for SB Evt 3"
+        write "<!> Failed (3302) - SB EID=3 Mask = ",$SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_3_ndx].Msk,"; Expected x'abba'"
       endif
     else
       ut_setrequirements cEVS3302, "F"
-      write "Event data not found for SB EVT 3"
+      write "<!> Failed (3302) - Binary Filter data not found for SB EID=3"
     endif
 
     ; Check mask value for SB event #4
     if (valid_evt_ID_4_ndx <> 0) then
       if ($SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_4_ndx].Msk = x'abba') then
         ut_setrequirements cEVS3302, "P"
+        write "<*> Passed (3302) - SB Mask for EID 4 is correct"
       else
         ut_setrequirements cEVS3302, "F"
-        write "Invalid mask value for SB Evt 4"
+        write "<!> Failed (3302) - SB EID=4 Mask = ",$SC_$CPU_EVS_AppData[cfe_sb_task_ndx].BinFltr[valid_evt_ID_4_ndx].Msk,"; Expected x'abba'"
       endif
     else
       ut_setrequirements cEVS3302, "F"
-      write "Event data not found for SB EVT 4"
+      write "<!> Failed (3302) - Binary Filter data not found for SB EID=4"
     endif
   endif ; Found SB index
-else
-  write " >>> ALERT: Error result from 'Write evs app file' cmd."
 endif ; Check for file write
 
-write "************************************************************************"
-write "Step 2.8   Test Delete Event Filter Command"
-write "************************************************************************"
-
+write ";***********************************************************************"
+write "; Step 2.8: Test Delete Event Filter Command"
+write ";***********************************************************************"
 ;****************************************************
 ; Delete one of the Event Filters which was added.
 ; This command should execute successfully.
 ;****************************************************
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG 
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1 
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=2"
 
 ; Wait for event
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 ; Check for acceptance of command
 if (ut_sc_status = UT_SC_Success) then
   ut_setrequirements cEVS3020, "P"
+  write "<*> Passed (3020) - Delete Event Filter for SB EID=2 successful."
 else
   ut_setrequirements cEVS3020, "F"
-  write " >>> ALERT: cEVS3020 failed because DELEVTFLTR command was rejected."
+  write "<!> Failed (3020) - Delete Event Filter for SB EID=2 rejected."
 endif
 
 ; Update local 'Sent Message Count' values
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+
+  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+    ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct"
+  else 
+    ut_setrequirements cEVS3105, "F"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  endif
 endif
 
-; Test 'Sent Message Count' values 
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else 
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Received sent msg cnt  = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected sent msg cnt  = ", lclevtmsgsentctr
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-
-;****************************************************
+;*******************************************************************
 ; Repeat previous command.
 ; This time expect error since event filter should already be gone.
 ; Expect command to be rejected and event message to be issued.
-;****************************************************
+;*******************************************************************
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ERR_EVTIDNOREGS_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_EVTIDNOREGS_EID, ERROR, 1
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=2"
@@ -3248,21 +3285,22 @@ ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=2"
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3020_1, "P"
+  write "<*> Passed (3020.1) - Delete Event Filter for SB EID=2 failed as expected."
 else
   ut_setrequirements cEVS3020_1, "F"
-  write " >>> ALERT: cEVS3020_1 failed because DELEVTFLTR command was not rejected."
+  write "<!> Failed (3020.1) - Delete Event Filter for SB EID=2 successful when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3020_1, "P"
+  write "<*> Passed (3020.1) - Expected Event message received."
 else
   ut_setrequirements cEVS3020_1, "F"
-  write " >>> ALERT: cEVS3020_1 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3020.1) - Expected Error Event Message ",CFE_EVS_ERR_EVTIDNOREGS_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
 ;********************************************************************
@@ -3270,7 +3308,7 @@ endif
 ; Expect command to be rejected and error event message.
 ;********************************************************************
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ERR_EVTIDNOREGS_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_EVTIDNOREGS_EID, ERROR, 1
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=42" 
@@ -3278,21 +3316,22 @@ ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CFE_SB"" EVENT_ID=42"
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3020_1, "P"
+  write "<*> Passed (3020.1) - Delete Event Filter for SB EID=42 failed as expected."
 else
   ut_setrequirements cEVS3020_1, "F"
-  write " >>> ALERT: cEVS3020_1 failed because DELEVTFLTR command was not rejected."
+  write "<!> Failed (3020.1) - Delete Event Filter for SB EID=42 successful when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3020_1, "P"
+  write "<*> Passed (3020.1) - Expected Event message received."
 else
   ut_setrequirements cEVS3020_1, "F"
-  write " >>> ALERT: cEVS3020_1 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3020.1) - Expected Error Event Message ",CFE_EVS_ERR_EVTIDNOREGS_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
 ;*******************************************************************************
@@ -3301,7 +3340,7 @@ endif
 ; Expect command to be rejected and error event message.
 ;*******************************************************************************
 ; Set up to capture event
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ERR_EVTIDNOREGS_EID, ERROR
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_EVTIDNOREGS_EID, ERROR, 1
 
 ; Send command
 ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CI_LAB_APP"" EVENT_ID=31"
@@ -3309,71 +3348,76 @@ ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""CI_LAB_APP"" EVENT_ID=31"
 ; Check for rejection of command
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3020_1, "P"
+  write "<*> Passed (3020.1) - Delete Event Filter for SB EID=31 failed as expected."
 else
   ut_setrequirements cEVS3020_1, "F"
-  write " >>> ALERT: cEVS3020_1 failed because DELEVTFLTR command was not rejected."
+  write "<!> Failed (3020.1) - Delete Event Filter for SB EID=31 successful when failure was expected."
 endif
 
 ; Check that event message was generated.
-ut_tlmwait $SC_$CPU_num_found_messages, 1
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
 if (ut_tw_status = UT_TW_Success) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3020_1, "P"
+  write "<*> Passed (3020.1) - Expected Event message received."
 else
   ut_setrequirements cEVS3020_1, "F"
-  write " >>> ALERT: cEVS3020_1 failed due to unexpected nbr of messages rcvd."
-  write " >>> Expected: 1. Received:", $SC_$CPU_num_found_messages
+  write "<!> Failed (3020.1) - Expected Error Event Message ",CFE_EVS_ERR_EVTIDNOREGS_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
 endif
 
-write "************************************************************************"
-write "Step 2.9: Restore filter mask for SB NOOP event to 0."
+write ";***********************************************************************"
+write "; Step 2.9: Restore filter mask for SB NOOP event to 0."
 ; This is necessary because Step 5.2 assumes the filter mask is 0.
-write "************************************************************************"
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID DEBUG
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_SETFILTERMSK_EID, DEBUG, 1
 
 evtID = CFE_SB_CMD0_RCVD_EID
 ut_sendcmd "$SC_$CPU_EVS_SETBINFLTRMASK APPLICATION=""CFE_SB"" EVENT_ID=evtID FILTERMASK=X'0000'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     ut_setrequirements cEVS3012, "P"
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
 
     if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
       ut_setrequirements cEVS3105, "P"
+      write "<*> Passed (3012;3105) - Counters are correct."
     else 
       ut_setrequirements cEVS3105, "F"
-      write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+      write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
       lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
     endif
   else
     ut_setrequirements cEVS3012, "F"
-    write " >>> ALERT: failure at set bin fltr mask for SB no-op"
-  endif                     
+    write "<!> Failed (3012) - Expected Error Event Message ",CFE_EVS_SETFILTERMSK_EID," was not received. Expected 1 message but Received ", $SC_$CPU_find_event[1].num_found_messages
+  endif
+else
+  ut_setrequirements cEVS3012, "F"
+  write "<!> Failed (3012) - Set Binary Filter Mask command"
 endif
 
-write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
-write " TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
-;  
-write "************************************************************************"
-write "Step 3.0:  Register EVS test application to further test binary filter "
-write "		  processing. "
-write "************************************************************************"
-write "Step 3.1:  Load EVS Test App"
+write ">>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
+write "TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC 
+   
+write ";***********************************************************************"
+write "; Step 3.0: Register EVS test application to further test binary filter "
+write ";	   processing. "
+write ";***********************************************************************"
+write "; Step 3.1: Load EVS Test App"
 ;                 Expect test app ID added to telemetry and 
 ;                 Test Application initialization event messages from CFE_ES and
 ;		  TST_EVS.
 ;                 Loading the test app will result in 2 INFO messages and 2 
 ;		  DEBUG messages.
-write "************************************************************************"
-;
+write ";***********************************************************************"
+ 
 lclevtmsgsentctr = lclevtmsgsentctr + 4 
 
-ut_setupevt $sc, $cpu, TST_EVS, TST_EVS_INIT_INF_EID, INFO
+ut_setupevents $sc, $cpu, TST_EVS, TST_EVS_INIT_INF_EID, INFO, 1
 ;
 start load_start_app ("TST_EVS", "$CPU")
 
@@ -3384,81 +3428,74 @@ ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 ;      NOTE: req cEVS3100 is assigned a value "A" here,
 ;      it shall be assigned the value "P" upon verification of 
 ;      changes to masks and binary filter counters
-;
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   ut_setrequirements cEVS3100, "A"
   apps_registered = apps_registered + 1
   TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 1
 else
   ut_setrequirements cEVS3100, "F"
-  write " >>> ALERT: cEVS3100 failed" 
-  write" >>> ALERT, ALERT! No event message found to indicate Load/Start/Register Test App"
-  write" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-  write" >>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT"
-  write" >>> ALERT! The test is now over because the test application failed to load"
+  write "<!> Failed (3100) - TST_EVS application failed to start" 
+  write">>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT >>> ALERT"
+  write"Terminating this test because the test application failed to start"
   goto end_it
 endif
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected ctr value = ", lclevtmsgsentctr
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at TST app evt msg sent ctr check value = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC,"; Expected ",EVSevtmsgsentctr
 endif  
 
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-write " >>> Total Number of apps registered after test app = ", apps_registered 
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-write " >>> Test app event msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+write ">>> Total Number of apps registered after test app = ", apps_registered 
+write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+write ">>> Test app event msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
-;
-write "************************************************************************"
-write "Step 3.1.1:    Retrieve application data"
-;                     Expect Test application information
-;                     Upon verification of test app info set req cEVS3100 
-;                     Upon verification of ctr increments set reqs cEVS3104 and
-;                     cEVS3105 to their correct values
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+write "; Step 3.1.1: Retrieve application data"
+;                    Expect Test application information
+;                    Upon verification of test app info set req cEVS3100 
+;                    Upon verification of ctr increments set reqs cEVS3104 and
+;                    cEVS3105 to their correct values
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_311.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_311.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-  write " Expected ctr value = ", lclevtmsgsentctr
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 if ($sc_$CPU_EVS_APP[apps_registered].APPENASTAT) then
   ut_setrequirements cEVS3100, "P"
+  write "<*> Passed (3100) - TST_EVS Event Message Generation is enabled."
 else 
   ut_setrequirements cEVS3100, "F"
-  write " >>> ALERT: cEVS3100 failed at check of evt msg gen status of app added"
+  write "<!> Failed (3100) - TST_EVS Event Message Generation is not enabled."
 endif
 
 if ($SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Debug = 0) AND ;;
@@ -3466,434 +3503,420 @@ if ($SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Debug = 0) AND ;;
    ($SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Err = 1) AND ;;
    ($SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Crit = 1) then 
   ut_setrequirements cEVS3100, "P"
+  write "<*> Passed (3100) - TST_EVS app Event Types enabled properly."
 else
   ut_setrequirements cEVS3100, "F"
-  write " >>> ALERT: cEVS3100 failed at check of evt msg type status of app added" 
+  write "<!> Failed (3100) - TST_EVS app Event Types are not enabled properly."
+  write "==> Debug = ",$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Debug,"; Expected 0"
+  write "==> Info  = ",$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Info,"; Expected 1"
+  write "==> Error = ",$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Err,"; Expected 1"
+  write "==> Crit  = ",$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Crit,"; Expected 1"
 endif   
 
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-write " >>> Name of app added is ",$SC_$CPU_EVS_AppData[apps_registered].AppName
-write " >>> Event Message Generation Status = ",$SC_$CPU_EVS_APP[apps_registered].APPENASTAT
+write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+write ">>> Name of app added is ",$SC_$CPU_EVS_AppData[apps_registered].AppName
+write ">>> Event Message Generation Status = ",$SC_$CPU_EVS_APP[apps_registered].APPENASTAT
 write " >>> DEBUG evt msg type status is ",p@$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Debug
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;
 for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId >= 0) then
+  if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId >= 0) AND ;;
+     ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk >= 0) then
     ut_setrequirements cEVS3100, "P"
+    write "<*> Passed (3100) - TST_EVS Binary Filter ",j," set properly."
   else 
     ut_setrequirements cEVS3100, "F"
-    write ">>> ALERT: cEVS3100 failed when checking evt id"
+    write "<!> Failed (3100) - TST_EVS Binary Filter ",j," not set properly. Expectd EvtID and Mask >= 0"
   endif
-enddo
 
-for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk >= 0) then
-    ut_setrequirements cEVS3100, "P"
-  else 
-    ut_setrequirements cEVS3100, "F"
-    write ">>> ALERT: cEVS3100 failed when checking evt mask"
-  endif
-enddo
-
-;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                    
-for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr >= 0) then
     ut_setrequirements cEVS3100_1, "P"
+    write "<*> Passed (3100.1) - TST_EVS Binary Filter Counter ",j," set properly."
   else 
     ut_setrequirements cEVS3100_1, "F"
-    write ">>> ALERT: cEVS3100_1 failed when checking app bin fltr ctr"
+    write "<!> Failed (3100) - TST_EVS Binary Filter Counter ",j," not set properly. Expectd >= 0"
   endif
 enddo
 
-for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  write "Evt Msg ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId, ;;
-        " ------ mask ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Msk, 5),;;
-        " ------------ ctr " ,$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr
+for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
+  write "Evt Msg ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, ;;
+        " ------ mask ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5),;;
+        " ------------ ctr " ,$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
 enddo
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
-;
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
 ;
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 3.2:    Set DEBUG Event Msg Type Status ENABLE"
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ENAAPPEVTTYPE_EID, DEBUG
+write ";***********************************************************************"
+write "; Step 3.2: Set DEBUG Event Msg Type Status ENABLE"
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ENAAPPEVTTYPE_EID, DEBUG, 1
  
 ut_sendcmd "$SC_$CPU_EVS_ENAAPPEVTTYPE APPLICATION=""TST_EVS"" DEBUG"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
-    write " >>> Command to ENABLE Event Msg Type DEBUG executed"
-  else
-    write " ALERT: failure to execute cmd to Enable Debug type"
   endif
 
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct."
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif
 endif
 
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-;
-write "************************************************************************"
-write "Step 3.2.1:    Retrieve applications data "
-;                     Expect DEBUG evt msg type status ENABLE for test App
-;                     cEVS3203c
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+ 
+write ";***********************************************************************"
+write "; Step 3.2.1: Retrieve applications data "
+;                    Expect DEBUG evt msg type status ENABLE for test App
+;                    cEVS3203c
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                       
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_321.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_321.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-write " >>> For test application ",$SC_$CPU_EVS_AppData[apps_registered].AppName 
-write " >>> DEBUG evt msg type status is ",  p@$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Debug  
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
+write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+write ">>> For test application ",$SC_$CPU_EVS_AppData[apps_registered].AppName 
+write ">>> DEBUG evt msg type status is ",  p@$SC_$CPU_EVS_AppData[apps_registered].EvtTypeAF.Debug  
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+ 
+write ";***********************************************************************"
+write "; Step 3.3: Request generation of 20 iters of every event msg "
+write ";           registered for filtering within Test Application "
 ;
-write "************************************************************************"
-write "Step 3.3:      Request generation of 20 iters of every event msg "
-write "               registered for filtering within Test Application "
-;!!!!!!!!!!!!!!!!!!!
-;!!!!!!!!!!!!!!!!!!!  cEVS3103 ("A" because full verification of cEVS3103
-;!!!!!!!!!!!!!!!!!!!  can only be made after correct pattern of gen of event
-;		      msgs is checked.
+;                  Expect generation of evt msgs as follows:
 ;
-;                     Expect generation of evt msgs as follows:
+;                  ID     Mask      # msgs   generation
+;                  1        0      20       All 20 sequentially
+;                  2  x'ffff'       1       First one only
+;                  3        1      10       Every other one   
+;                  4  x'fff8'       8       First eight only
+;                  5        2      10       Every other 2
+;                  17       0      20       All 20 sequentially
 ;
-;                     ID     Mask      # msgs   generation
-;                     1        0      20       All 20 sequentially
-;                     2  x'ffff'       1       First one only
-;                     3        1      10       Every other one   
-;                     4  x'fff8'       8       First eight only
-;                     5        2      10       Every other 2
-;                     17       0      20       All 20 sequentially
-;
-;                     Expect increment to app evt msg sent ctr by 69
-;                     Expect increment to total evt msg sent ctr by 69  
-;                     Upon respective verification set 
-;                     cEVS3104
-;                     cEVS3105
-write "************************************************************************"
-;
+;                  Expect increment to app evt msg sent ctr by 69
+;                  Expect increment to total evt msg sent ctr by 69  
+;                  Upon respective verification set 
+;                  cEVS3104
+;                  cEVS3105
+write ";***********************************************************************"
+ 
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 20
 
-ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "20" MILLISECONDS = "250"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="20" MILLISECONDS="250"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 20) then
+if ($SC_$CPU_find_event[1].num_found_messages = 20) then
   lclevtmsgsentctr = lclevtmsgsentctr + 20
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - 20 Event messages rcvd."
 else                     
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: failed check of test app num evt msgs of ID 1 found "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3103) - Did not rcv all expected EID=1 messages. Expected 20; Rcvd ",$SC_$CPU_find_event[1].num_found_messages
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctr at ID 1 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+
+write ">>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-;
+
+write "TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+ 
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 1
 
-ut_setupevt $sc, $cpu, TST_EVS, 2, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 2, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "2" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="2" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - 1 Event messages rcvd."
 else                     
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: failed while checking num found msgs of ID 2 "
+  write "<!> Failed (3103) - Did not rcv the expected EID=2 messages. Expected 1; Rcvd ",$SC_$CPU_find_event[1].num_found_messages
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
-else
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
+else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app ctr at ID 2 "
+  write "<!> Failed (3104) - TST_EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
+
 write " >>> app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC          
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
 endif
 
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write "TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 10
 
-ut_setupevt $sc, $cpu, TST_EVS, 3, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 3, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "3" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="3" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - 10 Event messages rcvd."
 else
-  write " >>> ALERT: failed while checking num found msgs of ID 3 "
+  ut_setrequirements cEVS3103, "F"
+  write "<!> Failed (3103) - Did not rcv the expected EID=3 messages. Expected 10; Rcvd ",$SC_$CPU_find_event[1].num_found_messages
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
-  ut_setrequirements cEVS3103, "A"
-else                     
-  ut_setrequirements cEVS3103, "F"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
+else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app evt msg ctr at ID 3"
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC     
+
+write ">>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC     
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-;
+
+write "TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+ 
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 8
 
-ut_setupevt $sc, $cpu, TST_EVS, 4, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 4, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "4" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="4" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 8) then
+if ($SC_$CPU_find_event[1].num_found_messages = 8) then
   lclevtmsgsentctr = lclevtmsgsentctr + 8
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - 8 Event messages rcvd."
 else                     
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: failed while checking num found msgs of ID 4"
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3103) - Did not rcv the expected EID=4 messages. Expected 8; Rcvd ",$SC_$CPU_find_event[1].num_found_messages
 endif
      
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app evt msg ctr at ID 4"
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
+
+write ">>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
                           
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write "TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 10
 
-ut_setupevt $sc, $cpu, TST_EVS, 5, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 5, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "5" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="5" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - 10 Event messages rcvd."
 else                     
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: failed while checking num found msgs of ID 5 "
+  write "<!> Failed (3103) - Did not rcv the expected EID=5 messages. Expected 8; Rcvd ",$SC_$CPU_find_event[1].num_found_messages
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
-  ut_setrequirements cEVS3103, "A"
-else                     
-  ut_setrequirements cEVS3103, "F"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
+else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app evt msg ctr at ID 5"
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+
+write ">>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
                           
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write "TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 20
 
-ut_setupevt $sc, $cpu, TST_EVS, 17, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 17, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "17" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="17" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 20) then
+if ($SC_$CPU_find_event[1].num_found_messages = 20) then
   lclevtmsgsentctr = lclevtmsgsentctr + 20
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - 20 Event messages rcvd."
 else                     
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: failed while checking num found msgs of ID 17"
+  write "<!> Failed (3103) - Did not rcv the expected EID=5 messages. Expected 8; Rcvd ",$SC_$CPU_find_event[1].num_found_messages
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed while checking app evt msg ctr at ID 17"
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
+
+write ">>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed while checking total evt msg sent ctr"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
                           
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write "TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 3.3.1:    Retrieve applications data "
-;                     Expect increment by 20 of each test app bin fltr ctr for
-;		      those evts registered for filtering
-;                     Upon verification of bin fltr ctr/evt msg, set cEVS3103_3
-;		      to its correct value
+write ";***********************************************************************"
+write "; Step 3.3.1: Retrieve applications data "
+;                    Expect increment by 20 of each test app bin fltr ctr for
+;		     those evts registered for filtering
+;                    Upon verification of bin fltr ctr/evt msg, set cEVS3103_3
+;		     to its correct value
 ;
 ;      NOTE: Correct evt msg gen pattern to be verified through analysis of 
 ;	     ASIST log.
-write "************************************************************************"
-;                     
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_331.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_331.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
+local eventID = 65535
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
+  eventID = $sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtID
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtID <> 65535) then
     if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr = 20) then
-      ut_setrequirements cEVS3103, "A"
+      ut_setrequirements cEVS3103, "P"
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103;3103.3) - Filter ID ",eventID," counter is correct."
     else 
       ut_setrequirements cEVS3103, "F"
-      write " >>> ALERT: cEVS3103 failed while checking evt msg generation" 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed while checking test app bin fltr ctr"
+      write "<!> Failed (3103;3103.3) - Filter ID ",eventID," counter expected = 20. Actual count = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
     endif
   endif
 enddo
 
-for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  write " >>> Bin Fltr ID = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtID , " Bin Fltr Ctr  = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
-enddo
+;;for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
+;;  write " >>> Bin Fltr ID = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtID , " Bin Fltr Ctr  = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
+;;enddo
 
-;
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
-;
 
-write "************************************************************************"
-write "Step 3.3.2:    Reset binary filter counters for test application"
-;                     Upon execution and verification of command, set
-;                     cEVS3011 accordingly
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTALLFILTER_EID, DEBUG
+write ";***********************************************************************"
+write "; Step 3.3.2: Reset binary filter counters for test application"
+;                    Upon execution and verification of command, set
+;                    cEVS3011 accordingly
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTALLFILTER_EID, DEBUG, 1
 
 cmdexctr = $SC_$CPU_EVS_CMDPC + 1
 /$SC_$CPU_EVS_RSTALLFLTRS APPLICATION="TST_EVS"
@@ -3902,49 +3925,52 @@ wait 5
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr} 
 if (ut_tw_status = UT_TW_Success) then
   ut_setrequirements cEVS3011, "P"
+  write "<*> Passed (3011) - TST_EVS Reset All Filters command send successfully."
 else
   ut_setrequirements cEVS3011, "F"
-  write " >>> ALERT: cEVS3011 failed at check of reset bin fltr cmd"
+  write "<!> Failed (3011) - TST_EVS Reset All Filters command did not increment CMDPC."
 endif
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
  
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3011, "P"
+  write "<*> Passed (3011) - Event message received."
 else
   ut_setrequirements cEVS3011, "F"
-  write " >>> ALERT: cEVS3011 failed at check of evt msg for reset bin fltr cmd"
+  write "<!> Failed (3011) - Did not rcv expected event message. Exepected 1; Rcv'd ",$SC_$CPU_find_event[1].num_found_messages
 endif 
    
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 3.3.2.1:  Retrieve applications data" 
+write ";***********************************************************************"
+write "; Step 3.3.2.1: Retrieve applications data" 
 ;                     Verify that all test app bin fltr ctrs are set to zero
 ;                     per req cEVS3011
-write "************************************************************************"
+write ";***********************************************************************"
 ;                                          
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+lclevtmsgsentctr = lclevtmsgsentctr + 1
 
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_3321.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_3321.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
@@ -3953,204 +3979,251 @@ write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$cpu_EVS_AppData[apps_registered].BinFltr[i].Ctr = 0) then
     ut_setrequirements cEVS3011, "P"
+    write "<*> Passed (3011) - Filter ",i," was Reset."
   else
     ut_setrequirements cEVS3011, "F"
-    write " >>> ALERT: cEVS3011 failed at check of test app bin fltr ctrs"
+    write "<!> Failed (3011) - Filter ",i," was not Reset. Expected msg count = 0. It is set to ", $sc_$cpu_EVS_AppData[apps_registered].BinFltr[i].Ctr
   endif 
 enddo
+
+;; Display all the filter params
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   write ">>> ",  $sc_$cpu_EVS_AppData[apps_registered].AppName, " -  Evt ID ", $sc_$cpu_EVS_AppData[apps_registered].BinFltr[i].EvtId, " - Mask - ", %hex($sc_$cpu_EVS_AppData[apps_registered].BinFltr[i].Msk, 5), " App Bin Fltr Ctr ", $sc_$cpu_EVS_AppData[apps_registered].BinFltr[i].Ctr 
 enddo 
 
-;
-write "************************************************************************"
-write "Step 3.4:  Change 6 event messages registered for filtering within test "
-write "           app by deleting all registered evts and then adding 6 evt IDs"
-write "           with with specific masks"
-write "************************************************************************"
-write "Step 3.4.1: Delete binary filters for evts 1 to 5 and 17" 
-;                     cEVS3020 (Initial ver)
-write "************************************************************************"
+write ";***********************************************************************"
+write "; Step 3.4: Change 6 event messages registered for filtering within test"
+write ";           app by deleting all registered evts and then adding 6 evt "
+write ";           IDs with with specific masks"
+write ";***********************************************************************"
+write "; Step 3.4.1: Delete binary filters for evts 1 to 5 and 17" 
+;                    cEVS3020 (Initial ver)
+write ";***********************************************************************"
+local eventIDs[6] = [1,2,3,4,5,17]
 
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG 
+for i = 1 to 6 do
+  cmdexctr =$SC_$CPU_EVS_CMDPC + 1
+  ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_DELFILTER_EID, "DEBUG", 1
 
-ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 1"
+  /$SC_$CPU_EVS_DELEVTFLTR APPLICATION="TST_EVS" EVENT_ID=eventIDs[i]
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr} 
+  if (ut_tw_status = UT_TW_Success) then
+    ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - Delete Event Filter command successful."
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     lclevtmsgsentctr = lclevtmsgsentctr + 1
-    ut_setrequirements cEVS3020, "P"
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del filter 1" 
+    write "<!> Failed (3020) - Delete Event Filter command did not increment CMDPC."
+  endif
+
+  ;; Check for the event message
+  ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+  if (ut_tw_status = UT_TW_Success) then
+    ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - Expected event message rcv'd."
+  else 
+    ut_setrequirements cEVS3020, "F"
+    write "<!> Failed (3020) - Expected event message was not rcv'd"
   endif
 
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct."
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif
-endif
 
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+enddo
+
+;-------------------------------------------------------------------------------
+;;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1 
+;
+;ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 2"
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    ut_setrequirements cEVS3020, "P"
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    write "<*> Passed (3020) - Delete Event Filter command successful."
+;  else 
+;    ut_setrequirements cEVS3020, "F"
+;    write "<!> Failed (3020) - Delete Event Filter command did not generate the expected event message."
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;    write "<*> Passed (3105) - Counters are correct."
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;else
+;  ut_setrequirements cEVS3020, "F"
+;  write "<!> Failed (3020) - Delete Event Filter command did not increment CMDPC."
+;endif
+;
+;write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 2"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    ut_setrequirements cEVS3020, "P"
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-  else 
-    ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del filter 2" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1 
+;   
+;ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 3"
+; 
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+; 
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    ut_setrequirements cEVS3020, "P"
+;    write "<*> Passed (3020) - Delete Event Filter command successful."
+;  else 
+;    ut_setrequirements cEVS3020, "F"
+;    write "<!> Failed (3020) - Delete Event Filter command did not generate the expected event message."
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;    write "<*> Passed (3105) - Counters are correct."
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;else
+;  ut_setrequirements cEVS3020, "F"
+;  write "<!> Failed (3020) - Delete Event Filter command did not increment CMDPC."
+;endif
+; 
+;write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG 
-   
-ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 3"
- 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
- 
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    ut_setrequirements cEVS3020, "P"
-  else 
-    ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del filter 3" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1 
 ;
-;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 4"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3020, "P"
-  else 
-    ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del filter 4" 
-  endif
-endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 4"
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3020, "P"
+;    write "<*> Passed (3020) - Delete Event Filter command successful."
+;  else 
+;    ut_setrequirements cEVS3020, "F"
+;    write "<!> Failed (3020) - Delete Event Filter command did not generate the expected event message."
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;    write "<*> Passed (3105) - Counters are correct."
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;else
+;  ut_setrequirements cEVS3020, "F"
+;  write "<!> Failed (3020) - Delete Event Filter command did not increment CMDPC."
+;endif
+;
+;write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 write " >>> EVS evt msg sent ctr = ",$SC_$CPU_EVS_APP[cfe_evs_task_ndx].APPMSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 5" 
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    ut_setrequirements cEVS3020, "P"
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-  else 
-    ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del filter 5" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1 
 ;
+;ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 5" 
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    ut_setrequirements cEVS3020, "P"
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    write "<*> Passed (3020) - Delete Event Filter command successful."
+;  else 
+;    ut_setrequirements cEVS3020, "F"
+;    write "<!> Failed (3020) - Delete Event Filter command did not generate the expected event message."
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;    write "<*> Passed (3105) - Counters are correct."
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;else
+;  ut_setrequirements cEVS3020, "F"
+;  write "<!> Failed (3020) - Delete Event Filter command did not increment CMDPC."
+;endif
+; 
+;write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+
 ;-------------------------------------------------------------------------------
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 17" 
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3020, "P"
-  else 
-    ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at send cmd to del filter 17" 
-  endif
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_DELFILTER_EID, DEBUG, 1 
 ;
-write "************************************************************************"
-write "Step 3.4.1.1:  Retrieve applications data" 
-;                     Expect for test app No event messages registered for 
-;		      filtering
-;                     cEVS3020 (full ver)
-write "************************************************************************"
+;ut_sendcmd "$SC_$CPU_EVS_DELEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID = 17" 
 ;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3020, "P"
+;    write "<*> Passed (3020) - Delete Event Filter command successful."
+;  else 
+;    ut_setrequirements cEVS3020, "F"
+;    write "<!> Failed (3020) - Delete Event Filter command did not generate the expected event message."
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;    write "<*> Passed (3105) - Counters are correct."
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;else
+;  ut_setrequirements cEVS3020, "F"
+;  write "<!> Failed (3020) - Delete Event Filter command did not increment CMDPC."
+;endif
+;
+;write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+
+write ";***********************************************************************"
+write "; Step 3.4.1.1: Retrieve applications data" 
+;                Expect for test app No event messages registered for filtering
+;                cEVS3020 (full ver)
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_3411.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_3411.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
@@ -4159,356 +4232,295 @@ write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId = 65535) then
     ut_setrequirements cEVS3020, "P"
+    write "<*> Passed (3020) - Filter ", i," has been deleted."
   else 
     ut_setrequirements cEVS3020, "F"
-    write " >>> ALERT: cEVSDELFLtr failed at check of test app filter deletion" 
+    write "<!> Failed (3020) - Filter ", i," was NOT deleted "
   endif
 enddo
-;
+ 
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId
 enddo
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
-;  
-write "************************************************************************"
-write "Step 3.4.2:    Add binary filters for 6 evt msgs" 
-;                     cEVS3019 (init ver)
+
+write ";***********************************************************************"
+write "; Step 3.4.2: Add binary filters for 6 evt msgs" 
+;                    cEVS3019 (init ver)
 ;
-;                     Evt Id      Mask
-;                     -------------------
-;                     1           2
-;                     2           x'ffff'
-;                     3           1
-;                     4           x'fff8'
-;                     5           2
-;                     8           0
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
+;                    Evt Id      Mask
+;                    -------------------
+;                    1           2
+;                    2           x'ffff'
+;                    3           1
+;                    4           x'fff8'
+;                    5           2
+;                    8           0
+write ";***********************************************************************"
+eventIDs[6] = 8
+local eventMasks[6] = [2,x'ffff',1,x'fff8',2,0]
+ 
+for i = 1 to 6 do
+  cmdexctr =$SC_$CPU_EVS_CMDPC + 1
+  ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ADDFILTER_EID, "DEBUG", 1
 
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=1 EVENT_MASK = 2"
+  /$SC_$CPU_EVS_ADDEVTFLTR APPLICATION="TST_EVS" EVENT_ID=eventIDs[i] EVENT_MASK=eventMasks[i]
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
+  ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr} 
+  if (ut_tw_status = UT_TW_Success) then
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     EVSevtmsgsentctr = EVSevtmsgsentctr + 1
     ut_setrequirements cEVS3019, "P"
+    write "<*> Passed (3019) - Add Event Filter command sent successfully for ID= 1"
   else 
     ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 1" 
+    write "<!> Failed (3019) - Add Event Filter command for ID=",eventIDs[i]," did not increment CMDPC"
+  endif
+
+  ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+  if (ut_tw_status = UT_TW_Success) then
+    ut_setrequirements cEVS3019, "P"
+    write "<*> Passed (3019) - Expected event message rcv'd."
+  else 
+    ut_setrequirements cEVS3019, "F"
+    write "<!> Failed (3019) - Expected event message was not rcv'd for ID=",eventIDs[i]
   endif
 
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct."
   else 
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif
-endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+enddo
 
+;-------------------------------------------------------------------------------
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
+;
+;ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=2 EVENT_MASK = x'ffff'"
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3019, "P"
+;  else 
+;    ut_setrequirements cEVS3019, "F"
+;    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 2" 
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+;    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;endif
+;
+;write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ;-------------------------------------------------------------------------------
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
 ;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=2 EVENT_MASK = x'ffff'"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3019, "P"
-  else 
-    ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 2" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=3 EVENT_MASK = 1"
 ;
-;-------------------------------------------------------------------------------
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 ;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=3 EVENT_MASK = 1"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3019, "P"
-  else 
-    ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 3" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3019, "P"
+;  else 
+;    ut_setrequirements cEVS3019, "F"
+;    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 3" 
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+;    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;endif
+;
+;write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ; ------------------------------------------------------------------------------
 ; 
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=4 EVENT_MASK = x'fff8'"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
- 
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3019, "P"
-  else 
-    ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 4" 
-  endif
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
+;
+;ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=4 EVENT_MASK = x'fff8'"
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+; 
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3019, "P"
+;  else 
+;    ut_setrequirements cEVS3019, "F"
+;    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 4" 
+;  endif
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+;    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;endif
+;
+;write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ;-------------------------------------------------------------------------------
 ; 
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=5 EVENT_MASK = 2"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3019, "P"
-  else 
-    ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 5" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
+;
+;ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=5 EVENT_MASK = 2"
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3019, "P"
+;  else 
+;    ut_setrequirements cEVS3019, "F"
+;    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 5" 
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+;    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;endif
+;
+;write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 ;
 ;-------------------------------------------------------------------------------
- 
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG 
-
-ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=8 EVENT_MASK = 0"
-
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
-
-if (ut_sc_status = UT_SC_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then
-    lclevtmsgsentctr = lclevtmsgsentctr + 1
-    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
-    ut_setrequirements cEVS3019, "P"
-  else 
-    ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 8" 
-  endif
-
-  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-    ut_setrequirements cEVS3105, "P"
-  else 
-    ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-  endif
-endif
-
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-
+; 
+;ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1 
 ;
-write "************************************************************************"
-write "Step 3.4.3:    Retrieve test application data"
+;ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=8 EVENT_MASK = 0"
+;
+;ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
+;
+;if (ut_sc_status = UT_SC_Success) then
+;  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+;    lclevtmsgsentctr = lclevtmsgsentctr + 1
+;    write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    EVSevtmsgsentctr = EVSevtmsgsentctr + 1
+;    ut_setrequirements cEVS3019, "P"
+;  else 
+;    ut_setrequirements cEVS3019, "F"
+;    write " >>> ALERT: cEVSADDFLtr failed at send cmd to add filter 8" 
+;  endif
+;
+;  if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+;    ut_setrequirements cEVS3105, "P"
+;  else 
+;    ut_setrequirements cEVS3105, "F"
+;    write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+;    write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+;    lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+;  endif
+;endif
+;
+;write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+;
+write ";***********************************************************************"
+write "; Step 3.4.3: Retrieve test application data"
 ;           Upon verification of added filter info based on the following:
 ;
-;                     Evt Id      Mask      B F Ctr
-;                     -----------------------------  
-;                     1           2           0
-;                     2           x'ffff'     0
-;                     3           1           0
-;                     4           x'fff8'     0
-;                     5           2           0
-;                     8           0           0
+;                    Evt Id      Mask      B F Ctr
+;                    -----------------------------  
+;                    1           2           0
+;                    2           x'ffff'     0
+;                    3           1           0
+;                    4           x'fff8'     0
+;                    5           2           0
+;                    8           0           0
 ;
-;                     set cEVS3019 to its correct value (full ver)
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+;                    set cEVS3019 to its correct value (full ver)
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_343.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_343.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;-------------------------------------------------------------------------------
-
 local evtID4ndx = 0       ; for later processing of evt msg ID 4
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 ; for added filter 1, check its bin fltr info
-for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 1) then
-    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = 2) then
+for j = 1 to 6 do
+  if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = eventIDs[j]) then
+    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = eventMasks[j]) then
       if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 0) then
         ut_setrequirements cEVS3019, "P"
-        write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
+        write "<*> Passed (3019) - Event Filter[",j,"] is correct."
       else
-        write "ALERT : wrong counter"
         ut_setrequirements cEVS3019, "F"
-        write " >>> ALERT: cEVS3019 failed at add filters"
+        write "<!> Failed (3019) - Event Filter[",j,"] Ctr = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr,"; Expected 0"
       endif
     else
-      write "ALERT : wrong mask"
+      write "<!> Failed (3019) - Event Filter[",j,"] Mask = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk,"; Expected ",eventMasks[j]
     endif
-  elseif ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 2) then
-    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = x'ffff') then
-      if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 0) then
-        ut_setrequirements cEVS3019, "P"
-        write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
-      else
-        write "ALERT : wrong counter"
-        ut_setrequirements cEVS3019, "F"
-        write " >>> ALERT: cEVS3019 failed at add filters"
-      endif
-    else
-      write "ALERT : wrong mask"
-    endif
-  elseif ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 3) then
-    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = 1) then
-      if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 0) then
-        write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
-      else
-        write "ALERT : counter wrong"
-      endif
-    else
-      write "ALERT : wrong mask"
-    endif
-  elseif ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 4) then
-    evtID4ndx = j
-    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = x'fff8') then
-      if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 0) then
-        ut_setrequirements cEVS3019, "P"
-        write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
-      else
-        write "ALERT : wrong counter"
-        ut_setrequirements cEVS3019, "F"
-        write " >>> ALERT: cEVS3019 failed at add filters"
-      endif
-    else
-      write "ALERT : wrong mask"
-    endif
-  elseif ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 5) then
-    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = 2) then
-      if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 0) then
-        ut_setrequirements cEVS3019, "P"
-        write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
-      else
-        write "ALERT : wrong counter"
-        ut_setrequirements cEVS3019, "F"
-        write " >>> ALERT: cEVS3019 failed at add filters"
-      endif
-    else
-      write "ALERT : wrong mask"
-    endif
-  elseif ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 8) then
-    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk = 0) then
-      if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 0) then
-        ut_setrequirements cEVS3019, "P"
-        write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr
-      else
-        write "ALERT : wrong ctr"
-        ut_setrequirements cEVS3019, "F"
-        write " >>> ALERT: cEVS3019 failed at add filters"
-      endif
-    else
-      write "ALERT : wrong mask"
-    endif
+  else
+    write "<!> Failed - Event Filter[",j,"] ID = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId,"; Expected ",eventIDs[j]
   endif                 
-enddo    
+enddo
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
 write" >>> Requirements Report"
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 3.5:   Request generation of every event msg registered for "
-write "            filtering within Test Application, 20 iterations of each."
+write ";***********************************************************************"
+write "; Step 3.5: Request generation of every event msg registered for "
+write ";           filtering within Test Application, 20 iterations of each."
 ;                  Expect Every event message generated according to its 
 ;		   event mask
 ;                  Evt Id      Mask      B F Ctr    # generated
@@ -4523,236 +4535,217 @@ write "            filtering within Test Application, 20 iterations of each."
 ;                  and increments the total evt msg sent ctr and app evt msg
 ;		   sent ctr
 ;                  Set cEVS3104 and cEVS3105 to their corresponding values
-write "************************************************************************"
-; 
+write ";***********************************************************************"
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 10
 
-ut_setupevt $sc, $cpu, TST_EVS, 1, INFO
+ut_setupevents $sc, $cpu, TST_EVS, 1, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "1" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="1" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
-else
-  write " >>> ALERT: wrong number of msgs found ", $SC_$CPU_num_found_messages
 endif
 
 if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at request for gen of evt msg 1 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed because total evt msg sent ctr is wrong = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
     
-; 
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 1
 
-ut_setupevt $sc, $cpu, TST_EVS, 2, INFO
+ut_setupevents $sc, $cpu, TST_EVS, 2, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "2" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="2" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   lclevtmsgsentctr = lclevtmsgsentctr + 1
-else
-  write " >>> ALERT: wrong number of msgs found ", $SC_$CPU_num_found_messages
-endif
-
-if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then               
-  ut_setrequirements cEVS3104, "P"
-else 
-  ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at request for gen of evt msg 2 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
-endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
-
-if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
-  ut_setrequirements cEVS3105, "P"
-else
-  ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed because total evt msg sent ctr is wrong = ",$SC_$CPU_EVS_MSGSENTC
-  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
-endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-
-;
-;-------------------------------------------------------------------------------
-;
-TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 10
-
-ut_setupevt $sc, $cpu, TST_EVS, 3, INFO
-
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "3" Iters = "20" MILLISECONDS = "150"
-
-ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
-
-if ($SC_$CPU_num_found_messages = 10) then
-  lclevtmsgsentctr = lclevtmsgsentctr + 10
-else
-  write " >>> ALERT: wrong number of msgs found ", $SC_$CPU_num_found_messages
 endif
 
 if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at request for gen of evt msg 3 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed because total evt msg sent ctr is wrong = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-;
+TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 10
+
+ut_setupevents $sc, $cpu, TST_EVS, 3, INFO, 1
+
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="3" Iters="20" MILLISECONDS="150"
+
+ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
+
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
+  lclevtmsgsentctr = lclevtmsgsentctr + 10
+endif
+
+if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
+  ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
+else 
+  ut_setrequirements cEVS3104, "F"
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
+endif
+
+if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
+  ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
+else
+  ut_setrequirements cEVS3105, "F"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
+  lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
+endif
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+
+;-------------------------------------------------------------------------------
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 8
 
-ut_setupevt $sc, $cpu, TST_EVS, 4, INFO
+ut_setupevents $sc, $cpu, TST_EVS, 4, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "4" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="4" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 8) then
+if ($SC_$CPU_find_event[1].num_found_messages = 8) then
   lclevtmsgsentctr = lclevtmsgsentctr + 8
-else
-  write " >>> ALERT: wrong number of msgs found ", $SC_$CPU_num_found_messages
 endif
 
 if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at request for gen of evt msg 4 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed because total evt msg sent ctr is wrong = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 10
 
-ut_setupevt $sc, $cpu, TST_EVS, 5, INFO
+ut_setupevents $sc, $cpu, TST_EVS, 5, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "5" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="5" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 10) then
+if ($SC_$CPU_find_event[1].num_found_messages = 10) then
   lclevtmsgsentctr = lclevtmsgsentctr + 10
-else
-  write " >>> ALERT: wrong number of msgs found ", $SC_$CPU_num_found_messages
 endif
 
 if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at request for gen of evt msg 5 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed because total evt msg sent ctr is wrong = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
 ;-------------------------------------------------------------------------------
-;
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 20
 
-ut_setupevt $sc, $cpu, TST_EVS, 8, INFO
+ut_setupevents $sc, $cpu, TST_EVS, 8, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "8" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="8" Iters="20" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, {TSTEVSevtmsgsentctr}
 
-if ($SC_$CPU_num_found_messages = 20) then
+if ($SC_$CPU_find_event[1].num_found_messages = 20) then
   lclevtmsgsentctr = lclevtmsgsentctr + 20
-else
-  write " >>> ALERT: wrong number of msgs found ", $SC_$CPU_num_found_messages
 endif
 
 if ($sc_$CPU_EVS_App[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at request for gen of evt msg 6 "
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
  
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed because total evt msg sent ctr is wrong = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;            
-write "************************************************************************"
-write "Step 3.5.1:    Retrieve applications data"
-;                     Expect for every app evt msg registered for filtering 
-;		      increment by 20/Evt ID
-;                     Upon verification of evt bin flt ctr increment/reg evt set
-;		      correct value for req cEVS3103_3
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+write "; Step 3.5.1: Retrieve applications data"
+;                    Expect for every app evt msg registered for filtering 
+;		     increment by 20/Evt ID
+;                    Upon verification of evt bin flt ctr increment/reg evt set
+;		     correct value for req cEVS3103_3
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_351.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_351.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
@@ -4764,38 +4757,41 @@ for j = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId <> 65535) then
     if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr = 20) then
       ut_setrequirements cEVS3103_3, "P"
+      write "<*> Passed (3103.3) - Filter[",j,"] counter is correct."
     else 
       ut_setrequirements cEVS3103_3, "F"
-      write " >>> ALERT: cEVS3103_3 failed at check of test app bin filter ctrs"
+      write "<!> Failed (3103.3) - Filter[",j,"] counter = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[j].Ctr,"; Expected 20."
+    endif
+
+    if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[j].EvtId = 4) then
+      evtID4ndx = j
     endif
   endif
 enddo
 
+write " >>> ",$SC_$CPU_EVS_AppData[apps_registered].AppName
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  write " >>> ",$SC_$CPU_EVS_AppData[apps_registered].AppName
   write " >>>           Evt ID = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId
   write " >>>           Mask   = ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Msk, 5)
-  write " >>> App Bin Fltr Ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr 
+  write " >>>     Bin Fltr Ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr 
 enddo 
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
+write ";***********************************************************************"
+write "; Step 3.6: Request via Test app the reset of app bin fltr ctr for "
+write "            evt msg ID 4 with mask = x'FFF8'"
 ;
-write "************************************************************************"
-write "Step 3.6:      Request via Test app the reset of app bin fltr ctr for "
-write "               evt msg ID 4 with mask = x'FFF8'"
-;
-;                     cEVS3106 (initial ver) 
-write "************************************************************************"
+;                  cEVS3106 (initial ver) 
+write ";***********************************************************************"
 cmdexctr =$SC_$CPU_EVS_CMDPC + 1
 
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_RSTFILTER_EID, DEBUG, 1
 
 /$SC_$CPU_TST_EVS_RESETFILTER RAPPNAME="TST_EVS" REVENTID=X'4' 
                   
@@ -4803,67 +4799,67 @@ ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
 
 if ($sc_$CPU_EVS_CMDPC = cmdexctr) then
   ut_setrequirements cEVS3106, "P"
+  write "<*> Passed (3106) - Reset Filter command sent successfully."
 else
   ut_setrequirements cEVS3106, "F"
-  write " >>> ALERT: cEVS3106 failed at clear test app bin fltr ctr for ID 4"
+  write "<!> Failed (3106) - Reset Filter command did not increment CMDPC."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then 
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then 
   lclevtmsgsentctr = lclevtmsgsentctr + 2
   TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 1
-else
-  write " >>> ALERT: failure at check for evt msg when reseting bin fltr ctr"
 endif
-                      
+
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at test app evt msg sent ctr check, value = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif  
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 3.6.1:    Retrieve applications data "
-;                     Expect test app bin fltr ctr for evt ID 4 = 0
-;                     Upon verification of reset for bin fltr ctr set
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+write "; Step 3.6.1: Retrieve applications data "
+;                    Expect test app bin fltr ctr for evt ID 4 = 0
+;                    Upon verification of reset for bin fltr ctr set
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                     
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_361.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_361.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
     
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;===============================================================================
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr = 0) then
   ut_setrequirements cEVS3106, "P"
+  write "<*> Passed (3106) - Event ID 4 Filter Counter has been reset."
 else
   ut_setrequirements cEVS3106, "F"
-  write " >>> ALERT: cEVS3106 failed when test app bin fltr ctr for ID 4 found not zero"
+  write "<!> Failed (3106) - Event ID 4 Filter Counter = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr,"; Expected 0"
 endif
 
 write " > > > > > > > > > > > > > > > > > > > > > > > > > >"
@@ -4874,229 +4870,221 @@ write ">>>  App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evt
 write "< < < < < < < < < < < < < < < < < < < < < < < < < < "
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 3.7:   Request generation of 20 iterations of event message ID 4"
+write ";***********************************************************************"
+write "; Step 3.7: Request generation of 20 iterations of event message ID 4"
 ;                  Expect Evt Msg generated 8 times only according to its mask
 ;                  cEVS3103 set to "A" because evaluation of evt msg gen pattern
 ;                  must be done post-process
 ;                  cEVS3104 and cEVS3105 
-write "************************************************************************"
-;
+write ";***********************************************************************"
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 8
 
-ut_setupevt $sc, $cpu, TST_EVS, 4, INFO
+ut_setupevents $sc, $cpu, TST_EVS, 4, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "4" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="4" Iters="20" MILLISECONDS="150"
 
 ; Need to allow a minimum of 3 seconds for all 20 event requests to be issued.
 wait 20
 
-if ($SC_$CPU_num_found_messages = 8) then
+if ($SC_$CPU_find_event[1].num_found_messages = 8) then
   lclevtmsgsentctr = lclevtmsgsentctr + 8
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - Expected number of events rcvd."
 else
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check of app evt msgs sent ctr"  
+  write "<!> Failed (3103) - Rcvd ",$SC_$CPU_find_event[1].num_found_messages,"; Expected 8."
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at test app evt msg sent ctr check, value = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif  
-
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at check of total evt msgs sent ctr"  
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 3.7.1:    Retrieve applications data "
-;                     Expect app bin filter ctr for evt ID 4 equal to 20, upon 
-;                     bin fltr ctr verification set
-;                     cEVS3103_3 to pass
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+write "; Step 3.7.1: Retrieve applications data "
+;                    Expect app bin filter ctr for evt ID 4 equal to 20, upon 
+;                    bin fltr ctr verification set
+;                    cEVS3103_3 to pass
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_371.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_371.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr = 20) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Bin Filter counter for ID=4 correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write" >>> ALERT: cEVS3103_3 failed at check of test app bin fltr ctr for evt ID 4"
+  write "<!> Failed (3103.3) - Bin Filter counter for ID=4 = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr,"; Expected 20"
 endif                       
                     
-write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr
- 
-;
-write "************************************************************************"
-write "Step 3.8:    Request generation of event message 4 for 20 iterations."
+write ";***********************************************************************"
+write "; Step 3.8: Request generation of event message 4 for 20 iterations."
 ;           Expect No Evt Msg generated because the fltr algorithm depends on 
 ;           the value of the app bin fltr ctr for the specified evt ID in
 ;           in combination with the mask to cause the gen of evt msgs and at
 ; 	    this point the bin fltr ctr = 20
 ;                   cEVS3103 
 ;                   cEVS3104 and cEVS3105 
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, TST_EVS, 4, INFO
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, TST_EVS, 4, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "4" Iters = "20" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="4" Iters="20" MILLISECONDS="150"
 wait 24
                     
-if ($SC_$CPU_num_found_messages <> 0) then
+if ($SC_$CPU_find_event[1].num_found_messages <> 0) then
   ut_setrequirements cEVS3103, "F"
-  write " >>> ALERT: cEVS3103 failed at check of app evt msgs sent ctr"  
+  write "<!> Failed (3103) - ",$SC_$CPU_find_event[1].num_found_messages," event messages were generated when none were expected."
 else                    
-  ut_setrequirements cEVS3103, "A"
+  ut_setrequirements cEVS3103, "P"
+  write "<*> Passed (3103) - No event messages were generated as expected."
 endif
    
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Counters are correct."
 else
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at check of test app evt msg sent ctr"
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
+  TSTEVSevtmsgsentctr = $SC_$CPU_EVS_App[apps_registered].APPMSGSENTC
 endif
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
-         
+
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at check of total evt msg sent ctr"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
                      
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 3.8.1:    Retrieve applications data "
-;                     Expect app bin filter ctr for evt ID 4 equal to 40, upon 
-;                     bin fltr ctr verification set                     
-;                     cEVS3103_3 to pass
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+write "; Step 3.8.1: Retrieve applications data "
+;                    Expect app bin filter ctr for evt ID 4 equal to 40, upon 
+;                    bin fltr ctr verification set                     
+;                    cEVS3103_3 to pass
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_381.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_381.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 write"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr = 40) then
   ut_setrequirements cEVS3103_3, "P"
-else
+  write "<*> Passed (3103.3) - Filter counter is correct."
+else 
   ut_setrequirements cEVS3103_3, "F"
-  write" >>> ALERT: cEVS3103_3 failed at check of test app bin fltr ctr for evt ID 4"
+  write "<!> Failed (3103.3) - Filter counter = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr,"; Expected 40."
 endif
            
-write " >>> Evt ID is  ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].EvtId
-write " >>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr 
+write ">>> Evt ID is  ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].EvtId
+write ">>> bin fltr ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID4ndx].Ctr 
 
-;
-write "************************************************************************"
-write "Step 4.0: Add filter for event message ID 12 which is not registered for"
-write "          filtering"
-write "************************************************************************"
-;                      
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
+write ";***********************************************************************"
+write "; Step 4.0: Add filter for event message ID 12 which is not registered "
+write ";           for filtering"
+write ";***********************************************************************"
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=12 EVENT_MASK=X'0'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
                       
 if (ut_tw_status = UT_TW_Success) then
-  if ($SC_$CPU_num_found_messages = 1) then              
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
     lclevtmsgsentctr = lclevtmsgsentctr + 1
     ut_setrequirements cEVS3019, "P"
+    write "<*> Passed (3019) - Add Event Filter command sent successfully."
   else
     ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVS3019 failed at check for evt ID 12"
+    write "<!> Failed (3019) - Event message for Add Event Filter command not rcv'd."
   endif
 endif
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 4.0.1:    Retrieve applications data "
+write ";***********************************************************************"
+write "; Step 4.0.1: Retrieve applications data "
 ;                     Expect evt msg ID 12 added for filtering
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_401.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_401.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -5105,81 +5093,82 @@ local valid_evt_ID_12_ndx = 0
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId = 12) then
     ut_setrequirements cEVS3019, "P"
+    write "<*> Passed (3019) - Event ID=12 found in binary filter table."
     valid_evt_ID_12_ndx = i
   endif
 enddo
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].Msk = 0) then
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - Event ID=12 mask is set correctly."
+
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].Ctr = 0) then
     ut_setrequirements cEVS3019, "P"
-    write " >>> Evt Msg ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].EvtId, " Added at index ", valid_evt_ID_12_ndx
-    write " >>> Mask = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].Msk 
-    write " >>> App Bin Flt Ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].Ctr
+    write "<*> Passed (3019) - Event ID=12 counter is set correctly."
   else
     ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVS3019 failed at check of app bin fltr ctr for evt 12"
+    write "<!> Failed (3019) - Event ID=12 counter = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].Ctr,"; Expected 0."
   endif
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed at check of bin fltr mask for evt 12"
+  write "<!> Failed (3019) - Event ID=12 counter = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[valid_evt_ID_12_ndx].Msk,"; Expected 0."
 endif
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 4.1:   Add filter for event message ID 12 which has been previously"
-write "            registered for filtering"
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_EVT_FILTERED_EID, ERROR
+write ";***********************************************************************"
+write "; Step 4.1: Add filter for event message ID 12 which has been previously"
+write ";           registered for filtering"
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_EVT_FILTERED_EID, ERROR, 1
 
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=12 EVENT_MASK=X'0'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   lclevtmsgsentctr = lclevtmsgsentctr + 1
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - Add Event Filter command failed as expected."
 else 
   ut_setrequirements cEVS3019, "F"
-  write "ALERT >>> cEVS3019 failed when num events msgs generated = $SC_$CPU_num_found_messages"
+  write "<!> Failed (3019) - Add Event Filter Error event message was not generated for an event already being filtered."
 endif 
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-;
-write "************************************************************************"
-write "Step 4.1.1:    Retrieve applications data "
-;                     Expect NO evt ID 12 added for filtering
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+ 
+write ";***********************************************************************"
+write "; Step 4.1.1: Retrieve applications data "
+;                    Expect NO evt ID 12 added for filtering
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_411.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_411.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
  
@@ -5191,11 +5180,7 @@ for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId = 12) then
     if (i <> valid_evt_ID_12_ndx) then
       ut_setrequirements cEVS3019, "F"
-      write " >>> ALERT: cEVS3019 failed when checking for absence of duplicate evt ID"
-      write " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-      write ">>> ALERT: Invalid addition of Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId
-      write ">>>        at location ", i
-      write " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      write "<!> Failed (3019) - Found EID=12 at a different location than expected."
     else
       ut_setrequirements cEVS3019, "P"
     endif
@@ -5203,135 +5188,128 @@ for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
 enddo
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 4.2:   Add filter for event message ID 13 which is not registered "
-write "            for filtering"
+write ";***********************************************************************"
+write "; Step 4.2: Add filter for event message ID 13 which is not registered "
+write ";           for filtering"
 ;                  cEVS3019 is set to pass if command succeeds,
 ;                  otherwise it is set to fail"
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ADDFILTER_EID, DEBUG, 1
 
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=13 EVENT_MASK=X'0'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   ut_setrequirements cEVS3019, "P"
 else
   ut_setrequirements cEVS3019, "F"
-  write " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  write " >>> ALERT: cEVS3019 failed while checking for add evt fltr evt msg"
-  write " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  write "<!> Failed (3019) - Add Event Filter command for EID=13 did not generated the expected event message."
 endif
 
 lclevtmsgsentctr = lclevtmsgsentctr + 1
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 4.2.1:    Retrieve applications data "
-;                     Expect evt ID 13 added for filtering
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+write "; Step 4.2.1: Retrieve applications data "
+;                    Expect evt ID 13 added for filtering
+write ";***********************************************************************"
+ 
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                      
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_421.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_421.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
  
 write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-;
+ 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;
 local evt_ID_13_ndx
 
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId = 13) then
     ut_setrequirements cEVS3019, "P"
     evt_ID_13_ndx = i
-    write " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    write " >>> Evt msg ID ", $sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId, " found.  Index ", i
   endif
 enddo
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evt_ID_13_ndx].EvtId <> 13) then
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: req cEVS3019 failed because evt msg ID 13 was not found"
+  write "<!> Failed (3019) - Did not find EID=13 registered for filtering."
 endif
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-; 
-write "************************************************************************"
-write "Step 4.3   Add filter for event message ID 14 which is not registered "
-write "           for filtering"
+write ";***********************************************************************"
+write "; Step 4.3: Add filter for event message ID 14 which is not registered "
+write ";           for filtering"
 ;               Expect Error message indicating that the event message ID 14 
 ;		filter cannot be added because the maximum number of events that
 ;		can registered for filtering has already been reached.
 ;               cEVS3019 is set to pass if above statement is true, otherwise
 ;               the requirement is set to Fail
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, CFE_EVS, CFE_EVS_ERR_MAXREGSFILTER_EID, ERROR, 1
 
 ut_sendcmd "$SC_$CPU_EVS_ADDEVTFLTR APPLICATION=""TST_EVS"" EVENT_ID=14 EVENT_MASK=X'0'"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
-if ($SC_$CPU_num_found_messages = 1) then              
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then              
   ut_setrequirements cEVS3019, "P"
+  write "<*> Passed (3019) - Max filters event message rcv'd."
   EVSevtmsgsentctr = EVSevtmsgsentctr + 1
   lclevtmsgsentctr = lclevtmsgsentctr + 1 
 else
   ut_setrequirements cEVS3019, "F"
-  write " >>> ALERT: cEVS3019 failed for evt ID 14 max num evts must have maxed out"
+  write "<!> Failed (3019) - Did not rcv the expected event message. Maybe the event was added??."
 endif
  
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-;
-write "************************************************************************"
-write "Step 4.4:      Retrieve applications data"
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+ 
+write ";***********************************************************************"
+write "; Step 4.4: Retrieve applications data"
 ;        Expected evt msg configuration for test app after step 4.3 is executed
 ;                    ID     Mask      
 ;                    ------------
@@ -5343,24 +5321,24 @@ write "Step 4.4:      Retrieve applications data"
 ;                     8     0    
 ;                     12    0
 ;                     13    0
-write "************************************************************************"
-;                      
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+write ";***********************************************************************"
+
+lclevtmsgsentctr = lclevtmsgsentctr + 1
                    
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_4_4.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_4_4.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check"
-  write " Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
   lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 ;===============================================================================
 
@@ -5368,21 +5346,14 @@ write " > > > > > > > > > > > > > > >> > > > > >> > > >> > >"
 write " Event Msg IDs currently registered for filtering with Test App"
 
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
-  if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId = 14) then
-    ut_setrequirements cEVS3019, "F"
-    write " >>> ALERT: cEVS3019 failed at check of add fltr for evt msg ID 14"
-    write "            Because such evt should not have been added"
-  else
-    ut_setrequirements cEVS3019, "P"
-  endif
   write " >>> Evt Msg ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId
 enddo
 write " > > > > > > > > > > > > > > >> > > > > >> > > >> > >"
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
+ 
 write" >>> Requirements Report"
-;
+ 
 local proceed = TRUE
 
 for i = 0 to ut_req_array_size do
@@ -5396,7 +5367,6 @@ if (proceed = FALSE) then
   goto end_it
 endif
 
-;
 write "************************************************************************"
 write"Table 1 - Summary Max Counter Test Sequence of Events"
 write"-------------------------------------------------------------------------"
@@ -5414,24 +5384,24 @@ write"5.9      1      TST_EVS Id=1     65535     65535       65535           1"
 write"5.10     1      TST_EVS Id=1     65535     65535       65535           0" 
 write"5.11     10     TST_EVS Id=8     65535     65535       65535           10"
 write"-------------------------------------------------------------------------"
-;
-write "************************************************************************"
-write "Step 5.0:     Test Maximum Event Msg Sent Counters and"
-write "              Binary Filter Counters (See table 1) " 
-write "************************************************************************"
-write "Step 5.1:     Reset Counters"
-write "************************************************************************"
-write "Step 5.1.1:   Request via TST_EVS the reset of all TST_EVS binary filter"
-write "		     counters"
+ 
+write ";***********************************************************************"
+write "; Step 5.0: Test Maximum Event Msg Sent Counters and"
+write ";           Binary Filter Counters (See table 1) " 
+write ";***********************************************************************"
+write "; Step 5.1: Reset Counters"
+write ";***********************************************************************"
+write "; Step 5.1.1: Request via TST_EVS the reset of all TST_EVS binary filter"
+write ";	     counters"
 ;                    cEVS3107
-write "************************************************************************"
-;                
+write ";***********************************************************************"
+
 TSTEVSevtmsgsentctr = TSTEVSevtmsgsentctr + 1
 lclevtmsgsentctr = lclevtmsgsentctr + 2
 
 cmdexctr = $SC_$CPU_EVS_CMDPC + 1
 
-ut_setupevt $sc, $cpu, TST_EVS, TST_EVS_RESETALLFILTERIDS_EID, INFO
+ut_setupevents $sc, $cpu, TST_EVS, TST_EVS_RESETALLFILTERIDS_EID, INFO, 1
 
 /$sc_$CPU_TST_EVS_RESETALLFILTERS AAPPNAME="TST_EVS"  
 
@@ -5439,98 +5409,96 @@ ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
 
 if ($SC_$CPU_EVS_CMDPC = cmdexctr) then
   ut_setrequirements cEVS3107, "P"
+  write "<*> Passed (3107) - Reset All Filters command sent successfully."
 else
   ut_setrequirements cEVS3107, "F"
-  write " >>> ALERT : cEVS3107 failed because Cmd to reset test app bin fltr ctrs failed"
+  write "<!> Failed (3107) - Reset All Filters command did not increment CMDPC."
 endif
  
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = TSTEVSevtmsgsentctr) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
 else 
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: cEVS3104 failed at test app evt msg sent ctr check, value = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-  write " >>>        Expected ",TSTEVSevtmsgsentctr
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected ",TSTEVSevtmsgsentctr
 endif  
 
-write " >>> test app evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   EVSevtmsgsentctr = EVSevtmsgsentctr + 1                            
   if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
     ut_setrequirements cEVS3105, "P"
+    write "<*> Passed (3105) - Counters are correct."
   else
     ut_setrequirements cEVS3105, "F"
-    write " >>> ALERT: incorrect total evt msgs sent ctr = ",$SC_$CPU_EVS_MSGSENTC
-    write " >>> while checking it at test app binary filter ctrs reset"
-    write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
     lclevtmsgsentctr = $sc_$CPU_EVS_MSGSENTC
   endif
 endif
 
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+write ">>> TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
+write ";***********************************************************************"
+write "; Step 5.1.1.1: Retrieve app data"
+;                      Expect all tst app binary filter counters to be zero
+;                      cEVS3107
+write ";***********************************************************************"
 ;
-write "************************************************************************"
-write "Step 5.1.1.1:  Retrieve app data"
-;                     Expect all tst app binary filter counters to be zero
-;                     cEVS3107
-write "************************************************************************"
-;
-lclevtmsgsentctr = lclevtmsgsentctr + 2
+lclevtmsgsentctr = lclevtmsgsentctr + 1
 
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_5111.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5111.dat", "$CPU")
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, {lclevtmsgsentctr}
 
 if ($sc_$CPU_EVS_MSGSENTC = lclevtmsgsentctr) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: cEVS3105 failed at total evt msg sent ctr check = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected ",lclevtmsgsentctr 
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-;                   
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+                    
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr = 0) then
     ut_setrequirements cEVS3107, "P"
+    write "<*> Passed (3107) - Binary Filter counter # ",i," reset."
   else
     ut_setrequirements cEVS3107, "F"
-    write " >>> ALERT: cEVS3107 failed at check of test app bin fltr ctrs"
+    write "<!> Failed (3107) - Binary Filter counter # ",i," set to ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr,"; Expected 0"
   endif 
 enddo
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   write ">>> ", $SC_$CPU_EVS_AppData[apps_registered].AppName, " -  Evt ID ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].EvtId, " - Mask - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Msk, 5), " App Bin Fltr Ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[i].Ctr 
 enddo 
 
-;
-write "************************************************************************"
-write "Step 5.1.2:   Disable evt msg type DEBUG for CFE_EVS to prevent of evt"
-write "		     generation of evt msgs when reseting ctrs and getting file"
-write "              to CVT"
-write "************************************************************************"
+write ";***********************************************************************"
+write "; Step 5.1.2: Disable evt msg type DEBUG for CFE_EVS to prevent of evt"
+write ";	     generation of evt msgs when reseting ctrs and getting file"
+write ";             to CVT"
+write ";***********************************************************************"
 ;     NOTE: NO more increment by 2 of total evt msg sent counter nor of CFE_EVS
 ;           msg sent counter due to generation of evt msgs from app data 
 ;	    retrieval because the status of DEBUG evt msg type for CFE_EVS will
 ;	    be hereafter, DISABLE
   
-local cmdexctr =$SC_$CPU_EVS_CMDPC + 1
+cmdexctr =$SC_$CPU_EVS_CMDPC + 1
 
 ut_sendcmd "$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION=""CFE_EVS"" DEBUG"
 
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr} 
 
 if (ut_sc_status = UT_SC_CmdFailure) then              
-  write " >>> ALERT: failure to DISABLE CFE_EVS debug evt msg type"
+  write " <!> Failed - DISABLE CFE_EVS debug event msg type"
 endif
-;
-write "************************************************************************"
-write "Step 5.1.3:    Clear TST_EVS evt msgs sent ctr"
-;                     Expect app evt msg sent ctr = 0
-;                     cEVS3009 (clear)
-write "************************************************************************"
+ 
+write ";***********************************************************************"
+write "; Step 5.1.3: Clear TST_EVS evt msgs sent ctr"
+;                    Expect app evt msg sent ctr = 0
+;                    cEVS3009 (clear)
+write ";***********************************************************************"
 ;
 cmdexctr =$SC_$CPU_EVS_CMDPC + 1
 
@@ -5539,31 +5507,30 @@ ut_sendcmd "$SC_$CPU_EVS_RSTAPPCTRS APPLICATION=""TST_EVS"""
 ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr} 
 
 if (ut_sc_status = UT_SC_CmdFailure) then
-  write " >>> ALERT: failure to reset test app evt msg sent ctr"
+  write " <!> Failed - TST_EVS app event msg counter reset"
 else
   if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 0) then
     ut_setrequirements cEVS3009, "P"
-    TSTEVSevtmsgsentctr =$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+    write "<*> Passed (3009) - TST_EVS msg sent counter reset."
+    TSTEVSevtmsgsentctr = $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
   else
     ut_setrequirements cEVS3009, "F"
-    write " >>> ALERT: cEVS3009 failed at check of test app ctr"
+    write "<!> Failed (3009) - TST_EVS msg sent counter = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 0"
   endif 
 endif
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> Test App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-;
-write "************************************************************************"
-write "Step 5.1.4:    Clear total event messages sent counter. "
-;                     Expect total event msg sent ctr = 0
-;                     cEVS3003 (clear/reset) This requirement is only partially
-;		      tested here.  The purpose of the command is to reset the
-;		      Total Evt Msg Sent Ctr
-;                     The requirement is fully tested in the EVS Cmds test.
-;                     The standard utility, ut_sendcmd, is not used here to send
-;		      command because the command counter should not increment 
-;		      like most commands.
-write "************************************************************************"
-;
+
+write ";***********************************************************************"
+write "; Step 5.1.4: Clear total event messages sent counter. "
+;                    Expect total event msg sent ctr = 0
+;                    cEVS3003 (clear/reset) This requirement is only partially
+;		     tested here.  The purpose of the command is to reset the
+;		     Total Evt Msg Sent Ctr
+;                    The requirement is fully tested in the EVS Cmds test.
+;                    The standard utility, ut_sendcmd, is not used here to send
+;		     command because the command counter should not increment 
+;		     like most commands.
+write ";***********************************************************************"
+ 
 write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_evs_cmdec
 
 /$SC_$CPU_EVS_ResetCtrs
@@ -5573,29 +5540,27 @@ write "EVS command counters valid/invalid: ", $sc_$cpu_evs_cmdpc, "/", $sc_$cpu_
 
 if ($sc_$CPU_EVS_MSGSENTC = 0) then
   ut_setrequirements cEVS3003, "P"
+  write "<*> Passed (3003) - Counter reset."
 else
   ut_setrequirements cEVS3003, "F"
-  write " >>> ALERT: cEVS3003 failed at check of reset total evt msgs sent ctr"
+  write "<!> Failed (3003) - EVS Msg Sent Counter = ",$sc_$CPU_EVS_MSGSENTC,"; Expected 0"
 endif 
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-; 
-write "************************************************************************"
-write "Step 5.1.5:    Set mask for evt msg ID 1 in Test app to 0 always send"
-write "************************************************************************"
-;                     NOTE: If the evt msg doesn't occur, 
-;                     we know that it is not because of the bin filter mask.
-;                     cEVS3012
+write ";***********************************************************************"
+write "; Step 5.1.5: Set mask for evt msg ID 1 in Test app to 0 always send"
+write ";***********************************************************************"
+;                    NOTE: If the evt msg doesn't occur, 
+;                    we know that it is not because of the bin filter mask.
+;                    cEVS3012
 ;
 cmdexctr =$SC_$CPU_EVS_CMDPC + 1
 
@@ -5605,19 +5570,20 @@ ut_tlmwait $SC_$CPU_EVS_CMDPC, {cmdexctr}
 
 if (ut_sc_status = UT_SC_CmdFailure) then
   ut_setrequirements cEVS3012, "F"
-  write " >>> ALERT: failure to set bin fltr mask for test app evt id 1"
+  write "<!> Failed (3012) - Set Binary Filter mask command did not increment CMDPC."
 else
   ut_setrequirements cEVS3012, "P"
+  write "<*> Passed (3012) - Set Binary Filter mask command send successfully."
 endif                     
-;
-write "************************************************************************"
-write "Step 5.1.5.1:  Retrieve app data"
+ 
+write ";***********************************************************************"
+write "; Step 5.1.5.1: Retrieve app data"
 ;                     Expect test app evt msg ID 1 with mask = 0,
 ;                     test app evt msg ID1 bin fltr ctr = 0
 ;                     cEVS3012
-write "************************************************************************"
+write ";***********************************************************************"
 ;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_5151.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5151.dat", "$CPU")
 wait 10
 
 local evtID1 = 0
@@ -5633,7 +5599,7 @@ if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Msk = 0) then
   ut_setrequirements cEVS3012, "P"
 else
   ut_setrequirements cEVS3012, "F"
-  write " >>> ALERT: cEVS3012 failed at check of mask and ctr for evt ID 1 "
+  write "<!> Failed (3012) - Binary Filter mask for EID=1 = ",$sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Msk,"; Expected 0"
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -5644,125 +5610,108 @@ write " >>>   ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId,;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, "   - -   ",$SC_$CPU_EVS_MSGSENTC
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 5.2:      Send 10 no-ops to CFE_SB "
-;                     Expect 10 SB NO-OP Evt Msgs and 
-;                     total evt msg sent ctr = 10
-;                     test app evt msg sent ctr = 0
-;                     cEVS3105
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO
+write ";***********************************************************************"
+write "; Step 5.2: Send 10 no-ops to CFE_SB "
+;                  Expect 10 SB NO-OP Evt Msgs and 
+;                  total evt msg sent ctr = 10
+;                  test app evt msg sent ctr = 0
+;                  cEVS3105
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO, 1
 
 ut_sendcmd $SC_$CPU_SB_NOOP 10
-ut_tlmwait $SC_$CPU_num_found_messages, 10 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10 
                  
-if ($SC_$CPU_num_found_messages <> 10) then           
-  write " >>> ALERT: incorrect number of evt msgs found"  
-endif
-
 if ($sc_$CPU_EVS_MSGSENTC = 10) then
-  write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
   ut_setrequirements cEVS3105, "P"
-else
+  write "<*> Passed (3105) - Counters are correct."
+else 
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: wrong value for total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 10." 
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-write "************************************************************************"
-write "Step 5.2.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.2.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 0
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_521.dat", "$CPU")
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_521.dat", "$CPU")
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 0 ) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write " >>> ALERT: wrong value for test app evt ID1 bin fltr ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 0"
 endif
-
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-write " >>> evt id      mask      fltr ctr    App ctr     Total ctr"
-write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
-      " - - ", %hex($SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Msk, 5), ;;
-      " - - ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr, " - - ", ;;
-      $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
-write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
-write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 write" >>> Requirements Report"
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-write "************************************************************************"
-write "Step 5.3:      Request generation of 10 TST_EVS event id 12" 
-;                     which is registered for filtering
-;                     cEVS3105, cEVS3104
-;                     Expect
-;                     total evt msg sent ctr = 20
-;                     tst app evt msg sent ctr = 10
-;                     TST_EVS ID=12 Evt Msgs = 10
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, TST_EVS, 12, DEBUG
+write ";***********************************************************************"
+write "; Step 5.3: Request generation of 10 TST_EVS event id 12" 
+;                  which is registered for filtering
+;                  cEVS3105, cEVS3104
+;                  Expect
+;                  total evt msg sent ctr = 20
+;                  tst app evt msg sent ctr = 10
+;                  TST_EVS ID=12 Evt Msgs = 10
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 12, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "12" Iters = "10" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="12" Iters="10" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_MSGSENTC, 20 
 
-if ($SC_$CPU_num_found_messages <> 10) then
-  write "ALERT : incorrect number of evt msgs found" 
+if ($SC_$CPU_find_event[1].num_found_messages <> 10) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 10"
 endif
 
 if ($sc_$CPU_EVS_MSGSENTC = 20) then
   ut_setrequirements cEVS3105, "P"
+  write "<*> Passed (3105) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
-  write " >>> ALERT: incorrect total evt msgs sent ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 10." 
 endif
-
-write " TEMSC Total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 10) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - TST_EVS Message counts are correct"
 else
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: incorrect test app evt msgs ctr ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC 
+  write "<!> Failed (3104) - TST_EVS msg sent ctr = ",$sc_$CPU_EVS_App[apps_registered].APPMSGSENTC,"; Expected 10."
 endif
                          
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> Test app evt msgs ctr ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
-                      
-;
-write "************************************************************************"
-write "Step 5.3.1:   Retrieve app data"
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
+
+write ";***********************************************************************"
+write "; Step 5.3.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 0
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_531.dat", "$CPU")
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_531.dat", "$CPU")
 wait 10                     
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 0 ) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write " >>> ALERT: wrong value for test app evt ID1 bin fltr ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 0"
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -5773,51 +5722,49 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 write" >>> Requirements Report"
-;
+ 
 for i = 0 to ut_req_array_size do
   ut_pfindicate {cfe_requirements[i]} {ut_requirement[i]}
 enddo
 
-;
-write "************************************************************************"
-write "Step 5.4:  Request generation of 65514 iterations of TST_EVS event id 1"
-;                 Expect 65514 TST_EVS ID=1 Evt Msgs
-;                 total evt msg sent ctr = 65534
-;                 tst app evt msg sent ctr = 65524
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, TST_EVS, 1, INFO
+write ";***********************************************************************"
+write "; Step 5.4: Request generation of 65514 iterations of TST_EVS event id 1"
+;                  Expect 65514 TST_EVS ID=1 Evt Msgs
+;                  total evt msg sent ctr = 65534
+;                  tst app evt msg sent ctr = 65524
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "1" Iters = "65514" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="1" Iters="65514" MILLISECONDS="150"
 
 wait until $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 65524
 
-if ($SC_$CPU_num_found_messages <> 65514) then
-  write " >>> Number of evt msgs found", $SC_$CPU_num_found_messages  
+if ($SC_$CPU_find_event[1].num_found_messages <> 65514) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 65514"
 endif
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC <> 65524) then
-  write " >>> ALERT: Unexpected App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC  
+  write "<!> Failed - Unexpected App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65524"
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 5.4.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.4.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 65514
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_541.dat", "$CPU")
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_541.dat", "$CPU")
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65514 ) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65514."
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -5828,46 +5775,47 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
-write "************************************************************************"
-write "Step 5.5:     Request generation of 1 iteration of TST_EVS event id 1"
-;                    total evt msg sent ctr = 65535
-;                    tst app evt msg sent ctr = 65525
-;                    cEVS3103_3
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, TST_EVS, 1, INFO
+ 
+write ";***********************************************************************"
+write "; Step 5.5: Request generation of 1 iteration of TST_EVS event id 1"
+;                  total evt msg sent ctr = 65535
+;                  tst app evt msg sent ctr = 65525
+;                  cEVS3103_3
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "1" Iters = "1" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="1" Iters="1" MILLISECONDS="150"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
-if ($SC_$CPU_num_found_messages <> 1) then
-  write " >>> ALERT: incorrect number of evt msgs found"  
+if ($SC_$CPU_find_event[1].num_found_messages <> 1) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 1"
 endif
+
+wait 10
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC <> 65525) then
-  write " >>> ALERT: Unexpected App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed - Unexpected App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65525"
 endif
 
-write " >>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
-write " >>> App evt msg sent ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+write ">>> TEMSC Total Evt Msg Sent Ctr = ",$SC_$CPU_EVS_MSGSENTC
 
-;
-write "************************************************************************"
-write "Step 5.5.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.5.1: Retrieve app data"
 ;                    test app evt msg ID1 bin fltr ctr = 65515
 ;                    cEVS3103_3
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_551.dat", "$CPU")
+write ";***********************************************************************"
+
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_551.dat", "$CPU")
 wait 30
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr = 65515) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write " >>> ALERT: Unexpected value for test app evt msg ID 1 bin fltr ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr 
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65515."
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -5878,54 +5826,56 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+ 
+write ";***********************************************************************"
+write "; Step 5.6: Request generation of 9 iteration of TST_EVS event id 1"
+;                  Expect 9 Evt Msg
+;                  total evt msg sent ctr = 65535
+;                  test app evt msg sent ctr = 65534
 ;
-write "************************************************************************"
-write "Step 5.6:      Request generation of 9 iteration of TST_EVS event id 1"
-;                     Expect 9 Evt Msg
-;                     total evt msg sent ctr = 65535
-;                     test app evt msg sent ctr = 65534
-;
-;                     cEVS3104, cEVS3105 and cEVS3105.1 (no rollover)
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, TST_EVS, 1, INFO
+;                  cEVS3104, cEVS3105 and cEVS3105.1 (no rollover)
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, INFO, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId = "1" Iters = "9" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg INFO EventId="1" Iters="9" MILLISECONDS="150"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 9 
-;;;wait 15
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 9, 60 
 
-if ($SC_$CPU_num_found_messages <> 9) then
-  write " >>> ALERT: incorrect number of evt msgs found"  
+if ($SC_$CPU_find_event[1].num_found_messages <> 9) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 9"
 endif
 
 if ($sc_$CPU_EVS_MSGSENTC = 65535) then
   ut_setrequirements cEVS3105_1, "P"
+  write "<*> Passed (3105.1) - Counters are correct."
 else
   ut_setrequirements cEVS3105_1, "F"
-  write " >>> ALERT: unexpected value found for total evt msg ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105.1) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 65535." 
 endif
+
+wait 10
 
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC <> 65534) then
-  write " >>> ALERT: unexpected value found test app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed - Unexpected value found test app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65534"
 endif
 
-;
-write "************************************************************************"
-write "Step 5.6.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.6.1: Retrieve app data"
 ;                    Expect 9 evt msgs
 ;                    test app evt msg ID1 bin fltr ctr = 65524
 ;                    cEVS3103_3
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_561.dat", "$CPU")
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_561.dat", "$CPU")
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65524) then
   ut_setrequirements cEVS3103_3, "P" 
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write " >>> ALERT: unexpected value found for bin fltr ctr check = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65524."
 endif
 
 write " Bin flt ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr
@@ -5938,55 +5888,57 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 ;
-write "************************************************************************"
-write "Step 5.7:     Request generation of 1 iteration of TST_EVS event id 1"
-;                    Expect 1 TST_EVS ID=1 Evt Msg
-;                    total evt msg sent ctr = 65535
-;                    test app evt msg sent ctr = 65535
-;                    cEVS3104, cEVS3105, cEVS3105_1 
-write "************************************************************************"
+write ";***********************************************************************"
+write "; Step 5.7: Request generation of 1 iteration of TST_EVS event id 1"
+;                  Expect 1 TST_EVS ID=1 Evt Msg
+;                  total evt msg sent ctr = 65535
+;                  test app evt msg sent ctr = 65535
+;                  cEVS3104, cEVS3105, cEVS3105_1 
+write ";***********************************************************************"
 ;
-ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "1" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="1" MILLISECONDS="150"
 
 ut_tlmwait $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC, 65535
 
-if ($SC_$CPU_num_found_messages <> 1) then
-  write " >>> ALERT: incorrect number of evt msgs found"  
+if ($SC_$CPU_find_event[1].num_found_messages <> 1) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 1"
 endif
 
 if ($sc_$CPU_EVS_MSGSENTC = 65535) then
   ut_setrequirements cEVS3105_1, "P"
+  write "<*> Passed (3105.1) - Counters are correct."
 else
   ut_setrequirements cEVS3105_1, "F"
-  write " >>> ALERT: unexpected value found for total evt msg ctr ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105.1) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 65535." 
 endif
               
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 65535) then
   ut_setrequirements cEVS3104, "P"
+  write "<*> Passed (3104) - Counters are correct."
 else
   ut_setrequirements cEVS3104, "F"
-  write " >>> ALERT: unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed (3104) - Unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65535"
 endif
 
-;
-write "************************************************************************"
-write "Step 5.7.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.7.1: Retrieve app data"
 ;                    Expect 1 evt msg
 ;                    test app evt msg ID1 bin fltr ctr = 65525
 ;                    
 ;                    cEVS3103_3
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_571.dat", "$CPU")
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_571.dat", "$CPU")
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65525) then
   ut_setrequirements cEVS3103_3, "P" 
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write " >>> ALERT: unexpected value found for bin fltr ctr check  "
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65525."
 endif
 
 write " Bin flt ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr
@@ -5998,57 +5950,61 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-write "************************************************************************"
-write "Step 5.8:      Request generation of 9 TST_EVS event id 1"
-;                     Expect 9 Evt Msgs
-;                     total evt msg sent ctr = 65535
-;                     test app evt msg sent ctr = 65535
-;                     cEVS3104, cEVS3104, cEVS3105 and cEVS3105.1
-write "************************************************************************"
-;
-ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "9" MILLISECONDS = "150"
+write ";***********************************************************************"
+write "; Step 5.8: Request generation of 9 TST_EVS event id 1"
+;                  Expect 9 Evt Msgs
+;                  total evt msg sent ctr = 65535
+;                  test app evt msg sent ctr = 65535
+;                  cEVS3104, cEVS3104, cEVS3105 and cEVS3105.1
+write ";***********************************************************************"
+ 
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
 
-ut_tlmwait $SC_$CPU_num_found_messages, 9 
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="9" MILLISECONDS="150"
 
-if ( $SC_$CPU_num_found_messages <> 9) then
-  write " >>> ALERT: incorrect number of evt msgs found"
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 9 
+
+if ( $SC_$CPU_find_event[1].num_found_messages <> 9) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 9"
 endif                       
 
 if ($sc_$CPU_EVS_MSGSENTC = 65535) then
   ut_setrequirements cEVS3105, "P"
   ut_setrequirements cEVS3105_1, "P"
+  write "<*> Passed (3105;3105.1) - Counters are correct."
 else
   ut_setrequirements cEVS3105, "F"
   ut_setrequirements cEVS3105_1, "F"
-  write " >>> ALERT: unexpected value found for total evt msg ctr = ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105;3105.1) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 65535." 
 endif
               
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 65535) then
   ut_setrequirements cEVS3104, "P"
   ut_setrequirements cEVS3104_1, "P"
+  write "<*> Passed (3104;3104.1) - Counters are correct."
 else
   ut_setrequirements cEVS3104, "F"
   ut_setrequirements cEVS3104_1, "F"
-  write " >>> ALERT: unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed (3104;3104.1) - Unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65535"
 endif
 
-;
-write "************************************************************************"
-write "Step 5.8.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.8.1: Retrieve app data"
 ;                    Expect 1 evt msg
 ;                    test app evt msg ID1 bin fltr ctr = 65534
 ;                    cEVS3103_3
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_581.dat", "$CPU")
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_581.dat", "$CPU")
 wait 10
 
-if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr = 65534) then
+if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65534) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65534."
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -6059,55 +6015,59 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
-write "************************************************************************"
-write "Step 5.9:     Request generation of 1 TST_EVS event id 1"
-;                    Expect No TST_EVS ID=1 Evt Msg
-;                    total evt msg sent ctr = 65535
-;                    test app evt msg sent ctr = 65535
-write "************************************************************************"
-;               
-ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
+ 
+write ";***********************************************************************"
+write "; Step 5.9: Request generation of 1 TST_EVS event id 1"
+;                  Expect No TST_EVS ID=1 Evt Msg
+;                  total evt msg sent ctr = 65535
+;                  test app evt msg sent ctr = 65535
+write ";***********************************************************************"
+                
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
       
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "1" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="1" MILLISECONDS="150"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
-if ($SC_$CPU_num_found_messages <> 1) then
-  write " >>> ALERT: incorrect number of evt msgs found"  
+if ($SC_$CPU_find_event[1].num_found_messages <> 1) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 1"
 endif                       
+
 if ($sc_$CPU_EVS_MSGSENTC = 65535) then
   ut_setrequirements cEVS3105_1, "P"
+  write "<*> Passed (3105.1) - Counters are correct."
 else
   ut_setrequirements cEVS3105_1, "F"
-  write " >>> ALERT: cEVS3105_1 failed because the total evt msg sent ctr is wrong ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105.1) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 65535." 
 endif
               
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 65535) then
   ut_setrequirements cEVS3104, "P"
   ut_setrequirements cEVS3104_1, "P"
+  write "<*> Passed (3104;3104.1) - Counters are correct."
 else
   ut_setrequirements cEVS3104, "F"
   ut_setrequirements cEVS3104_1, "F"
-  write " >>> ALERT: unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed (3104;3104.1) - Unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65535"
 endif
 
 ;
-write "************************************************************************"
-write "Step 5.9.1:   Retrieve app data"
+write ";***********************************************************************"
+write "; Step 5.9.1: Retrieve app data"
 ;                    Expect 1 evt msg
 ;                    test app evt msg ID1 bin fltr ctr = 65535
 ;                    cEVS3103_3
-write "************************************************************************"
+write ";***********************************************************************"
 ;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_591.dat", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_591.dat", "$CPU")
 wait 10
 
-if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr = 65535) then
+if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65535) then
   ut_setrequirements cEVS3103_3, "P"
+  write "<*> Passed (3103.3) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3, "F"
-  write " >>> ALERT: unexpected value found for bin fltr ctr check = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr
+  write "<!> Failed (3103.3) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65534."
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -6118,52 +6078,54 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
-write "************************************************************************"
-write "Step 5.10:     Request generation of 1 TST_EVS event id 1"
-;                     Expect No TST_EVS ID=1 Evt Msg
-;                     total evt msg sent ctr = 65535
-;                     test app evt msg sent ctr = 65535
-write "************************************************************************"
-;               
-ut_setupevt $sc, $cpu, TST_EVS, 1, DEBUG
-      
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "1" MILLISECONDS = "150"
+ 
+write ";***********************************************************************"
+write "; Step 5.10: Request generation of 1 TST_EVS event id 1"
+;                   Expect No TST_EVS ID=1 Evt Msg
+;                   total evt msg sent ctr = 65535
+;                   test app evt msg sent ctr = 65535
+write ";***********************************************************************"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 1 
+ut_setupevents $sc, $cpu, TST_EVS, 1, DEBUG, 1
+      
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId="1" Iters="1" MILLISECONDS="150"
+
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1 
 
 if ($sc_$CPU_EVS_MSGSENTC = 65535) then
   ut_setrequirements cEVS3105_1, "P"
+  write "<*> Passed (3105.1) - Counters are correct."
 else
   ut_setrequirements cEVS3105_1, "F"
-  write " >>> ALERT: cEVS3105_1 failed because the total evt msg sent ctr is wrong ",$SC_$CPU_EVS_MSGSENTC
+  write "<!> Failed (3105.1) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 65535." 
 endif
               
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 65535) then
   ut_setrequirements cEVS3104, "P"
   ut_setrequirements cEVS3104_1, "P"
+  write "<*> Passed (3104;3104.1) - Counters are correct."
 else
   ut_setrequirements cEVS3104, "F"
   ut_setrequirements cEVS3104_1, "F"
-  write " >>> ALERT: unexpected value found for total evt msg ctr ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed (3104;3104.1) - Unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65535"
 endif
 
-;
-write "************************************************************************"
-write "Step 5.10.1:  Retrieve app data"
-;                    Expect NO evt msg
-;                    test app evt msg ID1 bin fltr ctr = 65535
-;                    cEVS3103_3_1 no rollover
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_5101.dat", "$CPU")
+write ";***********************************************************************"
+write "; Step 5.10.1: Retrieve app data"
+;                     Expect NO evt msg
+;                     test app evt msg ID1 bin fltr ctr = 65535
+;                     cEVS3103_3_1 no rollover
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5101.dat", "$CPU")
 wait 10
 
-if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr = 65535) then
+if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr = 65535) then
   ut_setrequirements cEVS3103_3_1, "P"
+  write "<*> Passed (3103.3.1) - Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3_1, "F"
-  write " >>> ALERT: unexpected value found for test app evt msg ID 1 bin fltr ctr ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr
+  write "<!> Failed (3103.3.1) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65535."
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -6174,24 +6136,23 @@ write ">>> ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].EvtId, ;;
       $SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,  " - - ",$SC_$CPU_EVS_MSGSENTC
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-;
 
-write "************************************************************************"
-write "Step 5.11:     Request generation of 10 TST_EVS event id 8 "
-;                     Which is registered for filtering with a mask of 0
-;                     This evt msg is requested to verify that total evt 
-;                     msg sent ctr, app evt msg sent ctr and test app evt 
-;                     msg ID 1 bin fltr ctr all retain their maximum values
-;                     Expect 10 TST_EVS ID=8 Evt Msgs because the fact
-;                     that the app et msg ID 1 bin fltr ctr has reached its
-;                     maximum shall not affect generation of an evt msg
-;                     of a different ID which is rigestered for filtering
-;                     total evt msg sent ctr = 65535
-;                     test app evt msg sent ctr = 65535
-;                     cEVS3104.1
-;                     cEVS3105.1
-write "************************************************************************"
-;
+write ";***********************************************************************"
+write "; Step 5.11: Request generation of 10 TST_EVS event id 8 "
+;                   Which is registered for filtering with a mask of 0
+;                   This evt msg is requested to verify that total evt 
+;                   msg sent ctr, app evt msg sent ctr and test app evt 
+;                   msg ID 1 bin fltr ctr all retain their maximum values
+;                   Expect 10 TST_EVS ID=8 Evt Msgs because the fact
+;                   that the app et msg ID 1 bin fltr ctr has reached its
+;                   maximum shall not affect generation of an evt msg
+;                   of a different ID which is rigestered for filtering
+;                   total evt msg sent ctr = 65535
+;                   test app evt msg sent ctr = 65535
+;                   cEVS3104.1
+;                   cEVS3105.1
+write ";***********************************************************************"
+ 
 local evtID8ndx = 0
 
 for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
@@ -6200,53 +6161,56 @@ for i = 1 to CFE_EVS_MAX_EVENT_FILTERS do
   endif
 enddo
 
-ut_setupevt $sc, $cpu, TST_EVS, 8, DEBUG
+ut_setupevents $sc, $cpu, TST_EVS, 8, DEBUG, 1
 
-/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = 8 Iters = "10" MILLISECONDS = "150"
+/$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId=8 Iters="10" MILLISECONDS="150"
 
-ut_tlmwait $SC_$CPU_num_found_messages, 10 
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 10 
 
-if ($SC_$CPU_num_found_messages <> 10) then
-  write " >>> ALERT: incorrect number of evt msgs found"  
+if ($SC_$CPU_find_event[1].num_found_messages <> 10) then
+  write "<!> Failed - ",$SC_$CPU_find_event[1].num_found_messages," event messages generated. Expected 10"
 endif
 
 if ($sc_$CPU_EVS_MSGSENTC = 65535) then
   ut_setrequirements cEVS3105_1, "P"
+  write "<*> Passed (3105.1) - Counters are correct."
 else
   ut_setrequirements cEVS3105_1, "F"
-  write " >>> ALERT: cEVS3105_1 failed because the total evt msg sent ctr is wrong ",$SC_$CPU_EVS_MSGSENTC 
+  write "<!> Failed (3105.1) - total evt msg sent ctr = ",$SC_$CPU_EVS_MSGSENTC,"; Expected 65535." 
 endif
               
 if ($sc_$CPU_EVS_APP[apps_registered].APPMSGSENTC = 65535) then
   ut_setrequirements cEVS3104_1, "P"
+  write "<*> Passed (3104.1) - Counters are correct."
 else
   ut_setrequirements cEVS3104_1, "F"
-  write " >>> ALERT: cEVS3104_1 failed because the app evt msg sent ctr value if wrong ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC
+  write "<!> Failed (3104;3104.1) - Unexpected value found for app evt msg ctr = ",$SC_$CPU_EVS_APP[apps_registered].APPMSGSENTC,"; Expected 65535"
 endif
 
-;
-write "************************************************************************"
-write "Step 5.11.1:  Retrieve app data"
-;                    Expect 10 evt msgs of ID 8
-;                    test app evt msg ID 8 bin fltr ctr = 10
-;                    cEVS3103.3.1
-write "************************************************************************"
-;
-start get_file_to_cvt ("RAM:0", "cfe_evs_app.dat", "bin_fltr_5111.dat", "$CPU")
+write ";***********************************************************************"
+write "; Step 5.11.1: Retrieve app data"
+;                     Expect 10 evt msgs of ID 8
+;                     test app evt msg ID 8 bin fltr ctr = 10
+;                     cEVS3103.3.1
+write ";***********************************************************************"
+ 
+start get_file_to_cvt (ramDir, "cfe_evs_app.dat", "bin_fltr_5111.dat", "$CPU")
 wait 10
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[evtID8ndx].Ctr = 10) then
   ut_setrequirements cEVS3103_3_1, "P"
+  write "<*> Passed (3103.3.1) - ID8 Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3_1, "F"
-  write " >>> ALERT: cEVS3103_3_1 failed because the test app evt ID 8 bin fltr ctr value is wrong ",$SC_$CPU_EVS_AppData[apps_registered]. BinFltr[evtID8ndx].Ctr
+  write "<!> Failed (3103.3.1) - TST_EVS app event ID8 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID8ndx].Ctr,"; Expected 10."
 endif
 
 if ($sc_$CPU_EVS_AppData[apps_registered].BinFltr[1].Ctr = 65535) then
   ut_setrequirements cEVS3103_3_1, "P"
+  write "<*> Passed (3103.3.1) - ID1 Binary filter count is correct."
 else
   ut_setrequirements cEVS3103_3_1, "F"
-  write " >>> ALERT: cEVS3103_3_1 at check of no rollover for max bin fltr ctr"
+  write "<!> Failed (3103.3.1) - TST_EVS app event ID1 ctr = ",$SC_$CPU_EVS_AppData[apps_registered].BinFltr[evtID1].Ctr,"; Expected 65535."
 endif
 
 write " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"

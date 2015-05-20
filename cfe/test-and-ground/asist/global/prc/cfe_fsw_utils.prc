@@ -39,7 +39,9 @@ proc cfe_fsw_utils
 ;                                    and ut_sendrawcmd
 ;   03/26/06        S. Applebee      Updated ut_setupevt and ut_setupevents 
 ;                                    for GPM.
-;   10/26/09        W. Moleski       Updated to make more generic for missions
+;   01/16/14        W. Moleski       ut_sendcmd, ut_sendappcmd, ut_sendrawcmd
+;				     to detect rollover based upon the size of
+;				     of the counters (DCR 22118)
 ;
 ; ********************* TELEMETRY FLOAT WAIT ***************************
 ;
@@ -314,6 +316,7 @@ local temp
 local   mission_prefix, loc_underscore, prcsr_subsys, mnem_len, rest_mnem
 local   prcsr_prefix, actual_cmd_len, actual_cmd
 local underscore = "_"
+local ctr_size, ctr_rollover
 
 if (%nargs = 1) then
    n_times = 1
@@ -370,10 +373,20 @@ ENDIF
 ;
 ; store current values
 ;
-   exp_cmd_prc_cnt = {cmd_prc_ver_pt} + n_times
-   if (exp_cmd_prc_cnt >= 256) then
-	exp_cmd_prc_cnt = exp_cmd_prc_cnt - 256
+   ;; Get the size of the counter and determine the roll-over value
+   ctr_size = telemetry_attr(cmd_prc_ver_pt,"length")
+   ctr_rollover = 256
+   if (ctr_size = 2) then
+      ctr_rollover = 65536
    endif
+
+   exp_cmd_prc_cnt = {cmd_prc_ver_pt} + n_times
+   if (exp_cmd_prc_cnt >= ctr_rollover) then
+	exp_cmd_prc_cnt = exp_cmd_prc_cnt - ctr_rollover
+   endif
+;;   if (exp_cmd_prc_cnt >= 256) then
+;;	exp_cmd_prc_cnt = exp_cmd_prc_cnt - 256
+;;   endif
    exp_cmd_err_cnt =  {cmd_err_ver_pt}
 ;
 ; send the actual command number of specified times
@@ -441,6 +454,8 @@ local   cmd_expr, cmd_tat
 local temp
 local   mission_prefix, loc_underscore, prcsr_subsys, mnem_len, rest_mnem
 local   prcsr_prefix, actual_cmd_len, actual_cmd
+local ctr_size, ctr_rollover
+
 UT_SC_Status = UT_SC_CmdFailure
 if (%nargs = 2) then
    n_times = 1
@@ -472,10 +487,20 @@ else
 ;
 ; store current values
 ;
-   exp_cmd_prc_cnt = {cmd_prc_ver_pt} + n_times
-   if (exp_cmd_prc_cnt >= 256) then
-	exp_cmd_prc_cnt = exp_cmd_prc_cnt - 256
+   ;; Get the size of the counter and determine the roll-over value
+   ctr_size = telemetry_attr(cmd_prc_ver_pt,"length")
+   ctr_rollover = 256
+   if (ctr_size = 2) then
+      ctr_rollover = 65536
    endif
+
+   exp_cmd_prc_cnt = {cmd_prc_ver_pt} + n_times
+   if (exp_cmd_prc_cnt >= ctr_rollover) then
+	exp_cmd_prc_cnt = exp_cmd_prc_cnt - ctr_rollover
+   endif
+;;   if (exp_cmd_prc_cnt >= 256) then
+;;	exp_cmd_prc_cnt = exp_cmd_prc_cnt - 256
+;;   endif
    exp_cmd_err_cnt =  {cmd_err_ver_pt}
 ;
 ; send the actual command number of specified times
@@ -605,6 +630,7 @@ local   j, wtime, cmd_prc_ver_cnt, cmd_err_ver_cnt
 local   cmd_tat
 local temp
 local sdo_prefix, loc_underscore, sdo_subsys, mnem_len, rest_mnem
+local ctr_size, ctr_rollover
 
 if (%nargs < 1 OR %nargs > 3) then
    write "<!> Argument error"
@@ -624,11 +650,20 @@ ENDIF
 ;
 ; store current values
 ;
+   ;; Get the size of the counter and determine the roll-over value
+   ctr_size = telemetry_attr(cmd_prc_ver_pt,"length")
+   ctr_rollover = 256
+   if (ctr_size = 2) then
+      ctr_rollover = 65536
+   endif
 
    exp_cmd_prc_cnt = {cmd_prc_ver_pt}+1
-   if (exp_cmd_prc_cnt >= 256) then
-      exp_cmd_prc_cnt = exp_cmd_prc_cnt - 256
+   if (exp_cmd_prc_cnt >= ctr_rollover) then
+      exp_cmd_prc_cnt = exp_cmd_prc_cnt - ctr_rollover
    endif
+;;   if (exp_cmd_prc_cnt >= 256) then
+;;      exp_cmd_prc_cnt = exp_cmd_prc_cnt - 256
+;;   endif
    exp_cmd_err_cnt =  {cmd_err_ver_pt}
 ;
 ; send the actual command number of specified times
@@ -639,7 +674,7 @@ ENDIF
    if (%nargs < 3) then
      ut_tlmupdate (cmd_prc_ver_pt)
    elseif (%nargs=3) then
-      ut_tlmupdate {cmd_prc_ver_pt} {w_time}
+      UT_TLMUPDATE {cmd_prc_ver_pt} {w_time}
    endif
 
    IF (UT_TU_Status = UT_TU_TlmUpdated ) THEN

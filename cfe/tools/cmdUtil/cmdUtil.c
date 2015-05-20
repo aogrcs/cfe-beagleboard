@@ -1,4 +1,12 @@
 /*
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement. 
+**
 ** cmdUtil -- A CCSDS Command utility. This program will build a CCSDS Command packet
 **               with variable parameters and send it on a UDP network socket.
 **               this program is primarily used to command a cFE flight software system.
@@ -11,7 +19,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
+#include "getopt.h"
 #include <string.h>
 #include <limits.h>
 
@@ -79,7 +87,7 @@ int hostByteOrder;
 /*
 ** getopts parameter passing options string
 */
-static const char *optString = "H:P:I:C:E:b:h:l:s:v?";
+static const char *optString = "E:H:P:I:C:b:h:l:s:v?";
 
 /*
 ** getopts_long long form argument table
@@ -403,7 +411,13 @@ int main(int argc, char *argv[]) {
         case 'I':
             printf("Pkt ID: %s\n", (char*)optarg);
             tempShort = (short)strtol(optarg, 0, 0);
-            if (hostByteOrder != CommandData.Endian) {
+
+            /* 
+            ** The packet ID is supposed to be in Big Endian order 
+            ** If this is running on a little endian host, swap it 
+            */
+            if (hostByteOrder == LITTLE_ENDIAN )
+            {
                 byteSwap((char*)&tempShort, sizeof(tempShort));
             }
             memcpy(&CommandData.PacketHdr[0], &tempShort, sizeof(tempShort));
@@ -421,10 +435,19 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr,"Command Code Argument: '%s' rejected. Number is too large.\n",optarg);
                 break;
             }
+            /* 
+            ** Shift the command code to the upper 8 bits of the word 
+            */
 	    tempShort <<= 8;
-            if (hostByteOrder != CommandData.Endian) {
-                byteSwap((char*)&tempShort, sizeof(tempShort));
+
+            /*
+            ** Swap if needed 
+            */
+            if (hostByteOrder != CommandData.Endian) 
+            {
+               byteSwap((char*)&tempShort, sizeof(tempShort));
             }
+
             memcpy(&CommandData.PacketHdr[6], &tempShort, sizeof(tempShort));
             CommandData.GotCmdCode = 1;
             break;
@@ -477,13 +500,19 @@ int main(int argc, char *argv[]) {
     ** Assemble the packet header
     */
     tempShort = 0xC000; /* Sequence word. */
-    if (hostByteOrder != CommandData.Endian) {
+    if (hostByteOrder == LITTLE_ENDIAN)
+    {
         byteSwap((char*)&tempShort, sizeof(tempShort));
     }
     memcpy(&CommandData.PacketHdr[2], &tempShort, sizeof(tempShort));
 
-    tempShort = CommandData.DataLen;
-    if (hostByteOrder != CommandData.Endian) {
+    /* 
+    ** Process size field in header
+    ** Size field needs to be Size of packet data not including cmd secondary hdr + 1
+    */
+    tempShort = CommandData.DataLen + 1;
+    if (hostByteOrder == LITTLE_ENDIAN)
+    {
         byteSwap((char*)&tempShort, sizeof(tempShort));
     }
     memcpy(&CommandData.PacketHdr[4], &tempShort, sizeof(tempShort));
@@ -491,12 +520,15 @@ int main(int argc, char *argv[]) {
     /*
     ** Send the packet
     */
-    retStat = SendUdp(CommandData.HostName, CommandData.PortNum, CommandData.PacketHdr, CommandData.DataLen + 8);
+    retStat = SendUdp(CommandData.HostName, CommandData.PortNum, CommandData.PacketHdr, CommandData.DataLen + 8); 
 
-    if (retStat < 0) {
+    if (retStat < 0) 
+    {
         fprintf(stderr,"Problem sending UDP packet: %d\n", retStat);
         return ( retStat );
-    } else if (CommandData.Verbose) {
+    } 
+    else if (CommandData.Verbose) 
+    {
         printf("Command packet sent OK.\n");
     }
 

@@ -9,15 +9,10 @@ PROC $sc_$cpu_tbl_reset
 ;	software meets the requirements defined in the SRS for processor resets.
 ;
 ;  Requirements Tested
-;  	Based on LRO Mission Flight Software Requirements 
-;		(Version 1.2, 04/15/05)
-;
-;	cTBL6500:	Upon a Power-On Reset, all Table resources will be
-;			freed.
-;	cTBL6501:	Upon a Processor Reset, all Table resources will be
-;			freed.
-;	cTBL6501.1:	If the Table is a critical table then the contents of
-;			the Table will be preserved.
+;    cTBL6500	Upon a Power-On Reset, all Table resources will be freed.
+;    cTBL6501	Upon a Processor Reset, all Table resources will be freed.
+;    cTBL6501.1	If the Table is a critical table then the contents of the Table
+;		will be preserved.
 ;
 ;  Prerequisite Conditions
 ;       None 
@@ -28,6 +23,8 @@ PROC $sc_$cpu_tbl_reset
 ;	Date		Name			Description
 ;	05/01/06	W. Moleski	Initial development.
 ;	11/20/06	W. Moleski	Modifications for cFE 4.0.
+;	02/08/12	W. Moleski	Added variable for ram disk and replaced
+;					ut_setupevt with ut_setupevents
 ;
 ;  Arguments
 ;	None 
@@ -36,7 +33,7 @@ PROC $sc_$cpu_tbl_reset
 ;	Name					Description
 ;  	ut_pfindicate		Directive to print the pass fail status
 ;				of a particular requirement number.
-;  	ut_setupevt		Directive to look for a particular event
+;  	ut_setupevents		Directive to look for a particular event
 ;				and increment a value in the CVT to
 ;				indicate receipt.
 ;  	ut_setrequirements	Directive to status cfe requirements.
@@ -45,6 +42,8 @@ PROC $sc_$cpu_tbl_reset
 ;
 ;  Expected Test Results and Analysis
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
 #include "ut_statusdefs.h"
@@ -52,6 +51,8 @@ PROC $sc_$cpu_tbl_reset
 #include "tst_tbl_events.h"
 #include "cfe_evs_events.h"
 #include "cfe_es_events.h"
+
+%liv (log_procedure) = logging
 
 ;**********************************************************************
 ; Setup requirements checking
@@ -80,6 +81,8 @@ LOCAL tbl_2_active_default[1 .. 10]
 LOCAL tbl_2_inactive_default[1 .. 10]
 LOCAL tbl_1_index, tbl_2_index
 LOCAL numExpectedTables
+
+local ramDir = "RAM:0"
 
 ;**********************************************************************
 ; Initialize the global requirement values to "U" for Untested.
@@ -128,12 +131,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -180,12 +183,12 @@ write "; Step 1.4: Dump the Critical Table and verify that the default values"
 write "; are loaded."
 write ";*********************************************************************"
 ;;; Dump the Active buffer for the critical table
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.CriticalTbl_04","A","active_tbl_4_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.CriticalTbl_04","A","active_tbl_4_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -200,7 +203,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -235,12 +238,12 @@ write "; Step 2.0: Table Modification Tests "
 write ";**********************************************************************"
 write "; Step 2.1: Dump the default buffers for table #1 and #2."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -255,7 +258,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -271,12 +274,12 @@ enddo
 wait 5
 
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -291,7 +294,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -306,12 +309,12 @@ enddo
 wait 5
 
 ;;; Dump the Active buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -326,7 +329,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -389,7 +392,7 @@ else
 endif
 
 ; check for the successful load event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   write ";; Get Address event count = ", $SC_$CPU_find_event[2].num_found_messages
   write ";; Release Address event count = ", $SC_$CPU_find_event[3].num_found_messages
@@ -397,10 +400,10 @@ else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_FILE_LOADED_INF_EID, "."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Verify the LoadinProgress Flag
 write "Waiting for LoadInProgress flag to change for table #2......"
@@ -413,12 +416,12 @@ write ";**********************************************************************"
 write "; Step 2.3: Dump the buffers for table #2 and verify their contents."
 write ";**********************************************************************"
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -433,7 +436,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -463,12 +466,12 @@ endif
 wait 5
 
 ;;; Dump the Active buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -483,7 +486,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -517,7 +520,7 @@ ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_VALIDATION_INF_EID, "INFO", 2
 ut_sendcmd "$SC_$CPU_TBL_VALIDATE INACTIVE VTABLENAME=""TST_TBL.dflt_tbl_02"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - InActive Table 2 validate command sent."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     write "<!> Failed - Event Message not received for Validate command."
@@ -549,7 +552,8 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.5: Activate table #2."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG, 1
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_UPDATE_SUCCESS_INF_EID, INFO, 2
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.dflt_tbl_02"""
 
@@ -561,16 +565,23 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_LOAD_PEND_REQ_INF_EID, "."
 endif
 
-wait 10
+ut_tlmwait $SC_$CPU_find_event[2].num_found_messages, 1
+if (UT_TW_Status = UT_Success) then
+  write "<*> Passed - Event message ",$SC_$CPU_find_event[2].eventid, " received"
+else
+  write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_UPDATE_SUCCESS_INF_EID, "."
+endif
+
+wait 5
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
 wait 10
 
 ; Check to see if the last file loaded specified the correct file
@@ -586,12 +597,12 @@ write ";**********************************************************************"
 write "; Step 2.6: Dump the buffers for table #2 and verify their contents."
 write ";**********************************************************************"
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -606,7 +617,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -637,12 +648,12 @@ endif
 wait 5
 
 ;;; Dump the Active buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -657,7 +668,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -708,7 +719,7 @@ errcnt = $SC_$CPU_TBL_CMDEC
 num_free_buffers = $SC_$CPU_TBL_numFreeshrBuf - 1
 write "Current free shared buffers available = ",$SC_$CPU_TBL_numFreeshrBuf
 
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_FILE_LOADED_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_FILE_LOADED_INF_EID, INFO, 1
 
 start load_table ("sngl_tbl_ld_1", "$CPU")
 
@@ -735,17 +746,16 @@ else
   write "<!> Failed - Expected ", num_free_buffers, " counter = ", $SC_$CPU_TBL_NumFreeshrBuf
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_FILE_LOADED_INF_EID, "."
 endif
 
-wait 10
-
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Verify the LoadinProgress Flag
 write "Waiting for LoadInProgress flag to change for table #1......"
@@ -757,12 +767,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.8: Dump the buffers for Table #1 and verify their contents."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","I","inactive_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","I","inactive_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -777,7 +787,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<*> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -808,12 +818,12 @@ endif
 wait 5
  
 ;;; Dump the Active buffer for table #1
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -828,7 +838,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -867,7 +877,7 @@ ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_VALIDATION_INF_EID, "INFO", 2
 ut_sendcmd "$SC_$CPU_TBL_VALIDATE INACTIVE VTABLENAME=""TST_TBL.dflt_tbl_01"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed (6002) - InActive Table 1 validate command sent."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for Validate command."
@@ -899,7 +909,7 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.10: Activate table #1."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG, 1
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.dflt_tbl_01"""
 
@@ -911,16 +921,16 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_LOAD_PEND_REQ_INF_EID, "."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Check to see if the last file loaded specified the correct file
 if ($SC_$CPU_RF[tbl_1_index].$SC_$CPU_TBL_LASTFILEUPD = "/ram/sngl_tbl_ld_1") then
@@ -934,12 +944,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.11: Dump the active buffer for Table #1 and verify contents.  "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -954,7 +964,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -1031,7 +1041,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   write ";; Get Address event count = ", $SC_$CPU_find_event[2].num_found_messages
   write ";; Release Address event count = ", $SC_$CPU_find_event[3].num_found_messages
@@ -1039,11 +1049,11 @@ else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_FILE_LOADED_INF_EID, "."
 endif
 
-wait 10
+wait 5
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Verify the LoadinProgress Flag
 write "Waiting for LoadInProgress flag to change for table #2......"
@@ -1055,12 +1065,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.13: Dump and verify the Table #2 Load. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1075,8 +1085,8 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
-  write "<!> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
 endif
@@ -1106,12 +1116,12 @@ endif
 wait 5
 
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1126,7 +1136,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -1165,7 +1175,7 @@ ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_VALIDATION_INF_EID, "INFO", 2
 ut_sendcmd "$SC_$CPU_TBL_VALIDATE INACTIVE VTABLENAME=""TST_TBL.dflt_tbl_02"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - InActive Table 2 validate command sent."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     write "<!> Failed - Event Message not received for Validate command."
@@ -1196,7 +1206,7 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.15: Activate Table #2."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG, 1
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.dflt_tbl_02"""
 if (UT_SC_Status <> UT_SC_Success) then
@@ -1207,17 +1217,17 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
 endif
 
-wait 10
+wait 5
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Check to see if the last file loaded specified the correct file
 if ($SC_$CPU_RF[tbl_2_index].$SC_$CPU_TBL_LASTFILEUPD = "/ram/dbl_tbl_ld_2") then
@@ -1231,12 +1241,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 2.16: Dump and verify the Table #2 Load. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1251,8 +1261,8 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
-  write "<!> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
 endif
@@ -1282,12 +1292,12 @@ endif
 wait 5
 
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1302,7 +1312,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -1340,16 +1350,16 @@ ut_setupevents $SC, $CPU, TST_TBL, TST_TBL_REGMAXTABLES_EID, INFO, 1
 /$SC_$CPU_TST_TBL_REGMAXTBLS
 wait 20
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
     write "<!> Failed - The proper Event messages were not received."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ;;; Verify that the number of tables registered is the max
 if ($SC_$CPU_TBL_NumTables = CFE_TBL_MAX_NUM_TABLES) then
@@ -1371,7 +1381,7 @@ ut_setupevents $SC, $CPU, TST_TBL, TST_TBL_REGISTRYFULL_ERR_EID, ERROR, 2
 /$SC_$CPU_TST_TBL_TBLREGISTER RTABLENAME="1MoreTable" TBLOPTS=X'0' TBLSIZE=X'28'
 wait 20
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received."
   if ($SC_$CPU_find_event[2].num_found_messages = 1) then
     write "<*> Passed - Event message ",$SC_$CPU_find_event[2].eventid, " received."
@@ -1382,10 +1392,10 @@ else
     write "<!> Failed - The proper Event messages were not received."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ;;; Verify that the number of tables registered is the max
 if ($SC_$CPU_TBL_NumTables = CFE_TBL_MAX_NUM_TABLES) then
@@ -1400,7 +1410,7 @@ write ";**********************************************************************"
 write "; Step 2.19: Send an invalid Activate command in order to increment the "
 write "; error counter. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_NO_SUCH_TABLE_ERR_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_NO_SUCH_TABLE_ERR_EID, ERROR, 1
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.invalid_name"""
 
@@ -1412,7 +1422,7 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_NO_SUCH_TABLE_ERR_EID, "."
@@ -1427,12 +1437,12 @@ write "; Step 2.20.1: Verify that the table is a Critical Table and attempt to"
 write ";              delete it from the CDS."
 write ";**********************************************************************"
 ;;;; Dump the CDS Registry in order to verify that the Critical
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0", "cfe_cds_reg.log", "$sc_$cpu_cds_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_cds_reg.log", "$sc_$cpu_cds_reg.log", "$CPU")
+wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - CDS Registry Info retrieval. Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - CDS Registry Info retrieval. Expected Event message ",CFE_ES_CDS_REG_DUMP_INF_EID, " was not received"
@@ -1458,7 +1468,7 @@ if (found_CDS = TRUE) then
 endif
 
 ;; Try to delete the CDS before unregistering the table
-ut_setupevt "$SC", "$CPU", "CFE_TBL", CFE_TBL_IN_REGISTRY_ERR_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_IN_REGISTRY_ERR_EID, "ERROR", 1
 
 errcnt = $SC_$CPU_TBL_CMDEC+1
 
@@ -1472,7 +1482,7 @@ else
   write "<!> Failed - The TBL_DeleteCDS command did not increment the error counter."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Expected Event message ",CFE_TBL_IN_REGISTRY_ERR_EID, " was not received"
@@ -1486,10 +1496,10 @@ ut_setupevents $SC, $CPU, TST_TBL, TST_TBL_UNREGSFREETBL_EID, INFO, 1
 ut_setupevents $SC, $CPU, TST_TBL, TST_TBL_UNREGISTERTBL_EID, INFO, 2
 
 /$SC_$CPU_TST_TBL_UNREGTBL UTABLENAME="CriticalTbl_04"
-wait 10
+wait 5
 
 ;; Verify the expected event messages were generated
-if ($SC_$CPU_num_found_messages = 1 AND $SC_$CPU_find_event[2].num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1 AND $SC_$CPU_find_event[2].num_found_messages = 1) then
   write "<*> Passed - Expected Event Messages ",$SC_$CPU_find_event[1].eventid, " and ", $SC_$CPU_find_event[2].eventid, " received."
 else
   write "<!> Failed - Expected Event Messages ",TST_TBL_UNREGSFREETBL_EID," and ",TST_TBL_UNREGISTERTBL_EID," not received."
@@ -1499,7 +1509,7 @@ write ";**********************************************************************"
 write "; Step 2.20.3: Send a command to delete the Critical Table CDS before "
 write "; 	      stopping the TST_TBL application."
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_TBL", CFE_TBL_CDS_OWNER_ACTIVE_ERR_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_CDS_OWNER_ACTIVE_ERR_EID, "ERROR", 1
 
 errcnt = $SC_$CPU_TBL_CMDEC+1
 
@@ -1513,7 +1523,7 @@ else
   write "<!> Failed - The TBL_DeleteCDS command did not increment the error counter."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Expected Event message ",CFE_TBL_CDS_OWNER_ACTIVE_ERR_EID, " was not received"
@@ -1531,7 +1541,7 @@ cmdcnt = $SC_$CPU_ES_CMDPC + 1
 
 ; Delete the TST_TBL application
 /$SC_$CPU_ES_DELETEAPP APPLICATION="TST_TBL"
-wait 10
+wait 5
 
 ut_tlmwait $SC_$CPU_ES_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1541,7 +1551,7 @@ else
 endif
 
 ;; Check if the event was rcv'd
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Expected Event message ",CFE_ES_STOP_DBG_EID, " was not received"
@@ -1555,11 +1565,11 @@ else
 endif
 
 ;; Dump all running apps again to verify that the TST_ES app is running
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
-wait 10
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - App Info retrieval. Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - App Info retrieval. Expected Event message ",CFE_ES_ALL_APPS_EID, " was not received"
@@ -1584,7 +1594,7 @@ write "; Step 2.20.5: Send a command to delete the Critical Table. Verify the "
 write "; the table is deleted. This table should be recreated by the Power-On"
 write "; reset performed below."
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_TBL", CFE_TBL_CDS_DELETED_INFO_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_CDS_DELETED_INFO_EID, "INFO", 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 
@@ -1598,20 +1608,20 @@ else
   write "<!> Failed - The TBL_DeleteCDS command did not increment the valid command counter."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Expected Event message ",CFE_TBL_CDS_DELETED_INFO_EID, " was not received"
 endif
 
-wait 10
+wait 5
 ;;;; Dump the CDS Registry in order to verify that the Critical
 ;;;; Table was deleted
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0", "cfe_cds_reg.log", "$sc_$cpu_cds_reg.log", "$CPU")
-wait 10
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_CDS_REG_DUMP_INF_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir, "cfe_cds_reg.log", "$sc_$cpu_cds_reg.log", "$CPU")
+wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - CDS Registry Info retrieval. Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - CDS Registry Info retrieval. Expected Event message ",CFE_ES_CDS_REG_DUMP_INF_EID, " was not received"
@@ -1638,9 +1648,9 @@ write ";**********************************************************************"
 ;; Start the TST_ES application
 write "; Starting the TST_ES application. "
 s load_start_app ("TST_ES", "$CPU")
-wait 10
+wait 5
 
-ut_setupevt "$SC", "$CPU", "CFE_TBL", CFE_TBL_NOT_IN_CRIT_REG_ERR_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_NOT_IN_CRIT_REG_ERR_EID, "ERROR", 1
 
 errcnt = $SC_$CPU_TBL_CMDEC+1
 
@@ -1654,7 +1664,7 @@ else
   write "<!> Failed - The TBL_DeleteCDS command did not increment the error counter."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Expected Event message ",CFE_TBL_NOT_IN_CRIT_REG_ERR_EID, " was not received"
@@ -1710,12 +1720,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -1751,7 +1761,7 @@ else
 endif
 
 ; Check if the Number of Tables counter reset
-if ($SC_$CPU_TBL_NumTables = 0) then
+if ($SC_$CPU_TBL_NumTables = numTables) then
   write "<*> Passed (6500) - Table counter was reset!"
   ut_setrequirements TS_6500, "P"
 else
@@ -1760,8 +1770,8 @@ else
 endif
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ;; Print info from the table registry for the default tables 
 for i = tbl_1_index to (tbl_1_index + TST_TBL_NUM_DEFAULT_TABLES-1) do
@@ -1823,12 +1833,12 @@ write ";**********************************************************************"
 write "; Step 3.5: Dump the buffers for the default tables and verify that the"
 write "; default configuration exists."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1843,7 +1853,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -1872,12 +1882,12 @@ endif
 wait 5
 
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1892,7 +1902,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -1919,12 +1929,12 @@ endif
 wait 5
 
 ;;; Dump the Active buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -1939,7 +1949,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -1990,7 +2000,7 @@ errcnt = $SC_$CPU_TBL_CMDEC
 num_free_buffers = $SC_$CPU_TBL_numFreeshrBuf - 1
 write "Current free shared buffers available = ",$SC_$CPU_TBL_numFreeshrBuf
 
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_FILE_LOADED_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_FILE_LOADED_INF_EID, INFO, 1
 
 start load_table ("sngl_tbl_ld_1", "$CPU")
 
@@ -2017,17 +2027,17 @@ else
   write "<!> Failed - Expected ", num_free_buffers, " counter = ", $SC_$CPU_TBL_NumFreeshrBuf
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_FILE_LOADED_INF_EID, "."
 endif
 
-wait 10
+wait 5
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Verify the LoadinProgress Flag
 write "Waiting for LoadInProgress flag to change for table #1......"
@@ -2039,12 +2049,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.2: Dump the buffers for Table #1 and verify their contents."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","I","inactive_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","I","inactive_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2059,7 +2069,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<*> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -2090,12 +2100,12 @@ endif
 wait 5
  
 ;;; Dump the Active buffer for table #1
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2110,7 +2120,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -2149,7 +2159,7 @@ ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_VALIDATION_INF_EID, "INFO", 2
 ut_sendcmd "$SC_$CPU_TBL_VALIDATE INACTIVE VTABLENAME=""TST_TBL.dflt_tbl_01"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed (6002) - InActive Table 1 validate command sent."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for Validate command."
@@ -2181,7 +2191,7 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.4: Activate table #1."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG, 1
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.dflt_tbl_01"""
 
@@ -2193,7 +2203,7 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_LOAD_PEND_REQ_INF_EID, "."
@@ -2201,8 +2211,8 @@ endif
 
 wait 10
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Check to see if the last file loaded specified the correct file
 if ($SC_$CPU_RF[tbl_1_index].$SC_$CPU_TBL_LASTFILEUPD = "/ram/sngl_tbl_ld_1") then
@@ -2216,12 +2226,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.5: Dump the active buffer for Table #1 and verify contents.  "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2236,7 +2246,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -2313,7 +2323,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
   write ";; Get Address event count = ", $SC_$CPU_find_event[2].num_found_messages
   write ";; Release Address event count = ", $SC_$CPU_find_event[3].num_found_messages
@@ -2321,11 +2331,11 @@ else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_FILE_LOADED_INF_EID, "."
 endif
 
-wait 10
+wait 5
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Verify the LoadinProgress Flag
 write "Waiting for LoadInProgress flag to change for table #2......"
@@ -2337,12 +2347,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.7: Dump and verify the Table #2 Load. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2357,8 +2367,8 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
-  write "<!> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
 endif
@@ -2388,12 +2398,12 @@ endif
 wait 5
 
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2408,7 +2418,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -2447,7 +2457,7 @@ ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_VALIDATION_INF_EID, "INFO", 2
 ut_sendcmd "$SC_$CPU_TBL_VALIDATE INACTIVE VTABLENAME=""TST_TBL.dflt_tbl_02"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - InActive Table 2 validate command sent."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     write "<!> Failed - Event Message not received for Validate command."
@@ -2478,7 +2488,8 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.9: Activate Table #2."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG, 1
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_UPDATE_SUCCESS_INF_EID, INFO, 2
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.dflt_tbl_02"""
 if (UT_SC_Status <> UT_SC_Success) then
@@ -2489,17 +2500,17 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
 endif
 
-wait 10
+ut_tlmwait $SC_$CPU_find_event[2].num_found_messages, 1
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Check to see if the last file loaded specified the correct file
 if ($SC_$CPU_RF[tbl_2_index].$SC_$CPU_TBL_LASTFILEUPD = "/ram/dbl_tbl_ld_2") then
@@ -2513,12 +2524,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.10: Dump and verify the Table #2 Load. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2533,8 +2544,8 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
-  write "<!> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
 endif
@@ -2564,12 +2575,12 @@ endif
 wait 5
 
 ;;; Dump the inactive buffer for Table #2
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2584,7 +2595,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -2621,16 +2632,16 @@ ut_setupevents $SC, $CPU, TST_TBL, TST_TBL_REGMAXTABLES_EID, INFO, 1
 /$SC_$CPU_TST_TBL_REGMAXTBLS
 wait 20
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
     write "<!> Failed - The proper Event messages were not received."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ;;; Verify that the number of tables registered is the max
 if ($SC_$CPU_TBL_NumTables = CFE_TBL_MAX_NUM_TABLES) then
@@ -2652,7 +2663,7 @@ ut_setupevents $SC, $CPU, TST_TBL, TST_TBL_REGISTRYFULL_ERR_EID, ERROR, 2
 /$SC_$CPU_TST_TBL_TBLREGISTER RTABLENAME="1MoreTable" TBLOPTS=X'0' TBLSIZE=X'28'
 wait 20
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received."
   if ($SC_$CPU_find_event[2].num_found_messages = 1) then
     write "<*> Passed - Event message ",$SC_$CPU_find_event[2].eventid, " received."
@@ -2663,10 +2674,10 @@ else
     write "<!> Failed - The proper Event messages were not received."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ;;; Verify that the number of tables registered is the max
 if ($SC_$CPU_TBL_NumTables = CFE_TBL_MAX_NUM_TABLES) then
@@ -2681,7 +2692,7 @@ write ";**********************************************************************"
 write "; Step 4.13: Send an invalid Activate command in order to increment the "
 write "; error counter. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_NO_SUCH_TABLE_ERR_EID, ERROR
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_NO_SUCH_TABLE_ERR_EID, ERROR, 1
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.invalid_name"""
 
@@ -2693,7 +2704,7 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_NO_SUCH_TABLE_ERR_EID, "."
@@ -2725,7 +2736,7 @@ errcnt = $SC_$CPU_TBL_CMDEC
 num_free_buffers = $SC_$CPU_TBL_numFreeshrBuf - 1
 write "Current free shared buffers available = ",$SC_$CPU_TBL_numFreeshrBuf
 
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_FILE_LOADED_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_FILE_LOADED_INF_EID, INFO, 1
 
 start load_table ("critical_tbl_ld_1", "$CPU")
 
@@ -2752,17 +2763,17 @@ else
   write "<!> Failed - Expected ", num_free_buffers, " counter = ", $SC_$CPU_TBL_NumFreeshrBuf
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_FILE_LOADED_INF_EID, "."
 endif
 
-wait 10
+wait 5
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Verify the LoadinProgress Flag
 write "Waiting for LoadInProgress flag to change for the critical table ......"
@@ -2775,12 +2786,12 @@ write ";**********************************************************************"
 write "; Step 4.15: Dump the buffers for the Crtical Table and verify their "
 write ";            contents."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.CriticalTbl_04","I","inactive_tbl_4_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.CriticalTbl_04","I","inactive_tbl_4_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2795,7 +2806,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<*> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -2826,12 +2837,12 @@ endif
 wait 5
  
 ;;; Dump the Active buffer for the critical table
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.CriticalTbl_04","A","active_tbl_4_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.CriticalTbl_04","A","active_tbl_4_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2846,7 +2857,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_OVERWRITE_DUMP_INF_EID, "."
@@ -2885,7 +2896,7 @@ ut_setupevents "$SC", "$CPU", "CFE_TBL", CFE_TBL_VALIDATION_INF_EID, "INFO", 2
 ut_sendcmd "$SC_$CPU_TBL_VALIDATE INACTIVE VTABLENAME=""TST_TBL.CriticalTbl_04"""
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed (6002) - Critical Table InActive buffer validate command sent."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for Validate command."
@@ -2917,7 +2928,7 @@ wait 5
 write ";**********************************************************************"
 write "; Step 4.17: Activate the critical table."
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_LOAD_PEND_REQ_INF_EID, DEBUG, 1
 
 ut_sendcmd "$SC_$CPU_TBL_ACTIVATE ATableName = ""TST_TBL.CriticalTbl_04"""
 
@@ -2929,16 +2940,16 @@ endif
 
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
   write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_LOAD_PEND_REQ_INF_EID, "."
 endif
 
-wait 10
+wait 5
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ; Check to see if the last file loaded specified the correct file
 if ($SC_$CPU_RF[crit_tbl_index].$SC_$CPU_TBL_LASTFILEUPD = "/ram/critical_tbl_ld_1") then
@@ -2953,12 +2964,12 @@ write ";**********************************************************************"
 write "; Step 4.18: Dump the active buffer for the Critical Table and verify "
 write "; its contents.  "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_WRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.CriticalTbl_04","A","active_crit_tbl_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.CriticalTbl_04","A","active_crit_tbl_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -2973,7 +2984,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."
@@ -3012,11 +3023,10 @@ write ";**********************************************************************"
 ;; Save the command, error, and number of tables counters
 cmdcnt = $SC_$CPU_TBL_CMDPC
 errcnt = $SC_$CPU_TBL_CMDEC
-numTables = $SC_$CPU_TBL_NumTables
 
 write "Command Ctr = ", cmdcnt
 write "Error Ctr = ", errcnt
-write "Number of tables = ", numTables
+write "Number of tables = ", $SC_$CPU_TBL_NumTables
 
 wait 5
 
@@ -3057,12 +3067,12 @@ write "==> Processor Reset Counter = ",$SC_$CPU_ES_PROCRESETCNT
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -3098,7 +3108,7 @@ else
 endif
 
 ; Check if the Number of Tables counter reset
-if ($SC_$CPU_TBL_NumTables = 0) then
+if ($SC_$CPU_TBL_NumTables = numTables) then
   write "<*> Passed (6501) - Table counter was reset!"
   ut_setrequirements TS_6501, "P"
 else
@@ -3107,8 +3117,8 @@ else
 endif
 
 ;;;; Dump the Table Registry
-s get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
-wait 10
+s get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+wait 5
 
 ;; Print info from the table registry for the default tables 
 for i = tbl_1_index to (tbl_1_index + TST_TBL_NUM_DEFAULT_TABLES-1) do
@@ -3178,7 +3188,7 @@ ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 2
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_01","A","active_tbl_1_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -3193,7 +3203,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 elseif ($SC_$CPU_find_event[2].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[2].eventid, " received"
@@ -3230,7 +3240,7 @@ ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 2
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","I","inactive_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -3245,7 +3255,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid," received"
 elseif ($SC_$CPU_find_event[2].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[2].eventid, " received"
@@ -3280,7 +3290,7 @@ ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 2
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.dflt_tbl_02","A","active_tbl_2_dmp","$CPU",tbl_2_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -3295,7 +3305,7 @@ else
   write "<!> Failed - error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 elseif ($SC_$CPU_find_event[2].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[2].eventid, " received"
@@ -3327,12 +3337,12 @@ wait 5
 write ";**********************************************************************"
 write "; Step 5.6: Dump the Critical Table active buffer and verify contents. "
 write ";**********************************************************************"
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_OVERWRITE_DUMP_INF_EID, INFO, 1
 
 cmdcnt = $SC_$CPU_TBL_CMDPC+1
 errcnt = $SC_$CPU_TBL_CMDEC
 
-s get_tbl_to_cvt ("RAM:0","TST_TBL.CriticalTbl_04","A","active_crit_tbl_dmp","$CPU",tbl_1_pkt)
+s get_tbl_to_cvt (ramDir,"TST_TBL.CriticalTbl_04","A","active_crit_tbl_dmp","$CPU",tbl_1_pkt)
 
 ut_tlmwait $SC_$CPU_TBL_CMDPC, {cmdcnt}
 if (UT_TW_Status = UT_Success) then
@@ -3347,7 +3357,7 @@ else
   write "<!> Failed - Error counter incremented."
 endif
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
    write "<*> Passed - Event message ",$SC_$CPU_find_event[1].eventid, " received"
 else
    write "<!> Failed - Event message ",$SC_$CPU_evs_eventid," received. Expected Event message ",CFE_TBL_WRITE_DUMP_INF_EID, "."

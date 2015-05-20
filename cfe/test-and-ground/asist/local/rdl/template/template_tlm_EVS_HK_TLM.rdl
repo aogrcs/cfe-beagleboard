@@ -49,7 +49,9 @@ PACKET Pxxxx APID=nnnn, DESC="$sc $cpu EVS Housekeeping Packet", STALE = 36
                                    DISCRETE, DRANGE =(0,1), DLABEL=("OVERWRITE","DISCARD")
    UI   $sc_$cpu_EVS_MSGSENTC      DESC= "$sc $cpu EVS Total Event Mesages Sent Counter"
    UI   $sc_$cpu_EVS_LOGOVERFLOWC  DESC= "Local log Overflow counter"
-   ULI  $sc_$cpu_EVS_MemPoolHdl    DESC= "Application Identifier"
+   UB   $sc_$cpu_EVS_LogState      DESC= "State of the EVS Event Log",DISCRETE,
+				   DRANGE=(0,1), DLABEL=("Disabled","Enabled")
+   UB   $sc_$cpu_EVS_Spare[3]      DESC= "Spares for alignment"
    RECORD $sc_$cpu_EVS_APP[CFE_ES_MAX_APPLICATIONS]     DESC= "$sc $cpu EVS Application Information"
       ULI   APPID             DESC= "Application Identifier"
       UI    APPMSGSENTC       DESC= "Application Message Sent Counter"

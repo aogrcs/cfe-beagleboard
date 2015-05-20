@@ -1,8 +1,8 @@
 /*
 ** File: utf_cfe_bsp.h
-**  $Id: utf_cfe_psp.h 1.3 2010/10/25 15:09:27EDT jmdagost Exp  $
+**  $Id: utf_cfe_psp.h 1.4 2010/11/29 08:44:49GMT-05:00 jmdagost Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -16,9 +16,11 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:09:27EDT $
-** $Revision: 1.3 $
+** $Date: 2010/11/29 08:44:49GMT-05:00 $
+** $Revision: 1.4 $
 ** $Log: utf_cfe_psp.h  $
+** Revision 1.4 2010/11/29 08:44:49GMT-05:00 jmdagost 
+** Enhanced support for CFE_PSP_EepromWriteEnable and CFE_PSP_EepromWriteDisable
 ** Revision 1.3 2010/10/25 15:09:27EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 15:04:21EDT jmdagost 
@@ -56,6 +58,8 @@
 #define CFE_PSP_EEPROMWRITE8_HOOK    0
 #define CFE_PSP_EEPROMWRITE16_HOOK   1
 #define CFE_PSP_EEPROMWRITE32_HOOK   2
+#define CFE_PSP_EEPROMWRITEENA_HOOK  3
+#define CFE_PSP_EEPROMWRITEDIS_HOOK  4
 
 /*********** API Identifiers Used to set return codes************/
 #define CFE_PSP_GETKERNELTEXTSEGMENTINFO_PROC 0
@@ -63,7 +67,9 @@
 #define CFE_PSP_MEMVALIDATERANGE_PROC         2
 #define CFE_PSP_MEMRANGESET_PROC              3
 #define CFE_PSP_MEMRANGEGET_PROC              4
-#define NUM_OF_CFE_PSP_PROCS                  5
+#define CFE_PSP_EEPROMWRITEENA_PROC           5
+#define CFE_PSP_EEPROMWRITEDIS_PROC           6
+#define NUM_OF_CFE_PSP_PROCS                  7
 
 #define UTF_CFE_USE_DEFAULT_RETURN_CODE -500
 

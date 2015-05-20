@@ -1,7 +1,7 @@
 /*
 **  File: cfe_sb_events.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the
+**      Copyright (c) 2004-2006, United States government as represented by the
 **      administrator of the National Aeronautics Space Administration.
 **      All rights reserved. This software(cFE) was created at NASA's Goddard
 **      Space Flight Center pursuant to government contracts.
@@ -19,6 +19,8 @@
 **
 **
 ** $Log: cfe_sb_events.h  $
+** Revision 1.7 2011/12/20 10:52:41GMT-05:00 rmcgraw 
+** DCR15187:2 Removed event CFE_SB_MSGCNT_ERR1_EID (23)
 ** Revision 1.6 2009/05/08 11:29:10EDT rmcgraw 
 ** DCR7631:1 Removed 2 events rergarding index error and renumbered events
 ** Revision 1.5 2009/02/10 11:24:46EST rmcgraw 
@@ -292,8 +294,8 @@
 **/
 #define CFE_SB_GET_BUF_ERR_EID          16
 
-/** \brief <tt> 'Send Err:MsgId-to-Pipe Lim Exceeded MsgId 0x\%x,pipe \%s,sender \%s' </tt>
-**  \event <tt> 'Send Err:MsgId-to-Pipe Lim Exceeded MsgId 0x\%x,pipe \%s,sender \%s' </tt>
+/** \brief <tt> 'Send Err:Msg Limit Err MsgId 0x\%x,pipe \%s,sender \%s' </tt>
+**  \event <tt> 'Send Err:Msg Limit Err MsgId 0x\%x,pipe \%s,sender \%s' </tt>
 **
 **  \par Type: ERROR
 **
@@ -377,19 +379,6 @@
 **/
 #define CFE_SB_SUBSCRIPTION_RPT_EID     22
 
-
-/** \brief <tt> 'MsgId-to-Pipe Lim Cntr Err,Cnt \%d,Pipe \%s,app \%s,Lim \%d' </tt>
-**  \event <tt> 'MsgId-to-Pipe Lim Cntr Err,Cnt \%d,Pipe \%s,app \%s,Lim \%d' </tt>
-**
-**  \par Type: ERROR
-**
-**  \par Cause:
-**
-**  This error event message is issued when the Msg Limit Counter has an unexpected
-**  value of zero. This error is not by fault of the user. It is an indication that
-**  the SB internal memory has been corrupted.
-**/
-#define CFE_SB_MSGCNT_ERR1_EID          23
 
 /** \brief <tt> 'Sending Unsubscription Report Msg=0x\%x,Pipe=\%d,Stat=0x\%x' </tt>
 **  \event <tt> 'Sending Unsubscription Report Msg=0x\%x,Pipe=\%d,Stat=0x\%x' </tt>

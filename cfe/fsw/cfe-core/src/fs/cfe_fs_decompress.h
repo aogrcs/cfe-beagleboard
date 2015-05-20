@@ -1,6 +1,7 @@
 /*
-**   File: cfe_fs_decompress.h
+** $Id: cfe_fs_decompress.h 1.7 2012/01/13 12:11:28GMT-05:00 acudmore Exp  $
 **
+**   File: cfe_fs_decompress.h
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -23,6 +24,15 @@
 ** that if you modify it and redistribute it that you include comments to
 ** that effect with your name and the date.  Thank you. [The history has been
 ** moved to the file ChangeLog.]
+**
+** $Log: cfe_fs_decompress.h  $
+** Revision 1.7 2012/01/13 12:11:28GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.6 2012/01/10 18:37:52EST aschoeni 
+** CFE return codes set directly; FS_gz_huft_build return code is now properly redefined
+** Revision 1.5 2011/01/20 10:49:04EST lwalling 
+** Add file ID and change history log to file header
+**
 */
 
 #ifndef CFE_FS_decompress_H
@@ -40,7 +50,6 @@
 /*
 ** Defines
 */
-
 #define SH2(p) ((uint16)(uint8)((p)[0]) | ((uint16)(uint8)((p)[1]) << 8))
 #define LG(p) ((uint32)(SH2(p)) | ((uint32)(SH2((p)+2)) << 16))
 #define NEXTBYTE()  (uint8)( gz_inptr<gz_insize ? gz_inbuf[gz_inptr++] : FS_gz_fill_inbuf() )

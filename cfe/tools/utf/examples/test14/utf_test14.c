@@ -15,9 +15,11 @@
  *    comment out '#define UTF_USE_STDOUT' statement in
  *    utf_custom.h file.
 * 
-** $Date: 2009/10/13 15:23:32EDT $
-** $Revision: 1.5 $
+** $Date: 2012/02/28 10:33:00GMT-05:00 $
+** $Revision: 1.6 $
 ** $Log: utf_test14.c  $
+** Revision 1.6 2012/02/28 10:33:00GMT-05:00 wmoleski 
+** Added function hooks and Return Code handling and updated the examples to test these changes.
 ** Revision 1.5 2009/10/13 15:23:32EDT wmoleski 
 ** 
 ** Revision 1.4 2008/08/19 14:14:40EDT wfmoleski 
@@ -72,7 +74,22 @@ typedef struct
 
 uint32	resetSubType;
 
+/* Task Delete Handler */
 int32 delete_hook(uint32 taskID);
+
+/* Function Hook for CreateChildTask */
+int32 CFE_ES_CreateChildTaskHook(uint32 *TaskIdPtr, const char *TaskName, CFE_ES_ChildTaskMainFuncPtr_t FunctionPtr, const uint32 *StackPtr, uint32 StackSize, uint32 Priority, uint32 Flags)
+{
+  UTF_put_text("CreateChildTask Function Hook called for '%s'\n",TaskName);
+  return CFE_SUCCESS;
+}
+
+/* Function Hook for OS_BinSemCreate */
+int32 OS_BinSemCreateHook(uint32 *sem_id, const char *sem_name, uint32 initial_val, uint32 options)
+{
+  UTF_put_text("OS_BinSemCreate Function Hook called for '%s'\n",sem_name);
+  return OS_SUCCESS;
+}
 
 int main(void)
 {
@@ -261,7 +278,7 @@ int main(void)
 
     /* CFE_ES_CreateChildTask Test */
     UTF_put_text("\n***Test CFE_ES_CreateChildTask API***\n");
-	uint32 childTask1Id, childTask2Id;
+    uint32 childTask1Id, childTask2Id, childHookId=0;
 
     UTF_put_text("\nTest Case #1: Call CFE_ES_CreateChildTask()\n"); 
     ReturnVal = CFE_ES_CreateChildTask(&childTask1Id,  "ImportantTask1",  0, 0, 1024, 3, 0);
@@ -278,6 +295,12 @@ int main(void)
     ReturnVal = CFE_ES_CreateChildTask(&childTask2Id,  "ImportantTask2",  0, 0, 1024, 3, 0);
     UTF_put_text("CFE_ES_CreateChildTask returned %x. Expected %x.\n", ReturnVal,CFE_SUCCESS);
     UTF_put_text("ChildTask %d created.\n",childTask2Id);
+
+    UTF_put_text("\nTest Case #4: CFE_ES_CreateChildTask Function Hook test\n");
+    UTF_ES_API_set_function_hook(CFE_ES_CREATECHILDTASK_HOOK, (void *)&CFE_ES_CreateChildTaskHook);
+    UTF_put_text("CreateChildTask Hook Return Code %x\n", CFE_ES_CreateChildTask(&childHookId,"HookTask",0,0,1024,3,0));
+    /* Set the function hook pointer back to NULL */
+    UTF_ES_API_set_function_hook(CFE_ES_CREATECHILDTASK_HOOK,NULL);
     
     /* CFE_ES_RegisterChildTask Test */
     UTF_put_text("\n***Test CFE_ES_RegisterChildTask API***\n");
@@ -358,6 +381,19 @@ int main(void)
     UTF_put_text("\n***Child TaskId %d should not appear***\n",childTask1Id);
     UTF_ES_DumpTaskRecords();
 	
+    /* OS_BinSemCreate function hook & return code tests */
+    uint32 semId=0;
+    UTF_put_text("\nTest Case #1: OS_BinSemCreate Function Hook test\n");
+    UTF_OSAPI_set_function_hook(OS_BINSEMCREATE_HOOK, (void *)&OS_BinSemCreateHook);
+    UTF_put_text("OS_BinSemCreate Hook Return Code %x\n", OS_BinSemCreate(&semId,"BinarySemName",0,0));
+    /* Set the function hook pointer back to NULL */
+    UTF_OSAPI_set_function_hook(OS_BINSEMCREATE_HOOK,NULL);
+    
+    UTF_put_text("\nTest Case #2: OS_BinSemCreate Return Code test\n");
+    UTF_CFE_OSAPI_Set_Api_Return_Code(CFE_OSAPI_BINSEMCREATE_PROC, 0x12ab34cd);
+    UTF_put_text("OS_BinSemCreate Return Code %x\n", OS_BinSemCreate(&semId,"ReturnSemName",0,0));
+    UTF_CFE_OSAPI_Use_Default_Api_Return_Code(CFE_OSAPI_BINSEMCREATE_PROC);
+
     /* CFE_ES_WriteToSysLog Test */
    	char VeryLongString[400];
     UTF_put_text("\n***Test CFE_ES_WriteToSysLog API***\n");

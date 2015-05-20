@@ -1,6 +1,6 @@
 /*
 ** File: utf_cfe_es_api.c
-** $Id: utf_cfe_es_api.c 1.7 2010/10/25 15:06:43EDT jmdagost Exp  $
+** $Id: utf_cfe_es_api.c 1.9 2012/02/28 10:33:01GMT-05:00 wmoleski Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,6 +18,10 @@
 ** Notes:
 **
 ** $Log: utf_cfe_es_api.c  $
+** Revision 1.9 2012/02/28 10:33:01GMT-05:00 wmoleski 
+** Added function hooks and Return Code handling and updated the examples to test these changes.
+** Revision 1.8 2012/01/13 12:51:55EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.7 2010/10/25 15:06:43EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.6 2010/10/04 14:57:00EDT jmdagost 
@@ -146,6 +150,36 @@ static CFE_ES_AppInfo_t ES_DefaultAppInfo;
 
 CFE_ES_CDSVariables_t CDSVars;
 
+/* Function Hook Stuff */
+typedef struct
+{
+    int32 (*CFE_ES_CreateChildTask) (uint32, const char *, CFE_ES_ChildTaskMainFuncPtr_t, const uint32 *, uint32, uint32, uint32);
+
+} UTF_ES_API_HookTable_t;
+
+UTF_ES_API_HookTable_t UTF_ES_API_HookTable = {
+    NULL
+};
+
+/******************************************************************************
+**  Function: UTF_ES_API_set_function_hook()
+**
+**  Purpose:
+**    Install a user defined hook function for an ES function call.
+*/
+void UTF_ES_API_set_function_hook(int Index, void *FunPtr)
+{
+    if (Index == CFE_ES_CREATECHILDTASK_HOOK)
+    {
+      UTF_ES_API_HookTable.CFE_ES_CreateChildTask = FunPtr;
+    }
+    else
+    {
+      UTF_error("Invalid ES API Hook Index In Set Hook Call %d", Index);
+    }
+}
+
+
 int32 cfe_es_api_return_value[NUM_OF_CFE_ES_API_PROCS]=
  {
   UTF_CFE_USE_DEFAULT_RETURN_CODE, UTF_CFE_USE_DEFAULT_RETURN_CODE,
@@ -233,7 +267,7 @@ int32 CFE_ES_ResetCFE(uint32 ResetType)
 
 
 /*
-** Function: CFE_ES_ResetApp
+** Function: CFE_ES_RestartApp
 **
 ** Purpose:  Reset a single cFE App. Can do a WARM or COLD reset.
 **
@@ -1244,19 +1278,22 @@ int32 CFE_ES_GetTaskInfo(CFE_ES_TaskInfo_t *TaskInfo, uint32 TaskId)
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-int32 CFE_ES_CreateChildTask(uint32       					*TaskIdPtr,
-                             const char   					*TaskName,
-                             CFE_ES_ChildTaskMainFuncPtr_t	FunctionPtr,
-                             const uint32 					*StackPtr,
-                             uint32        					StackSize,
-                             uint32        					Priority,
-                             uint32        					Flags)
+int32 CFE_ES_CreateChildTask(uint32 *TaskIdPtr, const char *TaskName,
+                             CFE_ES_ChildTaskMainFuncPtr_t FunctionPtr,
+                             const uint32 *StackPtr,
+                             uint32 StackSize,
+                             uint32 Priority,
+                             uint32 Flags)
 {
    /* Handle Preset Return Code */
    if (cfe_es_api_return_value[CFE_ES_CREATECHILDTASK_PROC] !=  UTF_CFE_USE_DEFAULT_RETURN_CODE)
    {
       return cfe_es_api_return_value[CFE_ES_CREATECHILDTASK_PROC];
    }
+
+   /* Handle Function Hook */
+   if (UTF_ES_API_HookTable.CFE_ES_CreateChildTask)
+      return(UTF_ES_API_HookTable.CFE_ES_CreateChildTask(TaskIdPtr,TaskName,FunctionPtr,StackPtr,StackSize,Priority,Flags));
 
    int32          Result;
    uint32         AppId= 0xFFFFFFFF;

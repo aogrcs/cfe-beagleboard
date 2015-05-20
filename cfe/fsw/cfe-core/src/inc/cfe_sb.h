@@ -1,7 +1,7 @@
 /******************************************************************************
 ** File: cfe_sb.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the
+**      Copyright (c) 2004-2006, United States government as represented by the
 **      administrator of the National Aeronautics Space Administration.
 **      All rights reserved. This software(cFE) was created at NASA's Goddard
 **      Space Flight Center pursuant to government contracts.
@@ -17,6 +17,8 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb.h  $
+** Revision 1.10 2011/04/07 08:34:14GMT-05:00 lwalling 
+** This file references CFE TIME structures, therefore it should include cfe_time.h
 ** Revision 1.9 2009/07/29 19:21:50EDT aschoeni 
 ** Added ZeroCopyHandle_t
 ** Revision 1.8 2009/07/24 18:25:20EDT aschoeni 
@@ -72,6 +74,7 @@
 #include "cfe_mission_cfg.h"
 #include "cfe_platform_cfg.h"
 #include "ccsds.h"
+#include "cfe_time.h"
 
 
 /*

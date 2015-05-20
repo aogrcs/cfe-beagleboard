@@ -6,37 +6,36 @@ on ERROR resume
 #include "ut_statusdefs.h"
 
 write
-write "     Sending DEBUG message for CFE_EVS."
-write "     *** EVS messages are all ERROR or INFO types ***"
+write "*** Sending DEBUG message for CFE_EVS."
+write "*** NO messages are being generated at this time ***"
 write ""
 
-write "     Sending DEBUG message for CFE_SB."
-write "     *** SB no-op evt msg is of type INFO ***"
+write "*** Sending DEBUG message for CFE_SB."
+write "*** NO messages are being generated at this time ***"
 write ""
 
-write "     Sending DEBUG message for CFE_ES."
-write "     *** ES messages are all ERROR or INFO types ***"
+write "*** Sending DEBUG message for CFE_ES."
+write "*** NO messages are being generated at this time ***"
 write ""
 
-write "     Sending DEBUG message for CFE_TIME."
-write "     *** TIME messages are all ERROR or INFO types ***"
+write "*** Sending DEBUG message for CFE_TIME."
+write "*** NO messages are being generated at this time ***"
 write ""
 
-write "     Sending DEBUG message for CFE_TBL."
-write "     *** TBL no-op evt msg if of INFO type"
+write "*** Sending DEBUG message for CFE_TBL."
+write "*** NO messages are being generated at this time ***"
 write ""
 
-write "     Sending DEBUG message for CI_APP."
-write "     *** NO messages are being attempted at this time ***"
+write "*** Sending DEBUG message for CI_APP."
+write "*** NO messages are being generated at this time ***"
 write
 
-write "     Sending DEBUG message for TO_APP."
-write "     *** NO messages are being attempted at this time ***"
+write "*** Sending DEBUG message for TO_APP."
+write "*** NO messages are being generated at this time ***"
 write
 
-write "     Sending DEBUG message for TST_EVS."
+write "*** Sending DEBUG message for TST_EVS."
 /$SC_$CPU_TST_EVS_SendEvtMsg DEBUG EventId = "1" Iters = "1" Milliseconds = "0"
-write ""
 wait 5
 
 endproc

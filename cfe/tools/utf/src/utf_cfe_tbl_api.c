@@ -1,6 +1,6 @@
 /*
 ** File: utf_cfe_tbl_api.c
-** $Id: utf_cfe_tbl_api.c 1.8 2010/10/25 15:06:36EDT jmdagost Exp  $
+** $Id: utf_cfe_tbl_api.c 1.9 2012/01/13 12:52:00GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -18,6 +18,8 @@
 ** Notes:    
 **
 ** $Log: utf_cfe_tbl_api.c  $
+** Revision 1.9 2012/01/13 12:52:00GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.8 2010/10/25 15:06:36EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.7 2010/10/04 14:57:37EDT jmdagost 

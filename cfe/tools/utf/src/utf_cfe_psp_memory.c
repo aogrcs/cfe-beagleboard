@@ -1,6 +1,6 @@
 /*
 ** File: utf_cfe_psp_memory.c
-** $Id: utf_cfe_psp_memory.c 1.3 2010/10/25 15:06:30EDT jmdagost Exp  $
+** $Id: utf_cfe_psp_memory.c 1.5 2012/01/13 12:51:57GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -20,9 +20,13 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:30EDT $
-** $Revision: 1.3 $
+** $Date: 2012/01/13 12:51:57GMT-05:00 $
+** $Revision: 1.5 $
 ** $Log: utf_cfe_psp_memory.c  $
+** Revision 1.5 2012/01/13 12:51:57GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.4 2010/11/29 08:45:17EST jmdagost 
+** Enhanced support for CFE_PSP_EepromWriteEnable and CFE_PSP_EepromWriteDisable
 ** Revision 1.3 2010/10/25 15:06:30EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 14:57:14EDT jmdagost 
@@ -58,6 +62,7 @@ uint8 *CFE_PSP_CDSPtr = &cdsArea[0];
 
 int32 cfe_psp_return_value[NUM_OF_CFE_PSP_PROCS]=
  {
+  UTF_CFE_USE_DEFAULT_RETURN_CODE, UTF_CFE_USE_DEFAULT_RETURN_CODE,
   UTF_CFE_USE_DEFAULT_RETURN_CODE, UTF_CFE_USE_DEFAULT_RETURN_CODE,
   UTF_CFE_USE_DEFAULT_RETURN_CODE, UTF_CFE_USE_DEFAULT_RETURN_CODE,
   UTF_CFE_USE_DEFAULT_RETURN_CODE

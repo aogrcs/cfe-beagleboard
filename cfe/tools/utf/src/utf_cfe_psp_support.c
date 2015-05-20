@@ -1,6 +1,6 @@
 /*
 ** File: utf_psp_support.c
-** $Id: utf_cfe_psp_support.c 1.3 2010/10/25 15:06:35EDT jmdagost Exp  $
+** $Id: utf_cfe_psp_support.c 1.4 2012/01/13 12:51:59GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -22,9 +22,11 @@
 **
 ** Assumptions and Notes:
 **
-** $Date: 2010/10/25 15:06:35EDT $
-** $Revision: 1.3 $
+** $Date: 2012/01/13 12:51:59GMT-05:00 $
+** $Revision: 1.4 $
 ** $Log: utf_cfe_psp_support.c  $
+** Revision 1.4 2012/01/13 12:51:59GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.3 2010/10/25 15:06:35EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 14:57:25EDT jmdagost 

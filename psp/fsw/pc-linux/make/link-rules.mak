@@ -18,12 +18,16 @@ CORE_INSTALL_FILES = $(EXE_TARGET)
 ##
 ## Linker flags that are needed
 ##
-LDFLAGS = -Wl,-export-dynamic
+LDFLAGS = -m32 -Wl,-export-dynamic
 
 ##
 ## Libraries to link in
 ##
-LIBS =  -lm -lstdc++ -lpthread -ldl -lrt
+LIBS =  -lm -lpthread -ldl -lrt
+##
+## Uncomment the following line to link in C++ standard libs
+## LIBS += -lstdc++
+## 
 
 ##
 ## cFE Core Link Rule
@@ -35,4 +39,4 @@ $(EXE_TARGET): $(CORE_OBJS)
 ## Application Link Rule
 ##
 $(APPTARGET).$(APP_EXT): $(OBJS)
-	$(COMPILER) -shared -o $@ $(OBJS) 
+	$(COMPILER) -m32 -shared -o $@ $(OBJS) 

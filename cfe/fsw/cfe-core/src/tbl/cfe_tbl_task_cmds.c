@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_task_cmds.c 1.8 2010/10/27 16:36:49EDT dkobe Exp  $
+** $Id: cfe_tbl_task_cmds.c 1.15 2014/08/22 16:30:24GMT-05:00 lwalling Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,20 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_task_cmds.c  $
+** Revision 1.15 2014/08/22 16:30:24GMT-05:00 lwalling 
+** Change signed loop counters to unsigned
+** Revision 1.14 2014/06/09 10:28:32EDT lwalling 
+** Store name of last table loaded in housekeeping, modify comments when storing last table updated info
+** Revision 1.13 2012/02/22 15:13:33EST lwalling 
+** Remove obsolete TODO comments
+** Revision 1.12 2012/01/18 16:32:20EST jmdagost 
+** Updated no-op event msg to include cFE version numbers.
+** Revision 1.11 2012/01/13 12:17:40EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.10 2011/11/14 17:59:52EST lwalling 
+** Event EID mentioned in previous log entry should have been CFE_TBL_LOAD_EXCEEDS_SIZE_ERR_EID
+** Revision 1.9 2011/11/14 17:43:02EST lwalling 
+** Modified event text and argument list for CFE_TBL_FILE_INCOMPLETE_ERR_EID
 ** Revision 1.8 2010/10/27 16:36:49EDT dkobe 
 ** Added computation and reporting of Table CRCs to table load and registry reporting commands
 ** Revision 1.7 2010/10/27 13:57:56EDT dkobe 
@@ -50,6 +64,7 @@
 /*
 ** Required header files
 */
+#include "cfe_version.h"
 #include "cfe_evs.h"
 #include "cfe_es.h"
 #include "cfe_sb.h"
@@ -165,7 +180,7 @@ extern CFE_TBL_TaskData_t CFE_TBL_TaskData;
 CFE_TBL_CmdProcRet_t CFE_TBL_HousekeepingCmd( const CFE_SB_Msg_t *MessagePtr )
 {
     int32                     Status;
-    int32                     i;
+    uint32                    i;
     CFE_TBL_DumpControl_t    *DumpCtrlPtr;
     CFE_TIME_SysTime_t        DumpTime;
     int32                     FileDescriptor;
@@ -266,7 +281,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_HousekeepingCmd( const CFE_SB_Msg_t *MessagePtr )
 
 void CFE_TBL_GetHkData(void)
 {
-    int32 i;
+    uint32 i;
     uint16 Count;
     CFE_TBL_ValidationResult_t *ValPtr = NULL;
 
@@ -358,11 +373,14 @@ void CFE_TBL_GetHkData(void)
         /* Check to make sure the Registry Entry is still valid */
         if (CFE_TBL_TaskData.Registry[CFE_TBL_TaskData.LastTblUpdated].OwnerAppId != CFE_TBL_NOT_OWNED)
         {
-            /* Get the time and filename used for the last table update */
-            CFE_TBL_TaskData.HkPacket.LastUpdateTime = CFE_TBL_TaskData.Registry[CFE_TBL_TaskData.LastTblUpdated].TimeOfLastUpdate;
+            /* Get the time at the last table update */
+            CFE_TBL_TaskData.HkPacket.LastUpdateTime =
+              CFE_TBL_TaskData.Registry[CFE_TBL_TaskData.LastTblUpdated].TimeOfLastUpdate;
+
+            /* Get the table name used for the last table update */
             CFE_PSP_MemCpy(CFE_TBL_TaskData.HkPacket.LastUpdatedTbl, 
-                      CFE_TBL_TaskData.Registry[CFE_TBL_TaskData.LastTblUpdated].Name, 
-                      CFE_TBL_MAX_FULL_NAME_LEN);
+              CFE_TBL_TaskData.Registry[CFE_TBL_TaskData.LastTblUpdated].Name, 
+              CFE_TBL_MAX_FULL_NAME_LEN);
         }      
     }
 }
@@ -431,7 +449,8 @@ void CFE_TBL_GetTblRegData(void)
 CFE_TBL_CmdProcRet_t CFE_TBL_NoopCmd( const CFE_SB_Msg_t *MessagePtr )
 {
     /* Acknowledge receipt of NOOP with Event Message */
-    CFE_EVS_SendEvent(CFE_TBL_NOOP_INF_EID, CFE_EVS_INFORMATION, "No-op command");
+    CFE_EVS_SendEvent(CFE_TBL_NOOP_INF_EID, CFE_EVS_INFORMATION, "No-op command. cFE Version %d.%d.%d.%d",
+                      CFE_MAJOR_VERSION,CFE_MINOR_VERSION,CFE_REVISION,CFE_MISSION_REV);
 
     return CFE_TBL_INC_CMD_CTR;
 
@@ -488,7 +507,6 @@ CFE_TBL_CmdProcRet_t CFE_TBL_LoadCmd( const CFE_SB_Msg_t *MessagePtr )
     LoadFilename[OS_MAX_PATH_LEN-1] = '\0';
 
     /* Try to open the specified table file */
-    /* TODO: Put in PATH search capability to locate file */
     FileDescriptor = OS_open(LoadFilename, OS_READ_ONLY, 0);
 
     if (FileDescriptor >= 0)
@@ -588,6 +606,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_LoadCmd( const CFE_SB_Msg_t *MessagePtr )
                             
                                     /* Save file information statistics for housekeeping telemetry */
                                     CFE_PSP_MemCpy(CFE_TBL_TaskData.HkPacket.LastFileLoaded, LoadFilename, OS_MAX_PATH_LEN);
+                                    CFE_PSP_MemCpy(CFE_TBL_TaskData.HkPacket.LastTableLoaded, TblFileHeader.TableName, CFE_TBL_MAX_FULL_NAME_LEN);
 
                                     /* Increment successful command completion counter */
                                     ReturnCode = CFE_TBL_INC_CMD_CTR;
@@ -625,8 +644,9 @@ CFE_TBL_CmdProcRet_t CFE_TBL_LoadCmd( const CFE_SB_Msg_t *MessagePtr )
                         {
                             CFE_EVS_SendEvent(CFE_TBL_LOAD_EXCEEDS_SIZE_ERR_EID,
                                               CFE_EVS_ERROR,
-                                              "Table Hdr in '%s' indicates data beyond size of '%s' (%d)",
-                                              LoadFilename, TblFileHeader.TableName, RegRecPtr->Size);
+                                              "Cannot load '%s' (%d) at offset %d in '%s' (%d)",
+                                              LoadFilename, TblFileHeader.NumBytes, TblFileHeader.Offset,
+                                              TblFileHeader.TableName, RegRecPtr->Size);
                         }
                         else if (TblFileHeader.NumBytes == 0)
                         {

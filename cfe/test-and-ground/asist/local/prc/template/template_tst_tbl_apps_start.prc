@@ -13,8 +13,12 @@ proc $sc_$cpu_tst_tbl_apps_start (step_num)
 ;	      to be consistant with other templates.
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
+
+%liv (log_procedure) = logging
 
 local success_cmd_ctr, error_cmd_ctr
 local packet_sequence_cnt
@@ -25,6 +29,8 @@ local app_info_file_index
 local found_app1, found_app2
 local stream1, stream2
 
+local ramDir = "RAM:0"
+
 page $sc_$cpu_es_app_info
 
 wait 10
@@ -32,7 +38,7 @@ wait 10
 write ";*********************************************************************"
 write "; Step ",step_num, ".1: Determine if the Test applications are running."
 write ";*********************************************************************"
-start get_file_to_cvt ("RAM:0", "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", "$CPU")
 
 ;Loop thru the table looking for the TST_TBL apps (TST_TBL and TST_TBL2)
 for app_info_file_index = 1 to CFE_ES_MAX_APPLICATIONS do
@@ -72,7 +78,7 @@ write ";*********************************************************************"
 write "; Step ",step_num, ".4: Verify the applications are running.          "
 write ";*********************************************************************"
 ;  Dump ES apps
-start get_file_to_cvt ("RAM:0", "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", "$CPU")
 
 ;Loop thru the table looking for the TST_TBL apps (TST_TBL and TST_TBL2)
 for app_info_file_index = 1 to CFE_ES_MAX_APPLICATIONS do
@@ -84,9 +90,9 @@ for app_info_file_index = 1 to CFE_ES_MAX_APPLICATIONS do
 enddo
 
 if ((found_app1 = TRUE) AND (found_app2 = TRUE)) then
-    write "<*> Success: The Table Test Applications were found in the ES Application Info File"
+    write "<*> Passed - The Table Test Applications were found in the ES Application Info File"
 else
-    write "<!> Error: Did not find the applications that were just loaded"
+    write "<!> Failed - Did not find the applications that were just loaded"
     wait 10
     goto procerror
 endif
@@ -96,9 +102,10 @@ write "; Step ", step_num, ".5: Send NOOP commands to the test Applications  "
 write "; and verify that they were received. "
 write ";*********************************************************************"
 
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-  event_packet_ctr = p004scnt
-elseif ("$CPU" = "CPU2") then
+;; CPU1 is the default
+event_packet_ctr = p004scnt
+
+if ("$CPU" = "CPU2") then
   event_packet_ctr = p024scnt
 elseif ("$CPU" = "CPU3") then
   event_packet_ctr = p044scnt
@@ -117,7 +124,7 @@ elseif ("$CPU" = "CPU3") then
   wait until (p044scnt >= event_packet_ctr + 2)
 endif
 
-write "<*> Success: Test Table Applications are running."
+write "<*> Passed - Test Table Applications are running."
 Write "AFTER loading the Table Test Apps, there are " & $SC_$CPU_TBL_NUMTABLES & " tables registered"
   
 Write "Setup complete"
@@ -127,10 +134,11 @@ write "; Step ", step_num, ".6: Send commands to subscribe to the HK packets "
 write "; for each Test application. "
 write ";*********************************************************************"
 
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-   stream1 = x'904'
-   stream2 = x'909'
-elseif ("$CPU" = "CPU2") then
+;; CPU1 is the default
+stream1 = x'904'
+stream2 = x'909'
+
+if ("$CPU" = "CPU2") then
    stream1 = x'A04'
    stream2 = x'A09'
 elseif ("$CPU" = "CPU3") then
@@ -151,7 +159,7 @@ write ";*********************************************************************"
 
 page $SC_$CPU_TBL_REGISTRY
 wait 5
-start get_file_to_cvt ("RAM:0", "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_tbl_reg.log", "$sc_$cpu_tbl_reg.log", "$CPU")
 wait 20
 
 goto procterm

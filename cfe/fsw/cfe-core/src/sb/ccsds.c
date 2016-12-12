@@ -15,6 +15,8 @@
 **      Functions for working with CCSDS headers.
 **
 ** $Log: ccsds.c  $
+** Revision 1.5 2012/01/13 12:15:11GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.4 2010/10/25 15:00:51EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.3 2010/10/04 15:21:32EDT jmdagost 

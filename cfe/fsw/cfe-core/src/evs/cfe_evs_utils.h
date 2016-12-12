@@ -1,7 +1,7 @@
 /*
 **
 **  Filename: cfe_evs_utils.h
-**  $Id: cfe_evs_utils.h 1.3 2010/10/25 15:01:43EDT jmdagost Exp  $
+**  $Id: cfe_evs_utils.h 1.5 2012/01/13 12:00:56GMT-05:00 acudmore Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -29,9 +29,13 @@
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
 **
-**  $Date: 2010/10/25 15:01:43EDT $
-**  $Revision: 1.3 $
+**  $Date: 2012/01/13 12:00:56GMT-05:00 $
+**  $Revision: 1.5 $
 **  $Log: cfe_evs_utils.h  $
+**  Revision 1.5 2012/01/13 12:00:56GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.4 2011/04/05 16:33:46EDT lwalling 
+**  Optimize EVS use of string functions, plus other performance improvements
 **  Revision 1.3 2010/10/25 15:01:43EDT jmdagost 
 **  Corrected bad apostrophe in prologue.
 **  Revision 1.2 2010/10/04 15:27:13EDT jmdagost 
@@ -62,7 +66,6 @@
 
 /********************* Include Files  ************************/
 
-#include "cfe_platform_cfg.h"    /* cFE platform configuration definitions */
 #include "cfe_evs_task.h"        /* EVS internal definitions */
 
 /* ==============   Section I: Macro and Constant Type Definitions   =========== */
@@ -71,24 +74,22 @@
 
 /* ==============   Section III: Function Prototypes =========== */
 
-int32 EVS_InitCpyApplicationData(uint32 AppID, void *Filters, uint16 NumEventFilters);
+int32 EVS_GetAppID(uint32 *AppIdPtr);
 
-int32 EVS_SendEvent(uint32 AppID, CFE_TIME_SysTime_t Time, uint16 EventID, uint16 EventType, char *EventString );
+int32 EVS_GetApplicationInfo(uint32 *pAppID, const char *pAppName);
 
-int32 EVS_CheckApplication(uint32 AppID);
+int32 EVS_NotRegistered(uint32 AppID);
 
-int32 EVS_GetApplicationInfo(uint32 *pAppID, char *pAppName);
+boolean EVS_IsFiltered(uint32 AppID, uint16 EventID, uint16 EventType);
 
-int32 EVS_UnregisterInternal (const uint32 AppID);
-
-CFE_EVS_EVSBinFilter_t * EVS_FindEventID (const int16 EventID, CFE_EVS_EVSBinFilter_t *FilterArray);
-
-boolean EVS_IsFiltered (const uint32 AppID, const uint16 EventID, const uint16 EventType);
+EVS_BinFilter_t *EVS_FindEventID(int16 EventID, EVS_BinFilter_t *FilterArray);
 
 void EVS_EnableTypes(uint8 BitMask, uint32 AppID);
 
-void EVS_DisableTypes(uint8 BitMask, uint32 AppID);     
+void EVS_DisableTypes(uint8 BitMask, uint32 AppID);
 
-int32 CFE_EVS_CleanUpApp (uint32 AppId);
+void EVS_SendPacket(uint32 AppID, CFE_TIME_SysTime_t Time, CFE_EVS_Packet_t *EVS_PktPtr);
+
+int32 EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ... );
 
 #endif  /* _cfe_evs_utils_ */

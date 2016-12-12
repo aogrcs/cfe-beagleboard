@@ -1,7 +1,7 @@
 /*
 **
 **  File Name: cfe_evs.c
-**  $Id: cfe_evs.c 1.4 2010/10/26 17:01:42EDT jmdagost Exp  $
+**  $Id: cfe_evs.c 1.8 2014/05/30 13:26:02GMT-05:00 lwalling Exp  $
 **
 **
 **
@@ -21,9 +21,17 @@
 **  Purpose: This module defines the library functions of the
 **           Event Services API
 **
-**  $Date: 2010/10/26 17:01:42EDT $
-**  $Revision: 1.4 $
+**  $Date: 2014/05/30 13:26:02GMT-05:00 $
+**  $Revision: 1.8 $
 **  $Log: cfe_evs.c  $
+**  Revision 1.8 2014/05/30 13:26:02GMT-05:00 lwalling 
+**  Added CFE_EVS_EVT_NOT_REGISTERED error condition to CFE_EVS_ResetFilter()
+**  Revision 1.7 2012/09/28 19:14:22EDT aschoeni 
+**  Removed bad check on EventID limit when resetting filter
+**  Revision 1.6 2012/01/13 12:00:56EST acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.5 2011/04/05 16:33:57EDT lwalling 
+**  Optimize EVS use of string functions, plus other performance improvements
 **  Revision 1.4 2010/10/26 17:01:42EDT jmdagost 
 **  Made CFE_EVS_ResetFilter() argument a signed int and added test for positive.
 **  Revision 1.3 2010/10/25 15:01:44EDT jmdagost 
@@ -67,8 +75,6 @@
 #include <string.h>
 
 /* External Data */
-extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
-
 
 /* Local Function Prototypes */
 
@@ -87,48 +93,76 @@ extern CFE_EVS_GlobalData_t   CFE_EVS_GlobalData;
 */
 int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterScheme)
 {
-   int32                  Status = CFE_SUCCESS;
-   uint32                 AppID = 0xFFFFFFFF;
-   CFE_EVS_Table_t        *TableEntry;
+   uint16 FilterLimit;
+   uint16 i;
+   int32  Status = CFE_SUCCESS;
+   uint32 AppID = CFE_EVS_UNDEF_APPID;
+   CFE_EVS_BinFilter_t   *AppFilters;
+   EVS_AppData_t         *AppDataPtr;
 
-   /* Retreive the calling application's ID number */
-   Status = CFE_ES_GetAppID(&AppID);
+   /* Query and verify the caller's AppID */
+   Status = EVS_GetAppID(&AppID);
 
-   if(Status == CFE_SUCCESS)
+   if (Status == CFE_SUCCESS)
    {
-      /* Check validity of AppID and application registration */
-      Status = EVS_CheckApplication(AppID);
-
-      if(Status == CFE_SUCCESS)
+      /* Cleanup if already registered */
+      if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == TRUE)
       {
-         /* Unregister application if previously registered */
-         Status = EVS_UnregisterInternal(AppID);
+         CFE_PSP_MemSet(&CFE_EVS_GlobalData.AppData[AppID], 0, sizeof(EVS_AppData_t));
       }
-      if((Status == CFE_SUCCESS) || (Status == CFE_EVS_APP_NOT_REGISTERED))
+
+      /* Verify filter arguments */
+      if (FilterScheme != CFE_EVS_BINARY_FILTER)
       {
-         if(FilterScheme == CFE_EVS_BINARY_FILTER)
+         Status = CFE_EVS_UNKNOWN_FILTER;
+      }
+      else if ((NumEventFilters != 0) && (Filters == NULL))
+      {
+         Status = CFE_ES_ERR_BUFFER;
+      }
+      else
+      {
+         /* Initialize application event data */
+         AppDataPtr = &CFE_EVS_GlobalData.AppData[AppID];
+         AppDataPtr->RegisterFlag = TRUE;
+         AppDataPtr->ActiveFlag   = TRUE;
+         AppDataPtr->EventCount   = 0;
+         AppDataPtr->EventTypesActiveFlag = CFE_EVS_DEFAULT_TYPE_FLAG;
+
+         /* Set limit for number of provided filters */
+         if (NumEventFilters < CFE_EVS_MAX_EVENT_FILTERS)
          {
-            /* Create table entries for storing application information*/
-            Status = CFE_ES_GetPoolBuf((uint32 **)&TableEntry,
-                                       CFE_EVS_GlobalData.EVS_TableHdl,                                   
-                                       (sizeof(CFE_EVS_Table_t)));
-
-            if((Status == CFE_SUCCESS)||(Status > 0))
-            {
-               CFE_EVS_GlobalData.EVS_TablePtr[AppID].Address = TableEntry;
-
-               /* Initialize and coppy application data to EVS table */
-               Status = EVS_InitCpyApplicationData(AppID, Filters, NumEventFilters);
-            }
+            FilterLimit = NumEventFilters;
          }
          else
          {
-            Status = CFE_EVS_UNKNOWN_FILTER;
+            FilterLimit = CFE_EVS_MAX_EVENT_FILTERS;
+         }
+
+         if (Filters != NULL)
+         {
+            AppFilters = (CFE_EVS_BinFilter_t *) Filters;
+
+            /* Copy provided filters */
+            for (i = 0; i < FilterLimit; i++)
+            {
+               AppDataPtr->BinFilters[i].EventID = AppFilters[i].EventID;
+               AppDataPtr->BinFilters[i].Mask    = AppFilters[i].Mask;
+               AppDataPtr->BinFilters[i].Count   = 0;
+            }
+         }
+
+         /* Initialize remainder of filters as unused */
+         for (i = FilterLimit; i < CFE_EVS_MAX_EVENT_FILTERS; i++)
+         {
+            AppDataPtr->BinFilters[i].EventID = CFE_EVS_FREE_SLOT;
+            AppDataPtr->BinFilters[i].Mask    = 0;
+            AppDataPtr->BinFilters[i].Count   = 0;
          }
       }
    }
 
-   return Status;
+   return(Status);
 
 } /* End CFE_EVS_Register */
 
@@ -143,25 +177,24 @@ int32 CFE_EVS_Register (void *Filters, uint16 NumEventFilters, uint16 FilterSche
 ** Assumptions and Notes:
 **
 */
-int32 CFE_EVS_Unregister ( void )
+int32 CFE_EVS_Unregister(void)
 {
-   uint32           AppID = 0xFFFFFFFF;
-   int32            Status = CFE_SUCCESS;
+   int32 Status = CFE_SUCCESS;
+   uint32 AppID = CFE_EVS_UNDEF_APPID;
 
-   /* Retreive the calling application's ID number */
-   Status = CFE_ES_GetAppID(&AppID);
+   /* Query and verify the caller's AppID */
+   Status = EVS_GetAppID(&AppID);
 
-   if(Status == CFE_SUCCESS)
+   if (Status == CFE_SUCCESS)
    {
-      Status = EVS_CheckApplication(AppID);
+      /* Cleanup if already registered */
+      if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == TRUE)
+      {
+         CFE_PSP_MemSet(&CFE_EVS_GlobalData.AppData[AppID], 0, sizeof(EVS_AppData_t));
+      }
    }
 
-   if(Status == CFE_SUCCESS)
-   {
-      Status = EVS_UnregisterInternal(AppID);
-   }
-
-   return Status;
+   return(Status);
 
 } /* End CFE_EVS_Unregister */
 
@@ -178,49 +211,56 @@ int32 CFE_EVS_Unregister ( void )
 */
 int32 CFE_EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ... )
 {
-   int32               Status = CFE_SUCCESS;
-   uint32              AppID = 0xFFFFFFFF;
-   CFE_TIME_SysTime_t  Time;
-   char                BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
-   char                GTBigBuf[CFE_EVS_MAX_MESSAGE_LENGTH + 2];
-   va_list             Ptr;
+   CFE_EVS_Packet_t   EVS_Packet;
+   int32              ExpandedLength;
+   int32              Status = CFE_SUCCESS;
+   uint32             AppID = CFE_EVS_UNDEF_APPID;
+   CFE_TIME_SysTime_t Time;
+   va_list            Ptr;
 
-   /* Get application identifier */
-   Status = CFE_ES_GetAppID(&AppID);
+   /* Query and verify the caller's AppID */
+   Status = EVS_GetAppID(&AppID);
 
-   if(Status == CFE_SUCCESS)
+   if (Status == CFE_SUCCESS)
    {
-      /* Copy message to event packet */
-      va_start(Ptr, Spec);
-      vsnprintf(GTBigBuf, CFE_EVS_MAX_MESSAGE_LENGTH +2, Spec, Ptr);
-      va_end(Ptr);
-
-
-      /* We make a buffer greater than than the max allowed. We can
-       * check the length of the string to see if it is bigger
-       * than the allowed. If it is, we trunc it and increment
-       * the counter. 
-       *
-       * Then we copy the max size of the message over to another
-       * buffer to be sent 
-       */ 
-      if(strlen(GTBigBuf) > CFE_EVS_MAX_MESSAGE_LENGTH)
+      if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == FALSE)
       {
-         CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+         /* Handler for events from apps not registered with EVS */
+         Status = EVS_NotRegistered(AppID);
       }
+      else if (EVS_IsFiltered(AppID, EventID, EventType) == FALSE)
+      {
+         /* Initialize EVS event packet */
+         CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
+         EVS_Packet.Payload.PacketID.EventID   = EventID;
+         EVS_Packet.Payload.PacketID.EventType = EventType;
 
-      strncpy(BigBuf,GTBigBuf,CFE_EVS_MAX_MESSAGE_LENGTH);
-      
-      /* Get system time */
-      Time = CFE_TIME_GetTime();
+         /* vsnprintf() returns the total expanded length of the formatted string */
+         /* vsnprintf() copies and zero terminates portion that fits in the buffer */
+         va_start(Ptr, Spec);
+         ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
+         va_end(Ptr);
 
-      /* Send event */
-      Status = EVS_SendEvent(AppID, Time, EventID, EventType, BigBuf);
+         /* Were any characters truncated in the buffer? */
+         if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
+         {
+            /* Mark character before zero terminator to indicate truncation */
+            EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
+         }
+
+         /* Get current spacecraft time */
+         Time = CFE_TIME_GetTime();
+
+         /* Send the event packet */
+         EVS_SendPacket(AppID, Time, &EVS_Packet);
+      }
    }
 
-   return Status;
+   return(Status);
 
 } /* End CFE_EVS_SendEvent */
+
 
 /*
 **             Function Prologue
@@ -233,44 +273,54 @@ int32 CFE_EVS_SendEvent (uint16 EventID, uint16 EventType, const char *Spec, ...
 **
 ** Assumptions and Notes:
 */
-int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType,uint32 AppID, const char *Spec, ... )
+int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType, uint32 AppID, const char *Spec, ... )
 {
-   int32               Status = CFE_SUCCESS;
-   CFE_TIME_SysTime_t  Time;
-   char                BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
-   char                GTBigBuf[CFE_EVS_MAX_MESSAGE_LENGTH + 2];
-   va_list             Ptr;
+   CFE_EVS_Packet_t   EVS_Packet;
+   int32              ExpandedLength;
+   int32              Status = CFE_SUCCESS;
+   CFE_TIME_SysTime_t Time;
+   va_list            Ptr;
 
-   
-   /* Check to make sure the given AppID is legit */
-   Status = EVS_CheckApplication(AppID);
-   
-   if(Status == CFE_SUCCESS)
+   if (AppID >= CFE_ES_MAX_APPLICATIONS)
    {
-      /* Copy message to event packet */
+      Status = CFE_EVS_APP_ILLEGAL_APP_ID;
+   }
+   else if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == FALSE)
+   {
+      /* Handler for events from apps not registered with EVS */
+      Status = EVS_NotRegistered(AppID);
+   }
+   else if (EVS_IsFiltered(AppID, EventID, EventType) == FALSE)
+   {
+      /* Initialize EVS event packet */
+      CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
+      EVS_Packet.Payload.PacketID.EventID   = EventID;
+      EVS_Packet.Payload.PacketID.EventType = EventType;
+
+      /* vsnprintf() returns the total expanded length of the formatted string */
+      /* vsnprintf() copies and zero terminates portion that fits in the buffer */
       va_start(Ptr, Spec);
-      vsnprintf(GTBigBuf, CFE_EVS_MAX_MESSAGE_LENGTH +2, Spec, Ptr);
+      ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
       va_end(Ptr);
 
-      if(strlen(GTBigBuf) > CFE_EVS_MAX_MESSAGE_LENGTH)
+      /* Were any characters truncated in the buffer? */
+      if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
       {
-         CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+         /* Mark character before zero terminator to indicate truncation */
+         EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+         CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
       }
 
-      strncpy(BigBuf,GTBigBuf,CFE_EVS_MAX_MESSAGE_LENGTH);
-
-      /* Get system time */
+      /* Get current spacecraft time */
       Time = CFE_TIME_GetTime();
 
-      /* Send event */
-      Status = EVS_SendEvent(AppID, Time, EventID, EventType, BigBuf);
+      /* Send the event packet */
+      EVS_SendPacket(AppID, Time, &EVS_Packet);
    }
 
    return Status;
 
 } /* End CFE_EVS_SendEventWithAppID */
-
-
 
 
 /*
@@ -285,35 +335,49 @@ int32 CFE_EVS_SendEventWithAppID (uint16 EventID, uint16 EventType,uint32 AppID,
 */
 int32 CFE_EVS_SendTimedEvent (CFE_TIME_SysTime_t Time, uint16 EventID, uint16 EventType, const char *Spec, ... )
 {
-   int32              Status;
-   uint32             AppID = 0xFFFFFFFF;
-   char               BigBuf[CFE_EVS_MAX_MESSAGE_LENGTH];
-   char                GTBigBuf[CFE_EVS_MAX_MESSAGE_LENGTH + 2];
+   CFE_EVS_Packet_t   EVS_Packet;
+   int32              ExpandedLength;
+   int32              Status = CFE_SUCCESS;
+   uint32             AppID = CFE_EVS_UNDEF_APPID;
    va_list            Ptr;
 
-    /* Get application identifier */
-   Status = CFE_ES_GetAppID(&AppID);
+   /* Query and verify the caller's AppID */
+   Status = EVS_GetAppID(&AppID);
 
-   if(Status == CFE_SUCCESS)
+   if (Status == CFE_SUCCESS)
    {
-      /* Copy message to event packet */
-      va_start(Ptr, Spec);
-      vsnprintf(GTBigBuf,CFE_EVS_MAX_MESSAGE_LENGTH + 2, Spec, Ptr);
-      va_end(Ptr);
-
-
-      if(strlen(GTBigBuf) > CFE_EVS_MAX_MESSAGE_LENGTH)
+      if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == FALSE)
       {
-         CFE_EVS_GlobalData.EVS_TlmPkt.MessageTruncCounter++;
+         /* Handler for events from apps not registered with EVS */
+         Status = EVS_NotRegistered(AppID);
       }
+      else if (EVS_IsFiltered(AppID, EventID, EventType) == FALSE)
+      {
+         /* Initialize EVS event packet */
+         CFE_SB_InitMsg(&EVS_Packet, CFE_EVS_EVENT_MSG_MID, sizeof(CFE_EVS_Packet_t), TRUE);
+         EVS_Packet.Payload.PacketID.EventID   = EventID;
+         EVS_Packet.Payload.PacketID.EventType = EventType;
 
-      strncpy(BigBuf,GTBigBuf,CFE_EVS_MAX_MESSAGE_LENGTH);
+         /* vsnprintf() returns the total expanded length of the formatted string */
+         /* vsnprintf() copies and zero terminates portion that fits in the buffer */
+         va_start(Ptr, Spec);
+         ExpandedLength = vsnprintf((char *)EVS_Packet.Payload.Message, sizeof(EVS_Packet.Payload.Message), Spec, Ptr);
+         va_end(Ptr);
 
+         /* Were any characters truncated in the buffer? */
+         if (ExpandedLength >= sizeof(EVS_Packet.Payload.Message))
+         {
+            /* Mark character before zero terminator to indicate truncation */
+            EVS_Packet.Payload.Message[sizeof(EVS_Packet.Payload.Message) - 2] = CFE_EVS_MSG_TRUNCATED;
+            CFE_EVS_GlobalData.EVS_TlmPkt.Payload.MessageTruncCounter++;
+         }
 
-      Status = EVS_SendEvent(AppID, Time, EventID, EventType, BigBuf);
+         /* Send the event packet */
+         EVS_SendPacket(AppID, Time, &EVS_Packet);
+      }
    }
 
-   return Status;
+   return(Status);
 
 } /* End CFE_EVS_SendTimedEvent */
 
@@ -330,36 +394,35 @@ int32 CFE_EVS_SendTimedEvent (CFE_TIME_SysTime_t Time, uint16 EventID, uint16 Ev
 */
 int32 CFE_EVS_ResetFilter (int16 EventID)
 {
-   int32                  Status = CFE_SUCCESS;
-   CFE_EVS_EVSBinFilter_t *FilterPtr = NULL;
-   uint32                 AppID = 0xFFFFFFFF;
-   CFE_EVS_Table_t        *TablePtr;
+   int32            Status = CFE_SUCCESS;
+   EVS_BinFilter_t *FilterPtr = NULL;
+   uint32           AppID = CFE_EVS_UNDEF_APPID;
 
-   /* Retreive calling application's ID */
-   Status = CFE_ES_GetAppID(&AppID);
+   /* Query and verify the caller's AppID */
+   Status = EVS_GetAppID(&AppID);
 
-   if(Status == CFE_SUCCESS)
+   if (Status == CFE_SUCCESS)
    {
-      /* Check validity of AppID and application registration */
-      Status = EVS_CheckApplication(AppID);
-
-      if(Status == CFE_SUCCESS)
+      if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == FALSE)
       {
-         if((EventID >= 0) && (EventID <= CFE_EVS_MAX_EVENT_FILTERS))
-         {
-            TablePtr = CFE_EVS_GlobalData.EVS_TablePtr[AppID].Address;
-             
-            FilterPtr = EVS_FindEventID(EventID, (CFE_EVS_EVSBinFilter_t *)&TablePtr->BinFilters);
+         Status = CFE_EVS_APP_NOT_REGISTERED;
+      }
+      else
+      {
+         FilterPtr = EVS_FindEventID(EventID, CFE_EVS_GlobalData.AppData[AppID].BinFilters);
 
-            if(FilterPtr != NULL)
-            {
-               FilterPtr->Count = 0;
-            }
+         if (FilterPtr != NULL)
+         {
+            FilterPtr->Count = 0;
+         }
+         else
+         {
+            Status = CFE_EVS_EVT_NOT_REGISTERED;
          }
       }
    }
 
-   return Status;
+   return(Status);
 
 } /* End CFE_EVS_ResetFilter */
 
@@ -376,28 +439,29 @@ int32 CFE_EVS_ResetFilter (int16 EventID)
 */
 int32 CFE_EVS_ResetAllFilters ( void )
 {
-   int32                  Status = CFE_SUCCESS;
-   uint32                 AppID = 0xFFFFFFFF;
-   uint32                 i;
+   int32    Status = CFE_SUCCESS;
+   uint32   AppID = CFE_EVS_UNDEF_APPID;
+   uint32   i;
 
-   /* Retreive calling application's ID */
-   Status = CFE_ES_GetAppID(&AppID);
+   /* Get and verify caller's AppID */
+   Status = EVS_GetAppID(&AppID);
 
-   if(Status == CFE_SUCCESS)
+   if (Status == CFE_SUCCESS)
    {
-       /* Check validity of AppID and application registration */
-       Status = EVS_CheckApplication(AppID);
-
-       if(Status == CFE_SUCCESS)
-       {
-          for(i=0; i<CFE_EVS_MAX_EVENT_FILTERS; i++)
-          {
-             CFE_EVS_GlobalData.EVS_TablePtr[AppID].Address->BinFilters[i].Count = 0;
-          }
-       }
+      if (CFE_EVS_GlobalData.AppData[AppID].RegisterFlag == FALSE)
+      {
+         Status = CFE_EVS_APP_NOT_REGISTERED;
+      }
+      else
+      {
+         for (i = 0; i < CFE_EVS_MAX_EVENT_FILTERS; i++)
+         {
+            CFE_EVS_GlobalData.AppData[AppID].BinFilters[i].Count = 0;
+         }
+      }
    }
 
-   return Status;
+   return(Status);
 
 } /* End CFE_EVS_ResetAllFilters */
 

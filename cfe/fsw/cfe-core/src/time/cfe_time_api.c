@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_time_api.c 1.5 2010/10/25 15:00:06EDT jmdagost Exp  $
+** $Id: cfe_time_api.c 1.7 2012/01/13 12:21:34GMT-05:00 acudmore Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -19,6 +19,10 @@
 ** Notes:    Partially derived from SDO source code
 **
 ** $Log: cfe_time_api.c  $
+** Revision 1.7 2012/01/13 12:21:34GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.6 2011/11/30 15:10:03EST jmdagost 
+** Replaced ifdef/ifndef preprocessor tests with if...==TRUE/if...!=TRUE tests
 ** Revision 1.5 2010/10/25 15:00:06EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 15:16:32EDT jmdagost 
@@ -63,7 +67,6 @@
 ** Required header files...
 */
 #include "cfe_time_utils.h"
-extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
@@ -75,7 +78,7 @@ CFE_TIME_SysTime_t   CFE_TIME_GetTime(void)
 {
     CFE_TIME_SysTime_t CurrentTime;
 
-#ifdef CFE_TIME_CFG_DEFAULT_TAI
+#if (CFE_TIME_CFG_DEFAULT_TAI == TRUE)
 
     CurrentTime = CFE_TIME_GetTAI();
 
@@ -161,32 +164,28 @@ CFE_TIME_SysTime_t CFE_TIME_MET2SCTime (CFE_TIME_SysTime_t METTime)
 
     CFE_TIME_SysTime_t STCF;
     CFE_TIME_SysTime_t TIATime;
-    CFE_TIME_SysTime_t UTCTime;
     CFE_TIME_SysTime_t ReturnTime;
+#if (CFE_TIME_CFG_DEFAULT_TAI != TRUE)
     CFE_TIME_SysTime_t LeapSecsAsSysTime;
-    int16              LeapSeconds;
+#endif
     
     STCF = CFE_TIME_GetSTCF();
 
     /* TIA = MET + STCF */
     TIATime = CFE_TIME_Add(METTime, STCF);
 
-    LeapSeconds = CFE_TIME_GetLeapSeconds();
-
-    /* Put leap seconds in correct format */
-    LeapSecsAsSysTime.Seconds       = LeapSeconds;
-    LeapSecsAsSysTime.Subseconds    = 0;
-    
-    /* UTC Time = TIA Time - Leap Seconds */
-    UTCTime = CFE_TIME_Subtract(TIATime, LeapSecsAsSysTime);
-
-
-#ifdef CFE_TIME_CFG_DEFAULT_TAI
+#if (CFE_TIME_CFG_DEFAULT_TAI == TRUE)
 
     ReturnTime = TIATime;
 
 #else
-    ReturnTime = UTCTime;
+
+    /* Put leap seconds in correct format */
+    LeapSecsAsSysTime.Seconds       = CFE_TIME_GetLeapSeconds();
+    LeapSecsAsSysTime.Subseconds    = 0;
+    
+    /* UTC Time = TIA Time - Leap Seconds */
+    ReturnTime = CFE_TIME_Subtract(TIATime, LeapSecsAsSysTime);
 
 #endif
 
@@ -298,7 +297,7 @@ uint16 CFE_TIME_GetClockInfo(void)
     /*
     ** This instance of Time Service is a "server"...
     */
-    #ifdef CFE_TIME_CFG_SERVER
+    #if (CFE_TIME_CFG_SERVER == TRUE)
     StateFlags |= CFE_TIME_FLAG_SERVER;
     #endif
 
@@ -832,6 +831,10 @@ void CFE_TIME_Print(char *PrintBuffer, CFE_TIME_SysTime_t TimeToPrint)
             {
                 DaysInThisYear = 366;
             }
+            else
+            {
+                /* Do Nothing. Non-leap year. */ 
+            }
         }
 
         /*
@@ -1006,7 +1009,7 @@ int32  CFE_TIME_UnregisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFunc
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SRC_MET
+#if (CFE_TIME_CFG_SRC_MET == TRUE)
 void CFE_TIME_ExternalMET(CFE_TIME_SysTime_t NewMET)
 {
     /*
@@ -1033,7 +1036,7 @@ void CFE_TIME_ExternalMET(CFE_TIME_SysTime_t NewMET)
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SRC_GPS
+#if (CFE_TIME_CFG_SRC_GPS == TRUE)
 void CFE_TIME_ExternalGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps)
 {
     /*
@@ -1060,7 +1063,7 @@ void CFE_TIME_ExternalGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps)
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SRC_TIME
+#if (CFE_TIME_CFG_SRC_TIME == TRUE)
 void CFE_TIME_ExternalTime(CFE_TIME_SysTime_t NewTime)
 {
     /*

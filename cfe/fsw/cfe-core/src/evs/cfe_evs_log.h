@@ -1,7 +1,7 @@
 /*
 **
 **  Filename: cfe_evs_log.h
-**    $Id: cfe_evs_log.h 1.2 2010/10/04 17:08:19EDT jmdagost Exp  $
+**    $Id: cfe_evs_log.h 1.5 2012/01/13 12:00:54GMT-05:00 acudmore Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -32,9 +32,15 @@
 **  Notes:
 **
 **
-**  $Date: 2010/10/04 17:08:19EDT $ 
-**  $Revision: 1.2 $
+**  $Date: 2012/01/13 12:00:54GMT-05:00 $ 
+**  $Revision: 1.5 $
 **  $Log: cfe_evs_log.h  $
+**  Revision 1.5 2012/01/13 12:00:54GMT-05:00 acudmore 
+**  Changed license text to reflect open source
+**  Revision 1.4 2011/05/23 15:51:06EDT lwalling 
+**  Update list of included header files and function prototypes, delete unused macro definition
+**  Revision 1.3 2011/04/05 16:33:43EDT lwalling 
+**  Optimize EVS use of string functions, plus other performance improvements
 **  Revision 1.2 2010/10/04 17:08:19EDT jmdagost 
 **  Cleaned up copyright symbol.
 **  Revision 1.1 2008/04/17 08:05:13EDT ruperera 
@@ -101,22 +107,17 @@
 
 /********************* Include Files  ************************/
 
-#include "osapi-os-filesys.h"    /* OS API file system definitions */
-#include "osapi.h"               /* OS API interface definitions */
-#include "cfe_platform_cfg.h"    /* cFE platform configuration definitions */
-#include "cfe_evs_task.h"        /* EVS internal definitions */
+#include "cfe_evs_msg.h"         /* EVS public definitions */
 
 /* ==============   Section I: Macro and Constant Type Definitions   =========== */
-#define CFE_EVS_LOG_START           0
 
 /* ==============   Section II: Internal Structures ============ */    
 
 /* ==============   Section III: Function Prototypes =========== */
-int32 EVS_InitLogPtr ( void );
-void EVS_AddLog (CFE_EVS_Packet_t *Event);
-boolean EVS_LogFull ( void );
-boolean EVS_ClearLog ( void );
-boolean CFE_EVS_WriteLogFileCmd( const CFE_EVS_LogFileCmd_t *CmdPtr);
-boolean CFE_EVS_SetLoggingModeCmd (CFE_EVS_ModeCmd_t *CmdPtr);                          
+
+void    EVS_AddLog ( CFE_EVS_Packet_t *EVS_PktPtr );
+void    EVS_ClearLog ( void );
+boolean CFE_EVS_WriteLogFileCmd (CFE_SB_MsgPayloadPtr_t Payload);
+boolean CFE_EVS_SetLoggingModeCmd (CFE_SB_MsgPayloadPtr_t Payload);                          
 
 #endif  /* _cfe_evs_log_ */

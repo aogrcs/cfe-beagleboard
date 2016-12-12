@@ -2,7 +2,7 @@
 **
 **  Filename: cfe_evs_events.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASAs Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -11,7 +11,7 @@
 **      distributed and modified only pursuant to the terms of that agreement. 
 **
 **
-**  $Id: cfe_evs_events.h 1.4 2010/10/04 15:25:17EDT jmdagost Exp  $
+**  $Id: cfe_evs_events.h 1.7 2011/06/02 17:06:44GMT-05:00 lwalling Exp  $
 **
 **  Purpose:
 **	           cFE Event Services (EVS) Event IDs
@@ -20,9 +20,15 @@
 **
 **  References:
 **     Flight Software Branch C Coding Standard Version 1.0a
-**  $Date: 2010/10/04 15:25:17EDT $
-**  $Revision: 1.4 $
+**  $Date: 2011/06/02 17:06:44GMT-05:00 $
+**  $Revision: 1.7 $
 **  $Log: cfe_evs_events.h  $
+**  Revision 1.7 2011/06/02 17:06:44GMT-05:00 lwalling 
+**  Updated text and descriptions for Write Application Data to File command events
+**  Revision 1.6 2011/06/01 17:38:43EDT lwalling 
+**  Update Write Log File and Set Log Mode command events
+**  Revision 1.5 2011/05/23 15:40:20EDT lwalling 
+**  Update descriptions for event log command events when event log is disabled
 **  Revision 1.4 2010/10/04 15:25:17EDT jmdagost 
 **  Cleaned up copyright symbol.
 **  Revision 1.3 2009/07/31 19:54:05EDT aschoeni 
@@ -77,8 +83,8 @@
 **/
 #define CFE_EVS_STARTUP_EID                1
 
-/** \brief <tt> 'Write Log File Command: Error writing to log file, OS_write returned 0x\%08X, data filename = \%s' </tt>
-**  \event <tt> 'Write Log File Command: Error writing to log file, OS_write returned 0x\%08X, data filename = \%s' </tt> 
+/** \brief <tt> 'Write Log File Command Error: OS_write = 0x\%08X, filename = \%s' </tt>
+**  \event <tt> 'Write Log File Command Error: OS_write = 0x\%08X, filename = \%s' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -86,11 +92,16 @@
 **
 **  This event message is generated when a filesystem error occurred while writing the contents of the
 **  event message log to a file.
+**
+**  The message text identifies the event log filename and specifies the return value, in hex,
+**  from the system function call.  The expected return value is the number of bytes written,
+**  which in this case should be equal to the size of a #CFE_EVS_Packet_t structure.  Error
+**  codes are negative.
 **/
 #define CFE_EVS_ERR_WRLOGFILE_EID          2
 
-/** \brief <tt> 'Write Log File Command: Error creating log file, OS_creat returned 0x\%08X, data filename = \%s' </tt>
-**  \event <tt> 'Write Log File Command: Error creating log file, OS_creat returned 0x\%08X, data filename = \%s' </tt>
+/** \brief <tt> 'Write Log File Command Error: OS_creat = 0x\%08X, filename = \%s' </tt>
+**  \event <tt> 'Write Log File Command Error: OS_creat = 0x\%08X, filename = \%s' </tt>
 **
 **  \par Type: ERROR
 **
@@ -98,20 +109,12 @@
 **
 **  This event message is generated when a filesystem error occurred when attempting to create the file
 **  that is to hold the event message log.
+**
+**  The message text identifies the event log filename and specifies the return value, in hex,
+**  from the system function call.  The expected return value is a file handle, which in this case
+**  should be a relatively small positive number.  Error codes are negative.
 **/
 #define CFE_EVS_ERR_CRLOGFILE_EID          3
-
-/** \brief <tt> 'Write Log File Command: Error closing log file handle, OS_close returned 0x\%08X, data filename = \%s' </tt>
-**  \event <tt> 'Write Log File Command: Error closing log file handle, OS_close returned 0x\%08X, data filename = \%s' </tt> 
-**
-**  \par Type: ERROR
-**
-**  \par Cause:
-**
-**  This event message is generated when a filesystem error occurred when attempting to close the file
-**  that holds the event message log.
-**/
-#define CFE_EVS_ERR_CLOSELOGFILE_EID       4
 
 /** \brief <tt> 'Invalid command packet, Message ID = 0x\%08X' </tt>
 **  \event <tt> 'Invalid command packet, Message ID = 0x\%08X' </tt> 
@@ -234,41 +237,38 @@
 **/
 #define CFE_EVS_ERR_MAXREGSFILTER_EID     11
 
-/** \brief <tt> 'Write App Data Command: Error writing to application data file, OS_write returned 0x\%08X, data filename = \%s' </tt>
-**  \event <tt> 'Write App Data Command: Error writing to application data file, OS_write returned 0x\%08X, data filename = \%s' </tt> 
+/** \brief <tt> 'Write App Data Command Error: OS_write = 0x\%08X, filename = \%s' </tt>
+**  \event <tt> 'Write App Data Command Error: OS_write = 0x\%08X, filename = \%s' </tt> 
 **
 **  \par Type: ERROR
 **
 **  \par Cause:
 **
-**  This event message is generated when an error occurs while writing the
-**  contents of the Event Services Registry to an onboard file.
+**  This event message is generated when a filesystem error occurred while writing the contents of the
+**  event registry to a file.
+**
+**  The message text identifies the registry filename and specifies the return value, in hex,
+**  from the system function call.  The expected return value is the number of bytes written,
+**  which in this case should be equal to the size of a #CFE_EVS_AppDataFile_t structure.  Error
+**  codes are negative.
 **/
 #define CFE_EVS_ERR_WRDATFILE_EID         12
 
-/** \brief <tt> 'Write App Data Command: Error creating application data file, OS_creat returned 0x\%08X, data filename = \%s' </tt>
-**  \event <tt> 'Write App Data Command: Error creating application data file, OS_creat returned 0x\%08X, data filename = \%s' </tt> 
+/** \brief <tt> 'Write App Data Command Error: OS_creat = 0x\%08X, filename = \%s' </tt>
+**  \event <tt> 'Write App Data Command Error: OS_creat = 0x\%08X, filename = \%s' </tt> 
 **
 **  \par Type: ERROR
 **
 **  \par Cause:
 **
-**  This event message is generated when an error occurs while creating the
-**  file which is to hold the contents of the EVS Registry.
+**  This event message is generated when a filesystem error occurred when attempting to create the file
+**  that is to hold the event registry data.
+**
+**  The message text identifies the registry filename and specifies the return value, in hex,
+**  from the system function call.  The expected return value is a file handle, which in this case
+**  should be a relatively small positive number.  Error codes are negative.
 **/
 #define CFE_EVS_ERR_CRDATFILE_EID         13
-
-/** \brief <tt> 'Write App Data Command: Error closing application data file handle, OS_close returned 0x\%08X, data filename = \%s' </tt>
-**  \event <tt> 'Write App Data Command: Error closing application data file handle, OS_close returned 0x\%08X, data filename = \%s' </tt> 
-**
-**  \par Type: ERROR
-**
-**  \par Cause:
-**
-**  This event message is generated when an error occurs while closing the
-**  file which is holding the contents of the EVS Registry.
-**/
-#define CFE_EVS_ERR_CLOSEDATFILE_EID      14
 
 /** \brief <tt> 'Invalid command code -- ID = 0x\%08x, CC = \%d' </tt>
 **  \event <tt> 'Invalid command code -- ID = 0x\%08x, CC = \%d' </tt>
@@ -516,8 +516,8 @@
 **/
 #define CFE_EVS_DELFILTER_EID             31
 
-/** \brief <tt> 'Write App Data Command Received' </tt> 
-**  \event <tt> 'Write App Data Command Received' </tt> 
+/** \brief <tt> 'Write App Data Command: \%d application data entries written to \%s' </tt> 
+**  \event <tt> 'Write App Data Command: \%d application data entries written to \%s' </tt> 
 **
 **  \par Type: DEBUG
 **
@@ -526,65 +526,74 @@
 **  This event message is generated upon successful completion of the 
 **  \link #CFE_EVS_FILE_WRITE_APP_DATA_CC "Write Event Services Application Information to File" \endlink command.
 **
-**  The \c \%s field identifies the filename of the file that was written to, the \c Size field identifies the
-**  number of bytes, in decimal, written to the file and the \c Entries field specifies the number, in decimal,
-**  of Event Registry entries written to the file.
+**  The message text identifies the event log filename and specifies the number, in decimal,
+**  of events written to the file.
 **/
 #define CFE_EVS_WRDAT_EID                 32
 
-/** \brief <tt> '\%s written: Size = \%d, Entries = \%d' </tt>
-**  \event <tt> '\%s written: Size = \%d, Entries = \%d' </tt>
+/** \brief <tt> 'Write Log File Command: \%d event log entries written to \%s' </tt>
+**  \event <tt> 'Write Log File Command: \%d event log entries written to \%s' </tt>
 **
 **  \par Type: DEBUG
 **
 **  \par Cause:
 **
-**  This event message is generated upon successful completion of either the 
-**  \link #CFE_EVS_FILE_WRITE_LOG_DATA_CC "Write Event Log to File" \endlink command or the
-**  \link #CFE_EVS_FILE_WRITE_APP_DATA_CC "Write Event Services Application Information to File" \endlink command.
+**  This event message is generated upon successful completion of the 
+**  \link #CFE_EVS_FILE_WRITE_LOG_DATA_CC "Write Event Log to File" \endlink command.
 **
-**  The \c \%s field identifies the filename of the file that was written to, the \c Size field identifies the
-**  number of bytes, in decimal, written to the file and the \c Entries field specifies the number, in decimal,
-**  of Events written to the file.
+**  The message text identifies the event log filename and specifies the number, in decimal,
+**  of events written to the file.
 **/
 #define CFE_EVS_WRLOG_EID                 33
 
-/** \brief <tt> 'Set Log Mode Command: No Event Log Availiable in Current cFE Configuration' </tt>
-**  \event <tt> 'Set Log Mode Command: No Event Log Availiable in Current cFE Configuration' </tt> 
+/** \brief <tt> 'Set Log Mode Command: Event Log is Disabled' </tt>
+**  \event <tt> 'Set Log Mode Command: Event Log is Disabled' </tt> 
 **
 **  \par Type: ERROR
 **
 **  \par Cause:
 **
-**  This event message is generated upon receipt of a "Set Log Mode" command when there isn't a Local Event Log available for
-**  the processor.  To provide a Local Event Log, the cFE code must be compiled for the target with the \b CFE_EVS_LOG_ON
-**  macro defined.
+**  This event message is generated upon receipt of a "Set Log Mode"
+**  command when the use of the Event Log has been disabled.  To enable
+**  the Event Log, the cFE code must be compiled for the target with
+**  the \b CFE_EVS_LOG_ON macro defined.  The EVS task must also succeed
+**  during task initialization in acquiring a pointer to the cFE reset
+**  area and in the creation of a serializing semaphore to control
+**  access to the Event Log.
 **/
 #define CFE_EVS_NO_LOGSET_EID             34
 
-/** \brief <tt> 'Clear Log Command: No Event Log Availiable in Current cFE Configuration' </tt>
-**  \event <tt> 'Clear Log Command: No Event Log Availiable in Current cFE Configuration' </tt> 
+/** \brief <tt> 'Clear Log Command: Event Log is Disabled' </tt>
+**  \event <tt> 'Clear Log Command: Event Log is Disabled' </tt> 
 **
 **  \par Type: ERROR
 **
 **  \par Cause:
 **
-**  This event message is generated upon receipt of a "Clear Log" command when there isn't a Local Event Log available for
-**  the processor.  To provide a Local Event Log, the cFE code must be compiled for the target with the \b CFE_EVS_LOG_ON
-**  macro defined.
+**  This event message is generated upon receipt of a "Clear Log"
+**  command when the use of the Event Log has been disabled.  To enable
+**  the Event Log, the cFE code must be compiled for the target with
+**  the \b CFE_EVS_LOG_ON macro defined.  The EVS task must also succeed
+**  during task initialization in acquiring a pointer to the cFE reset
+**  area and in the creation of a serializing semaphore to control
+**  access to the Event Log.
 **/
 #define CFE_EVS_NO_LOGCLR_EID             35
 
-/** \brief <tt> 'Write Log Command: No Event Log Availiable in cFE Configuration' </tt>
-**  \event <tt> 'Write Log Command: No Event Log Availiable in cFE Configuration' </tt> 
+/** \brief <tt> 'Write Log Command: Event Log is Disabled' </tt>
+**  \event <tt> 'Write Log Command: Event Log is Disabled' </tt> 
 **
 **  \par Type: ERROR
 **
 **  \par Cause:
 **
-**  This event message is generated upon receipt of a "Write Log" command when there isn't a Local Event Log available for
-**  the processor.  To provide a Local Event Log, the cFE code must be compiled for the target with the \b CFE_EVS_LOG_ON
-**  macro defined.
+**  This event message is generated upon receipt of a "Write Log"
+**  command when the use of the Event Log has been disabled.  To enable
+**  the Event Log, the cFE code must be compiled for the target with
+**  the \b CFE_EVS_LOG_ON macro defined.  The EVS task must also succeed
+**  during task initialization in acquiring a pointer to the cFE reset
+**  area and in the creation of a serializing semaphore to control
+**  access to the Event Log.
 **/
 #define CFE_EVS_NO_LOGWR_EID              36
 
@@ -603,8 +612,8 @@
 **/
 #define CFE_EVS_EVT_FILTERED_EID          37
 
-/** \brief <tt> 'Set Log Mode Command Received with Log Mode = \%d' </tt> 
-**  \event <tt> 'Set Log Mode Command Received with Log Mode = \%d' </tt>
+/** \brief <tt> 'Set Log Mode Command Error: Log Mode = \%d' </tt> 
+**  \event <tt> 'Set Log Mode Command Error: Log Mode = \%d' </tt>
 **
 **  \par Type: DEBUG
 **
@@ -612,22 +621,23 @@
 **
 **  This event message is generated when a "Set Log Mode" command is completed successfully.
 **
-**  The \c Log \c Mode field identifies, in decimal, the newly selected Log Mode.  Possible
-**  values for the Log Mode are: #CFE_EVS_SHORT_FORMAT or #CFE_EVS_LONG_FORMAT 
+**  The event text identifies the Log Mode command argument.  Valid Log Mode command
+**  arguments are: #CFE_EVS_LOG_OVERWRITE or #CFE_EVS_LOG_DISCARD.
 **/
 #define CFE_EVS_LOGMODE_EID               38
 
-/** \brief <tt> 'Set Log Mode Command: Invalid Log Mode = \%d' </tt>
-**  \event <tt> 'Set Log Mode Command: Invalid Log Mode = \%d' </tt> 
+/** \brief <tt> 'Set Log Mode Command Error: Log Mode = \%d' </tt>
+**  \event <tt> 'Set Log Mode Command Error: Log Mode = \%d </tt> 
 **
 **  \par Type: ERROR
 **
 **  \par Cause:
 **
-**  This event message is generated when a "Set Log Mode" command specifies an illegal value for the Log Mode.
+**  This event message is generated when a "Set Log Mode" command is received that specifies
+**  an invalid Log Mode command argument.
 **  
-**  The \c Log \c Mode field identifies the Log Mode found in the command message.  Legal values for this
-**  field are: #CFE_EVS_SHORT_FORMAT or #CFE_EVS_LONG_FORMAT
+**  The event text identifies the invalid Log Mode command argument.  Valid Log Mode command
+**  arguments are: #CFE_EVS_LOG_OVERWRITE or #CFE_EVS_LOG_DISCARD.
 **/
 #define CFE_EVS_ERR_LOGMODE_EID           39
 

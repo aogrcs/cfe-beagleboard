@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_time.h 1.4 2008/12/08 12:07:21EST dkobe Exp  $
+** $Id: cfe_time.h 1.6 2014/08/17 17:23:30GMT-05:00 sstrege Exp  $
 **
 ** Purpose:  cFE Time Services (TIME) library API header file
 **
@@ -8,6 +8,10 @@
 ** Notes:
 **
 ** $Log: cfe_time.h  $
+** Revision 1.6 2014/08/17 17:23:30GMT-05:00 sstrege 
+** Fixed doxygen compiler warnings.
+** Revision 1.5 2011/11/30 15:10:46EST jmdagost 
+** Replaced ifdef/ifndef preprocessor tests with if...==TRUE/if...!=TRUE tests
 ** Revision 1.4 2008/12/08 12:07:21EST dkobe 
 ** Updates to correct doxygen errors
 ** Revision 1.3 2008/08/07 09:17:43EDT dkobe 
@@ -171,7 +175,7 @@ typedef int32 (*CFE_TIME_SynchCallbackPtr_t)(void);
 **        This routine returns the current spacecraft time.  The time returned 
 **        is either TAI (no leap seconds) or UTC (including leap seconds).  This choice
 **        is made in the mission configuration file by defining either #CFE_TIME_CFG_DEFAULT_TAI
-**        or #CFE_TIME_CFG_DEFAULT_UTC at compile time.  To maintain re-usability 
+**        or #CFE_TIME_CFG_DEFAULT_UTC as TRUE at compile time.  To maintain re-usability 
 **        across missions, most applications should be using this function 
 **        (or #CFE_TIME_GetTime) rather than the specific routines for getting UTC/TAI directly.
 **
@@ -257,7 +261,7 @@ CFE_TIME_SysTime_t  CFE_TIME_GetUTC(void);    /* returns time computed as UTC (M
 **        This function returns Spacecraft Time given MET.  Note that Spacecraft 
 **        Time is returned as either UTC or TAI depeneding on whether the mission
 **        configuration parameter #CFE_TIME_CFG_DEFAULT_UTC or #CFE_TIME_CFG_DEFAULT_TAI
-**        was specified at compile time.
+**        was set to TRUE at compile time.
 **
 ** \par Assumptions, External Events, and Notes:
 **          None
@@ -749,7 +753,7 @@ void  CFE_TIME_ExternalTone(void); /* OK to call from ISR */
 **    by the Time Server, these functions also act as the signal to
 **    create and distribute the "time at the tone" command packet.
 */
-#ifdef CFE_TIME_CFG_SRC_MET
+
 
 /*****************************************************************************/
 /**
@@ -770,13 +774,13 @@ void  CFE_TIME_ExternalTone(void); /* OK to call from ISR */
 **
 ** \par Assumptions, External Events, and Notes:
 **          - This routine is included in the API only when 3 specific configuration 
-**            parameters are defined.  The first is #CFE_TIME_SERVER which defines 
+**            parameters are set to TRUE.  The first is #CFE_TIME_CFG_SERVER which defines 
 **            this instantiation of cFE TIME as a time server (not a client).  The 
 **            second required configuration parameter is #CFE_TIME_CFG_SOURCE which 
 **            enables time source selection commands to the cFE TIME task, and further 
 **            enables configuration definitions for the selected type of external time 
 **            data.  The third configuration parameter required for this routine is 
-**            #CFE_TIME_SRC_MET, which indicates that the external time data consists 
+**            #CFE_TIME_CFG_SRC_MET, which indicates that the external time data consists 
 **            of MET.
 **
 ** \param[in]  NewMET   The MET value at the next (or previous) 1 Hz tone signal.
@@ -785,9 +789,7 @@ void  CFE_TIME_ExternalTone(void); /* OK to call from ISR */
 **                
 ******************************************************************************/
 void CFE_TIME_ExternalMET(CFE_TIME_SysTime_t NewMET);
-#endif
 
-#ifdef CFE_TIME_CFG_SRC_GPS
 
 /*****************************************************************************/
 /**
@@ -809,13 +811,13 @@ void CFE_TIME_ExternalMET(CFE_TIME_SysTime_t NewMET);
 **
 ** \par Assumptions, External Events, and Notes:
 **          - This routine is included in the API only when 3 specific configuration 
-**            parameters are defined.  The first is #CFE_TIME_SERVER which defines this 
+**            parameters are set to TRUE.  The first is #CFE_TIME_CFG_SERVER which defines this 
 **            instantiation of cFE TIME as a time server (not a client).  The second 
 **            required configuration parameter is #CFE_TIME_CFG_SOURCE which enables 
 **            time source selection commands to the cFE TIME task, and further enables 
 **            configuration definitions for the selected type of external time data.  
 **            The third configuration parameter required for this routine is 
-**            #CFE_TIME_SRC_GPS, which indicates that the external time data consists 
+**            #CFE_TIME_CFG_SRC_GPS, which indicates that the external time data consists 
 **            of a time value relative to a known epoch, plus a leap seconds value.
 **
 ** \param[in]  NewTime   The MET value at the next (or previous) 1 Hz tone signal.
@@ -826,9 +828,8 @@ void CFE_TIME_ExternalMET(CFE_TIME_SysTime_t NewMET);
 **                
 ******************************************************************************/
 void CFE_TIME_ExternalGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps);
-#endif
 
-#ifdef CFE_TIME_CFG_SRC_TIME
+
 
 /*****************************************************************************/
 /**
@@ -850,13 +851,13 @@ void CFE_TIME_ExternalGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps);
 **
 ** \par Assumptions, External Events, and Notes:
 **          - This routine is included in the API only when 3 specific configuration 
-**            parameters are defined.  The first is #CFE_TIME_SERVER which defines this 
+**            parameters are set to TRUE.  The first is #CFE_TIME_CFG_SERVER which defines this 
 **            instanciation of cFE TIME as a time server (not a client).  The second 
 **            required configuration parameter is #CFE_TIME_CFG_SOURCE which enables 
 **            time source selection commands to the cFE TIME task, and further enables 
 **            configuration definitions for the selected type of external time data.  
 **            The third configuration parameter required for this routine is 
-**            #CFE_TIME_SRC_TIME, which indicates that the external time data consists 
+**            #CFE_TIME_CFG_SRC_TIME, which indicates that the external time data consists 
 **            of a time value relative to a known epoch.
 **
 ** \param[in]  NewTime   The MET value at the next (or previous) 1 Hz tone signal.
@@ -865,7 +866,6 @@ void CFE_TIME_ExternalGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps);
 **                
 ******************************************************************************/
 void CFE_TIME_ExternalTime(CFE_TIME_SysTime_t NewTime);
-#endif
 
 /*****************************************************************************/
 /**
@@ -913,6 +913,24 @@ int32  CFE_TIME_RegisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPt
 **
 ******************************************************************************/
 int32  CFE_TIME_UnregisterSynchCallback(CFE_TIME_SynchCallbackPtr_t CallbackFuncPtr);   
+
+
+/*****************************************************************************/
+/**
+** \brief This function should be called from the system PSP layer once per second
+**
+** \par Description
+**        Drives the time processing logic from the system PSP layer.  This must be called
+**        once per second based on a hardware interrupt or OS kernel signal.
+**
+** \par Assumptions, External Events, and Notes:
+**        This will update the global data structures accordingly, incrementing each
+**        by the 1Hz amount.
+**
+**
+******************************************************************************/
+void CFE_TIME_Local1HzISR(void);
+
 
 #endif /* _cfe_time_ */
 

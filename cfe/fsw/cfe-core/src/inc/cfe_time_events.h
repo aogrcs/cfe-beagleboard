@@ -2,7 +2,7 @@
 **
 **  Filename: cfe_time_events.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -11,7 +11,7 @@
 **      distributed and modified only pursuant to the terms of that agreement. 
 **
 *
-**  $Id: cfe_time_events.h 1.4 2010/10/25 15:01:10EDT jmdagost Exp  $
+**  $Id: cfe_time_events.h 1.5 2011/11/30 15:10:44GMT-05:00 jmdagost Exp  $
 **
 **  Purpose:
 **	           cFE Time Services (Time) Event IDs
@@ -22,8 +22,8 @@
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
 **
-**  $Date: 2010/10/25 15:01:10EDT $
-**  $Revision: 1.4 $
+**  $Date: 2011/11/30 15:10:44GMT-05:00 $
+**  $Revision: 1.5 $
 **  $Log $
 */
 
@@ -459,8 +459,8 @@
 **/
 #define CFE_TIME_1HZ_ERR_EID     38
 
-/** \brief <tt> 'Set Source commands invalid without CFE_TIME_CFG_SOURCE defined' </tt>
-**  \event <tt> 'Set Source commands invalid without CFE_TIME_CFG_SOURCE defined' </tt> 
+/** \brief <tt> 'Set Source commands invalid without CFE_TIME_CFG_SOURCE set to TRUE' </tt>
+**  \event <tt> 'Set Source commands invalid without CFE_TIME_CFG_SOURCE set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -469,12 +469,12 @@
 **  This event message is generated whenever Time Services receives
 **  a \link #CFE_TIME_SET_SOURCE_CC Set Clock Source Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SOURCE has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_SOURCE_CFG_EID  40   /* cmd disabled per cfg "error" */
 
-/** \brief <tt> 'Set Signal commands invalid without CFE_TIME_CFG_SIGNAL defined' </tt>
-**  \event <tt> 'Set Signal commands invalid without CFE_TIME_CFG_SIGNAL defined' </tt> 
+/** \brief <tt> 'Set Signal commands invalid without CFE_TIME_CFG_SIGNAL set to TRUE' </tt>
+**  \event <tt> 'Set Signal commands invalid without CFE_TIME_CFG_SIGNAL set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -483,12 +483,12 @@
 **  This event message is generated whenever Time Services receives
 **  a \link #CFE_TIME_SET_SIGNAL_CC Set Clock Signal Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SIGNAL has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_SIGNAL_CFG_EID  41
 
-/** \brief <tt> 'Set Delay commands invalid without CFE_TIME_CFG_CLIENT defined' </tt>
-**  \event <tt> 'Set Delay commands invalid without CFE_TIME_CFG_CLIENT defined' </tt> 
+/** \brief <tt> 'Set Delay commands invalid without CFE_TIME_CFG_CLIENT set to TRUE' </tt>
+**  \event <tt> 'Set Delay commands invalid without CFE_TIME_CFG_CLIENT set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -498,12 +498,12 @@
 **  either a \link #CFE_TIME_ADD_DELAY_CC Add Tone Delay Command \endlink
 **  OR a \link #CFE_TIME_SUB_DELAY_CC Subtract Tone Delay Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_CLIENT has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_DELAY_CFG_EID   42
 
-/** \brief <tt> 'Set Time commands invalid without CFE_TIME_CFG_SERVER defined' </tt>
-**  \event <tt> 'Set Time commands invalid without CFE_TIME_CFG_SERVER defined' </tt> 
+/** \brief <tt> 'Set Time commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt>
+**  \event <tt> 'Set Time commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -512,12 +512,12 @@
 **  This event message is generated whenever Time Services receives
 **  a \link #CFE_TIME_SET_TIME_CC Set Spacecraft Time Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SERVER has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_TIME_CFG_EID    43
 
-/** \brief <tt> 'Set MET commands invalid without CFE_TIME_CFG_SERVER defined' </tt>
-**  \event <tt> 'Set MET commands invalid without CFE_TIME_CFG_SERVER defined' </tt> 
+/** \brief <tt> 'Set MET commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt>
+**  \event <tt> 'Set MET commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -526,12 +526,12 @@
 **  This event message is generated whenever Time Services receives
 **  a \link #CFE_TIME_SET_MET_CC Set Mission Elapsed Time Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SERVER has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_MET_CFG_EID     44
 
-/** \brief <tt> 'Set STCF commands invalid without CFE_TIME_CFG_SERVER defined' </tt>
-**  \event <tt> 'Set STCF commands invalid without CFE_TIME_CFG_SERVER defined' </tt> 
+/** \brief <tt> 'Set STCF commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt>
+**  \event <tt> 'Set STCF commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -540,12 +540,12 @@
 **  This event message is generated whenever Time Services receives
 **  a \link #CFE_TIME_SET_STCF_CC Set Spacecraft Time Correlation Factor Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SERVER has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_STCF_CFG_EID    45
 
-/** \brief <tt> 'Set Leaps commands invalid without CFE_TIME_CFG_SERVER defined' </tt>
-**  \event <tt> 'Set Leaps commands invalid without CFE_TIME_CFG_SERVER defined' </tt> 
+/** \brief <tt> 'Set Leaps commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt>
+**  \event <tt> 'Set Leaps commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -554,12 +554,12 @@
 **  This event message is generated whenever Time Services receives
 **  a \link #CFE_TIME_SET_LEAPS_CC Set Leap Seconds Command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SERVER has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_LEAPS_CFG_EID   46
 
-/** \brief <tt> 'STCF Adjust commands invalid without CFE_TIME_CFG_SERVER defined' </tt>
-**  \event <tt> 'STCF Adjust commands invalid without CFE_TIME_CFG_SERVER defined' </tt> 
+/** \brief <tt> 'STCF Adjust commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt>
+**  \event <tt> 'STCF Adjust commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -569,12 +569,12 @@
 **  either a \link #CFE_TIME_ADD_ADJUST_CC Add Single STCF Adjustment Command \endlink
 **  OR a \link #CFE_TIME_SUB_ADJUST_CC Subtract Single STCF Adjustment command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SERVER has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_DELTA_CFG_EID   47
 
-/** \brief <tt> '1Hz Adjust commands invalid without CFE_TIME_CFG_SERVER defined' </tt>
-**  \event <tt> '1Hz Adjust commands invalid without CFE_TIME_CFG_SERVER defined' </tt> 
+/** \brief <tt> '1Hz Adjust commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt>
+**  \event <tt> '1Hz Adjust commands invalid without CFE_TIME_CFG_SERVER set to TRUE' </tt> 
 **
 **  \par Type: ERROR
 **
@@ -584,7 +584,7 @@
 **  either a \link #CFE_TIME_ADD_1HZADJ_CC Add STCF Adjustment each second Command \endlink
 **  OR a \link #CFE_TIME_SUB_1HZADJ_CC Subtract STCF Adjustment each second command \endlink
 **  and the Time Services configuration parameter #CFE_TIME_CFG_SERVER has
-**  not been defined in the cfe_platform_cfg.h file.
+**  not been set to TRUE in the cfe_platform_cfg.h file.
 **/
 #define CFE_TIME_1HZ_CFG_EID     48
 

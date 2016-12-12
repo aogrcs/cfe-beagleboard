@@ -80,6 +80,14 @@ CLASS Pxxxx APID=nnnn, DESC="$sc $cpu SB Test App Commands"
 !
   CMD  $sc_$cpu_TST_SB_PassMsgZC           FCTN=22, DESC="$sc $cpu SB Test App Pass Message Zero Copy"
 !
+  CMDS  $sc_$cpu_TST_SB_SendMsg           FCTN=23, DESC="$sc $cpu SB Test App Send Msg"
+    ULI MsgSize		DESC="Size in bytes of message to send"
+  END
+!
+  CMD  $sc_$cpu_TST_SB_ZCGetPtr           FCTN=24, DESC="$sc $cpu SB Test App Zero Copy Get Pointer"
+!
+  CMD  $sc_$cpu_TST_SB_ZCReleasePtr       FCTN=25, DESC="$sc $cpu SB Test App Zero Copy Release Pointer"
+!
 END       !END PACKET
 !
 !======================================================================================================

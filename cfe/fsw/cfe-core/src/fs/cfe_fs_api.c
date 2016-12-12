@@ -1,5 +1,13 @@
 /*
-** $Id: cfe_fs_api.c 1.6 2010/11/03 15:09:41EDT jmdagost Exp  $
+** $Id: cfe_fs_api.c 1.8 2014/08/22 17:06:20GMT-05:00 lwalling Exp  $
+**
+**      Copyright (c) 2004-2012, United States government as represented by the 
+**      administrator of the National Aeronautics Space Administration.  
+**      All rights reserved. This software(cFE) was created at NASA's Goddard 
+**      Space Flight Center pursuant to government contracts.
+**
+**      This is governed by the NASA Open Source Agreement and may be used, 
+**      distributed and modified only pursuant to the terms of that agreement.
 **
 ** Purpose:  cFE File Services (FS) library API source file
 **
@@ -8,6 +16,10 @@
 ** Notes:
 **
 ** $Log: cfe_fs_api.c  $
+** Revision 1.8 2014/08/22 17:06:20GMT-05:00 lwalling 
+** Change signed loop counters to unsigned
+** Revision 1.7 2012/01/13 12:11:28EST acudmore 
+** Changed license text to reflect open source
 ** Revision 1.6 2010/11/03 15:09:41EDT jmdagost 
 ** Added cfe.h include file.
 ** Revision 1.5 2010/10/25 17:51:05EDT jmdagost 
@@ -42,7 +54,8 @@
 /*
 ** Required header files...
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
+#include "cfe_fs_priv.h"
 #include "cfe_fs.h"
 #include "cfe_time.h"
 #include "osapi.h"
@@ -50,8 +63,6 @@
 #include "cfe_es.h"
 #include <string.h>
 
-void CFE_FS_ByteSwapCFEHeader(CFE_FS_Header_t *Hdr);
-void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
@@ -89,6 +100,17 @@ int32 CFE_FS_ReadHeader(CFE_FS_Header_t *Hdr, int32 FileDes)
 
 } /* End of CFE_FS_ReadHeader() */
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/*                                                                         */
+/* CFE_FS_InitHeader() -- intialize cFE file header structure              */
+/*                                                                         */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+void CFE_FS_InitHeader(CFE_FS_Header_t *Hdr, const char *Description, uint32 SubType)
+{
+   CFE_PSP_MemSet(Hdr, 0, sizeof(CFE_FS_Header_t));
+   strncpy((char *)Hdr->Description, Description, sizeof(Hdr->Description) - 1);
+   Hdr->SubType = SubType;
+}
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                         */
@@ -200,17 +222,17 @@ int32 CFE_FS_SetTimestamp(int32 FileDes, CFE_TIME_SysTime_t NewTimestamp)
             }
             else
             {
-                CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Subseconds (Status=0x%08X)\n", Result);
+                CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Seconds (Status=0x%08X)\n", (unsigned int)Result);
             }
         }
         else
         {
-            CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Seconds (Status=0x%08X)\n", Result);
+            CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to write Seconds (Status=0x%08X)\n", (unsigned int)Result);
         }
     }
     else
     {
-        CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to lseek time fields (Status=0x%08X)\n", Result);
+        CFE_ES_WriteToSysLog("CFE_FS:SetTime-Failed to lseek time fields (Status=0x%08X)\n", (unsigned int)Result);
     }
     
     return(Result);
@@ -264,12 +286,12 @@ void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr)
 /*   combination.                                                          */
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
+int32 CFE_FS_ExtractFilenameFromPath(const char *OriginalPath, char *FileNameOnly)
 {
-   int    i,j;
+   uint32 i,j;
    int    StringLength;
    int    DirMarkIdx;
-   int32  ReturnCode;
+   int32   ReturnCode;
    
    if ( OriginalPath == NULL || FileNameOnly == NULL )
    {
@@ -346,9 +368,9 @@ int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly)
 /*  file name. The file name must end in ".gz".                            */ 
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-boolean CFE_FS_IsGzFile(char *FileName)
+boolean CFE_FS_IsGzFile(const char *FileName)
 {
-   int    StringLength;
+   size_t    StringLength;
    
    if ( FileName == NULL )
    {

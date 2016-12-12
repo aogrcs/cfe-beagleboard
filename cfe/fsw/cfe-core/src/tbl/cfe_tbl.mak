@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# $Id: cfe_tbl.mak 1.1 2008/04/17 08:05:33EDT ruperera Exp  $
+# $Id: cfe_tbl.mak 1.1 2008/04/17 07:05:33GMT-05:00 ruperera Exp  $
 #
 # Purpose:  cFE Table Services (TBL) make file
 #
@@ -9,7 +9,7 @@
 # Notes:    
 #
 # $Log: cfe_tbl.mak  $
-# Revision 1.1 2008/04/17 08:05:33EDT ruperera 
+# Revision 1.1 2008/04/17 07:05:33GMT-05:00 ruperera 
 # Initial revision
 # Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/tbl/project.pj
 # Revision 1.4 2007/08/24 13:04:50EDT apcudmore 

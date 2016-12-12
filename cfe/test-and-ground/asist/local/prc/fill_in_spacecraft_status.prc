@@ -22,7 +22,7 @@ local logging = %liv (log_procedure)
 ; 21OCT09                 Added include statement and modified   WFM
 ;			  code to generically set values based
 ;			  upon definitions in the include file
-; 24NOV10                 Modified to handle 4 digit cFE version  WFM
+; 14FEB12                 Added new version items and settings   WFM
 ;
 
 #include "cfe_utils.h"
@@ -83,6 +83,8 @@ local cfeRevisionItem
 local cfeMissionRevItem
 local osMajorVerItem
 local osMinorVerItem
+local osRevisionItem
+local osMissionRevItem
 
 ; Display Values
 if (to_cmd_sent = "1") then
@@ -100,11 +102,13 @@ if (to_cmd_sent = "1") then
   cfeMissionRevItem = cpu_prefix & "_ES_CFEMSNREV"
   osMajorVerItem = cpu_prefix & "_ES_OSMAJORVER"
   osMinorVerItem = cpu_prefix & "_ES_OSMINORVER"
+  osRevisionItem = cpu_prefix & "_ES_OSREVISION"
+  osMissionRevItem = cpu_prefix & "_ES_OSMISSIONREV"
 
   ; Set the values
   gsescstatval11 = {cksumItem}
   gsescstatval21 = {cfeMajorVerItem}  & "." & {cfeMinorVerItem} & "." & {cfeRevisionItem} & "." & {cfeMissionRevItem}
-  gsescstatval31 = {osMajorVerItem} & "." & {osMinorVerItem}
+  gsescstatval31 = {osMajorVerItem} & "." & {osMinorVerItem} & "." & {osRevisionItem} & "." & {osMissionRevItem}
 
 elseif (to_cmd_sent = "2") then
   ; setup the database mnemonics for CPU2
@@ -117,11 +121,13 @@ elseif (to_cmd_sent = "2") then
   cfeMissionRevItem = cpu_prefix & "_ES_CFEMSNREV"
   osMajorVerItem = cpu_prefix & "_ES_OSMAJORVER"
   osMinorVerItem = cpu_prefix & "_ES_OSMINORVER"
+  osRevisionItem = cpu_prefix & "_ES_OSREVISION"
+  osMissionRevItem = cpu_prefix & "_ES_OSMISSIONREV"
 
   ; Set the values
   gsescstatval12 = {cksumItem}
   gsescstatval22 = {cfeMajorVerItem}  & "." & {cfeMinorVerItem} & "." & {cfeRevisionItem} & "." & {cfeMissionRevItem}
-  gsescstatval32 = {osMajorVerItem} & "." & {osMinorVerItem}
+  gsescstatval32 = {osMajorVerItem} & "." & {osMinorVerItem} & "." & {osRevisionItem} & "." & {osMissionRevItem}
 elseif (to_cmd_sent = "3") then
   ; setup the database mnemonics for CPU2
   cpu_prefix = db_prefix & "3"
@@ -133,11 +139,13 @@ elseif (to_cmd_sent = "3") then
   cfeMissionRevItem = cpu_prefix & "_ES_CFEMSNREV"
   osMajorVerItem = cpu_prefix & "_ES_OSMAJORVER"
   osMinorVerItem = cpu_prefix & "_ES_OSMINORVER"
+  osRevisionItem = cpu_prefix & "_ES_OSREVISION"
+  osMissionRevItem = cpu_prefix & "_ES_OSMISSIONREV"
 
   ; Set the values
   gsescstatval13 = {cksumItem}
   gsescstatval23 = {cfeMajorVerItem}  & "." & {cfeMinorVerItem} & "." & {cfeRevisionItem} & "." & {cfeMissionRevItem}
-  gsescstatval33 = {osMajorVerItem} & "." & {osMinorVerItem}
+  gsescstatval33 = {osMajorVerItem} & "." & {osMinorVerItem} & "." & {osRevisionItem} & "." & {osMissionRevItem}
 endif
 
 %liv (log_procedure) = logging

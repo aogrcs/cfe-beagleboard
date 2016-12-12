@@ -1,7 +1,7 @@
 /*
-** $Id: cfe.h 1.4 2010/10/25 15:01:09EDT jmdagost Exp  $
+** $Id: cfe.h 1.4 2010/10/25 14:01:09GMT-05:00 jmdagost Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -18,7 +18,7 @@
 **           to completely define the cFE interface.
 **
 ** $Log: cfe.h  $
-** Revision 1.4 2010/10/25 15:01:09EDT jmdagost 
+** Revision 1.4 2010/10/25 14:01:09GMT-05:00 jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.3 2010/10/04 15:24:39EDT jmdagost 
 ** Cleaned up copyright symbol.
@@ -54,7 +54,17 @@
 #include "osapi.h"            /* Define OS API function prototypes */
 
 #include "cfe_mission_cfg.h"  /* Define mission configuration parameters */
+
+/*
+ * Note that the platform configuration is _not_ included with cfe.h anymore.
+ *
+ * Most applications should not depend on any of the #defines in that file.
+ * If an application truly does need a value from the platform config, then
+ * it can retrieve it from the mission data dictionary using a public API.
+ */
+#if !defined(_ENHANCED_BUILD_)
 #include "cfe_platform_cfg.h" /* Define platform configuration parameters */
+#endif
 
 #include "cfe_msgids.h"       /* Define common cFE Message IDs */
 #include "cfe_error.h"        /* Define common cFE error codes */

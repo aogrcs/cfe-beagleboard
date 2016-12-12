@@ -2,7 +2,7 @@
 **
 **  Filename: cfe_evs.h
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -11,7 +11,7 @@
 **      distributed and modified only pursuant to the terms of that agreement. 
 **
 *
-**  $Id: cfe_evs.h 1.4 2010/10/26 17:01:08EDT jmdagost Exp  $
+**  $Id: cfe_evs.h 1.4 2010/10/26 16:01:08GMT-05:00 jmdagost Exp  $
 **
 **  Title:    Event Services API Application Library Header File
 **
@@ -23,10 +23,10 @@
 **  References:
 **     Flight Software Branch C Coding Standard Version 1.0a
 **
-**  $Date: 2010/10/26 17:01:08EDT $
+**  $Date: 2010/10/26 16:01:08GMT-05:00 $
 **  $Revision: 1.4 $
 **  $Log: cfe_evs.h  $
-**  Revision 1.4 2010/10/26 17:01:08EDT jmdagost 
+**  Revision 1.4 2010/10/26 16:01:08GMT-05:00 jmdagost 
 **  Made CFE_EVS_ResetFilter() argument a signed int.
 **  Revision 1.3 2010/10/04 17:06:06EDT jmdagost 
 **  Cleaned up copyright symbol.
@@ -86,6 +86,15 @@
 
 /******************* Macro Definitions ***********************/
 
+/* 
+** The OS_PRINTF macro may be defined by OSAL to enable
+** printf-style argument checking.  If using a version of OSAL
+** that does not define this then define it as a no-op.
+*/
+#ifndef OS_PRINTF
+#define OS_PRINTF(m,n) 
+#endif
+
 /** \name Event Filter Schemes */
 /** \{ */
 #define CFE_EVS_BINARY_FILTER    0
@@ -133,22 +142,6 @@ typedef struct {
 
 /* Command packet structures */
 
-
-/* Internal packet structures */
-
-/* 
-** \brief  EVS Log type definition. This is declared here so ES can include it 
-**  in the reset area structure 
-*/
-typedef struct {
-    uint16 Next;                              /**< \brief Index of the next entry in the local event log */
-    uint16 LogCount;                          /**< \brief Local Event Kog counter */
-    uint8  LogFullFlag;                       /**< \brief Local Event Log full flag */
-    uint8  LogMode;                           /**< \brief Local Event Logging mode (overwrite/discard) */
-    uint16 LogOverflowCounter;                /**< \brief Local Event Log overflow counter */
-    CFE_EVS_Packet_t LogEntry[CFE_EVS_LOG_MAX];/**< \brief The actual Local Event Log entry */
-
-} CFE_EVS_Log_t; 
 
 /****************** Function Prototypes **********************/
 
@@ -274,7 +267,7 @@ int32 CFE_EVS_Unregister( void );
 **/
 int32 CFE_EVS_SendEvent (uint16 EventID,
                          uint16 EventType,
-                         const char *Spec, ... );
+                         const char *Spec, ... )  OS_PRINTF(3,4);
 
 
 /** 
@@ -326,7 +319,7 @@ int32 CFE_EVS_SendEvent (uint16 EventID,
 int32 CFE_EVS_SendEventWithAppID (uint16 EventID,
                                   uint16 EventType,
                                   uint32 AppID, 
-                                  const char *Spec, ... );
+                                  const char *Spec, ... ) OS_PRINTF(4,5);
 
 
 /** 
@@ -378,7 +371,7 @@ int32 CFE_EVS_SendEventWithAppID (uint16 EventID,
 int32 CFE_EVS_SendTimedEvent (CFE_TIME_SysTime_t Time,
                               uint16 EventID,
                               uint16 EventType,
-                              const char *Spec, ... );    
+                              const char *Spec, ... ) OS_PRINTF(4,5);
 
 
 /** 

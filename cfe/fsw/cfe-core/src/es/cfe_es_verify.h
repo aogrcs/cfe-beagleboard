@@ -10,8 +10,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 ** Purpose:
 **   This header file performs compile time checking for ES configuration
@@ -26,6 +24,8 @@
 **     The upper limits are somewhat arbitrary right now.
 **
 **  $Log: cfe_es_verify.h  $
+**  Revision 1.4 2012/01/13 11:50:06GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.3 2010/10/26 16:28:46EDT jmdagost 
 **  Added CFE_ES_MAX_SHELL_CMD test (for < OS_MAX_CMD_LEN)
 **  Revision 1.2 2009/07/28 18:04:06EDT jmdagost 

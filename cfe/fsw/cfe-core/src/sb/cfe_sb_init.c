@@ -17,6 +17,8 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb_init.c  $
+** Revision 1.12 2012/01/13 12:15:12GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.11 2010/11/04 16:41:25EDT aschoeni 
 ** Added optional sender information storage
 ** Revision 1.10 2010/10/20 12:36:52EDT jmdagost 
@@ -72,13 +74,10 @@
 #include "cfe_psp.h"
 #include "cfe_error.h"
 #include "cfe_sb_events.h"
-#include "cfe_platform_cfg.h"
 
 /*
 **  External Declarations
 */
-
-extern cfe_sb_t         CFE_SB;
 
 uint32 CFE_SB_MemPoolDefSize[CFE_ES_MAX_MEMPOOL_BLOCK_SIZES] = 
 {
@@ -125,7 +124,7 @@ int32 CFE_SB_EarlyInit (void) {
 
     Stat = OS_MutSemCreate(&CFE_SB.SharedDataMutexId, "CFE_SB_DataMutex", 0);
     if(Stat != OS_SUCCESS){
-      CFE_ES_WriteToSysLog("SB shared data mutex creation failed! RC=0x%08x\n",Stat);
+      CFE_ES_WriteToSysLog("SB shared data mutex creation failed! RC=0x%08x\n",(unsigned int)Stat);
       return Stat;
     }/* end if */
     
@@ -191,8 +190,8 @@ int32  CFE_SB_InitBuffers(void) {
                                 CFE_ES_NO_MUTEX);
     
     if(Stat != CFE_SUCCESS){
-        CFE_ES_WriteToSysLog("PoolCreate failed for SB Buffers, gave adr 0x%x,size %d,stat=0x%x\n",
-                             CFE_SB.Mem.Partition,CFE_SB_BUF_MEMORY_BYTES,Stat);
+        CFE_ES_WriteToSysLog("PoolCreate failed for SB Buffers, gave adr 0x%lx,size %d,stat=0x%x\n",
+              (unsigned long)CFE_SB.Mem.Partition,CFE_SB_BUF_MEMORY_BYTES,(unsigned int)Stat);
         return Stat;
     }
     

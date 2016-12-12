@@ -1,12 +1,12 @@
 /*
-** $Id: cfe_fs.h 1.4 2010/10/25 17:50:16EDT jmdagost Exp  $
+** $Id: cfe_fs.h 1.4 2010/10/25 16:50:16GMT-05:00 jmdagost Exp  $
 **
 ** Purpose:  cFE File Services (FS) library API header file
 **
 ** Author:   S.Walling/Microtel
 **
 ** $Log: cfe_fs.h  $
-** Revision 1.4 2010/10/25 17:50:16EDT jmdagost 
+** Revision 1.4 2010/10/25 16:50:16GMT-05:00 jmdagost 
 ** Added assumption to CFE_FS_ExtractFilenameFromPath()
 ** Revision 1.3 2008/08/28 08:41:10EDT apcudmore 
 ** Fixed CFS name ( CFS-->CFE )
@@ -191,6 +191,22 @@ int32 CFE_FS_ReadHeader(CFE_FS_Header_t *Hdr, int32 FileDes);
 
 /*****************************************************************************/
 /**
+** \brief Initializes the contents of the Standard cFE File Header
+**
+** \par Description
+**        This API will clear the specified #CFE_FS_Header_t variable and
+**        initialize the description field with the specified value
+**
+** \param[in] Hdr     Pointer to a variable of type #CFE_FS_Header_t that will be
+**                    cleared and initialized
+**
+** \sa #CFE_FS_WriteHeader
+**
+******************************************************************************/
+void CFE_FS_InitHeader(CFE_FS_Header_t *Hdr, const char *Description, uint32 SubType);
+
+/*****************************************************************************/
+/**
 ** \brief Write the specified Standard cFE File Header to the specified file
 **
 ** \par Description
@@ -282,7 +298,7 @@ int32 CFE_FS_SetTimestamp(int32 FileDes, CFE_TIME_SysTime_t NewTimestamp);
 ** \sa
 **               
 ******************************************************************************/
-boolean CFE_FS_IsGzFile(char *FileName);
+boolean CFE_FS_IsGzFile(const char *FileName);
 
 /*****************************************************************************/
 /**
@@ -308,7 +324,7 @@ boolean CFE_FS_IsGzFile(char *FileName);
 ** \sa
 **               
 ******************************************************************************/
-int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly);
+int32 CFE_FS_ExtractFilenameFromPath(const char *OriginalPath, char *FileNameOnly);
 
 /*****************************************************************************/
 /**
@@ -337,7 +353,7 @@ int32 CFE_FS_ExtractFilenameFromPath(char *OriginalPath, char *FileNameOnly);
 ** \sa
 **               
 ******************************************************************************/
-int32 CFE_FS_Decompress( char * SourceFile, char * DestinationFile );
+int32 CFE_FS_Decompress( const char * SourceFile, const char * DestinationFile );
 
 
 #endif /* _cfe_fs_ */

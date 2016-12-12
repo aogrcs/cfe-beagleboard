@@ -10,7 +10,7 @@
 ## Warning Level Configuration
 ##
 ## WARNINGS=-Wall -ansi -pedantic -Wstrict-prototypes
-WARNINGS	= -Wall  -ansi
+WARNINGS	= -Wall  -std=c99
 
 ##
 ## A fix for Windows systems on vxWorks 6.4
@@ -46,7 +46,7 @@ ENDIAN_DEFS=-D_EB -DENDIAN=_EB -DSOFTWARE_BIG_BIT_ORDER
 ##
 ## Compiler Architecture Switches
 ## 
-ARCH_OPTS = -mcpu=750 -mstrict-align -fno-builtin -fvolatile
+ARCH_OPTS = -mcpu=750 -mstrict-align -fno-builtin
 
 ##
 ## Application specific compiler switches 

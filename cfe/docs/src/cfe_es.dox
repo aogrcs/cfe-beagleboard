@@ -91,7 +91,7 @@
 
   <CENTER><B>Application</B></CENTER>
   
-  The term 'Application' as defined in the \ref cfeappdevguide is <i> a set of
+  The term 'Application' as defined in the \ref cfeglossary is <i> a set of
   data and functions that is treated as a single entity by the cFE.  cFE
   resources are allocated on a per-Application basis.  Applications are made up
   of a Main Task and zero or more Child Tasks.</i>
@@ -200,8 +200,8 @@
   \ref cfeesugsyslogsrv. The \ref cfeesugsyslogsrv 
   may also contain positive acknowledge messages regarding the startup script processing.
 
-  Refer to the \ref cfeappdevguide for more 
-  information regarding the startup scripts. The startup script delivered with the 
+  Refer to the CFS Deployment Guide for more 
+  information regarding the startup script. The startup script delivered with the 
   cFE (<tt>cfe_es_startup.scr</tt>) also has some detailed information about the fields 
   and the settings.
     
@@ -982,6 +982,8 @@
   
   \verbatim
   $Log: cfe_es.dox  $
+  Revision 1.6 2014/08/23 19:57:25GMT-05:00 sstrege 
+  Removed/Replaced all references to the doxygen application developers guide
   Revision 1.5 2009/03/04 15:46:31EST rmcgraw 
   DCR6812:2 Added '...refer to developers guide...' in memory pool section
   Revision 1.4 2009/02/24 15:18:50EST rmcgraw 

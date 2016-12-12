@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_task_cmds.h 1.3 2010/10/25 15:00:34EDT jmdagost Exp  $
+** $Id: cfe_tbl_task_cmds.h 1.4 2012/01/13 12:17:40GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,8 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_task_cmds.h  $
+** Revision 1.4 2012/01/13 12:17:40GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.3 2010/10/25 15:00:34EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.2 2010/10/04 15:18:55EDT jmdagost 
@@ -57,7 +59,33 @@ typedef enum
     CFE_TBL_INC_CMD_CTR=1     /**< No errors detected and increment command counter */
 } CFE_TBL_CmdProcRet_t;
 
-typedef CFE_TBL_CmdProcRet_t (*CFE_TBL_MsgProcFuncPtr_t)(const CFE_SB_Msg_t *MessagePtr);
+typedef CFE_TBL_CmdProcRet_t (*CFE_TBL_MsgProcFuncPtr_t)(const CFE_SB_MsgPayloadPtr_t Payload);
+
+#define CFE_TBL_BAD_CMD_CODE  (-1) /**< Command Code found in Message does not match any in #CFE_TBL_CmdHandlerTbl */
+#define CFE_TBL_BAD_MSG_ID    (-2) /**< Message ID found in Message does not match any in #CFE_TBL_CmdHandlerTbl */
+
+/*
+** Table task const data
+*/
+
+typedef enum
+{
+    CFE_TBL_TERM_MSGTYPE=0,   /**< \brief Command Handler Table Terminator Type */
+    CFE_TBL_MSG_MSGTYPE,      /**< \brief Message Type (requires Message ID match) */
+    CFE_TBL_CMD_MSGTYPE       /**< \brief Command Type (requires Message ID and Command Code match) */
+} CFE_TBL_MsgType_t;
+
+/**
+** Data structure of a single record in #CFE_TBL_CmdHandlerTbl
+*/
+typedef struct {
+    uint32                   MsgId;           /**< \brief Acceptable Message ID */
+    uint32                   CmdCode;         /**< \brief Acceptable Command Code (if necessary) */
+    uint32                   ExpectedLength;  /**< \brief Expected Message Length (in bytes) including message header */
+    CFE_TBL_MsgProcFuncPtr_t MsgProcFuncPtr;  /**< \brief Pointer to function to handle message  */
+    CFE_TBL_MsgType_t        MsgTypes;        /**< \brief Message Type (i.e. - with/without Cmd Code)   */
+} CFE_TBL_CmdHandlerTblRec_t;
+
 
 /* Command Message Processing Functions */
 /*****************************************************************************/
@@ -74,7 +102,7 @@ typedef CFE_TBL_CmdProcRet_t (*CFE_TBL_MsgProcFuncPtr_t)(const CFE_SB_Msg_t *Mes
 **
 ** \retval #CFE_TBL_DONT_INC_CTR \copydoc CFE_TBL_DONT_INC_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_HousekeepingCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_HousekeepingCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -91,7 +119,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_HousekeepingCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_NoopCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_NoopCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -107,7 +135,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_NoopCmd(const CFE_SB_Msg_t *MessagePtr);
 **
 ** \retval #CFE_TBL_DONT_INC_CTR \copydoc CFE_TBL_DONT_INC_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_ResetCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_ResetCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -125,7 +153,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_ResetCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_LoadCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_LoadCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -143,7 +171,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_LoadCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_DumpCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_DumpCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -162,7 +190,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_DumpCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_ValidateCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_ValidateCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -180,7 +208,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_ValidateCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_ActivateCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_ActivateCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -197,7 +225,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_ActivateCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_DumpRegCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_DumpRegCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -215,7 +243,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_DumpRegCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_TlmRegCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_TlmRegCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -232,7 +260,7 @@ CFE_TBL_CmdProcRet_t CFE_TBL_TlmRegCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_DeleteCDSCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_DeleteCDSCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
 
 /*****************************************************************************/
 /**
@@ -249,6 +277,79 @@ CFE_TBL_CmdProcRet_t CFE_TBL_DeleteCDSCmd(const CFE_SB_Msg_t *MessagePtr);
 ** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
 ** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
 ******************************************************************************/
-CFE_TBL_CmdProcRet_t CFE_TBL_AbortLoadCmd(const CFE_SB_Msg_t *MessagePtr);
+extern CFE_TBL_CmdProcRet_t CFE_TBL_AbortLoadCmd(const CFE_SB_MsgPayloadPtr_t MessagePtr);
+
+
+/*****************************************************************************/
+/**
+** \brief Output block of data to file with standard cFE Table Image Headers
+**
+** \par Description
+**        Writes the specified block of data in memory to the specified file
+**        with the standard cFE File and cFE Table Image Headers.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \param[in] DumpFilename    Character string containing the full path of the file
+**                            to which the contents of the table are to be written
+**
+** \param[in] TableName       Name of table being dumped to a file
+**
+** \param[in] DumpDataAddr    Address of data buffer whose contents are to be written
+**                            to the specified file
+**
+** \param[in] TblSizeInBytes  Size of block of data to be written to the file
+**
+** \retval #CFE_TBL_INC_ERR_CTR  \copydoc CFE_TBL_INC_ERR_CTR
+** \retval #CFE_TBL_INC_CMD_CTR  \copydoc CFE_TBL_INC_CMD_CTR
+******************************************************************************/
+extern CFE_TBL_CmdProcRet_t CFE_TBL_DumpToFile( const char *DumpFilename, const char *TableName,
+                                         void *DumpDataAddr, uint32 TblSizeInBytes);
+
+
+/*****************************************************************************/
+/**
+** \brief Compares message with #CFE_TBL_CmdHandlerTbl to identify the message
+**
+** \par Description
+**          Searches the Command Handler Table for an entry matching the
+**          message ID and, if necessary, the Command Code.  If an entry
+**          is not located, an error code is returned.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \param[in] MessageID message ID of command message received on command pipe
+**
+** \param[in] CommandCode command code from command message received on command pipe
+**
+** \retval #CFE_SUCCESS          \copydoc CFE_SUCCESS
+** \retval #CFE_TBL_BAD_CMD_CODE \copydoc CFE_TBL_BAD_CMD_CODE
+** \retval #CFE_TBL_BAD_MSG_ID   \copydoc CFE_TBL_BAD_MSG_ID
+**
+******************************************************************************/
+
+extern int16 CFE_TBL_SearchCmdHndlrTbl(CFE_SB_MsgId_t MessageID, uint16 CommandCode);
+
+/*****************************************************************************/
+/**
+** \brief Aborts load by freeing associated inactive buffers and sending event message
+**
+** \par Description
+**        This function aborts the load for the table whose registry entry is identified
+**        by the registry record pointer given as an argument.  Aborting the load consists
+**        of freeing any associated inactive buffer and issuing an event message.
+**
+** \par Assumptions, External Events, and Notes:
+**        The given registry record pointer is assumed to be valid.
+**
+** \param[in] RegRecPtr   Pointer to registry record entry for the table whose load is to be aborted
+**
+** \return None
+******************************************************************************/
+void CFE_TBL_AbortLoad(CFE_TBL_RegistryRec_t *RegRecPtr);
+
+
 
 #endif  /* _cfe_tbl_task_cmds_ */

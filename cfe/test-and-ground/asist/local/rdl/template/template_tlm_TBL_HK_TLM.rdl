@@ -19,17 +19,18 @@
 !
 !       HISTORY: 
 !
-!  2005/11/08  SMA             : Initial
-!  2005/11/14  SMA             : Corrected for compiler byte alignment.
-!  2005/11/17  SMA             : Add Dave Kobe changes.
-!  2006/06/08  WFM             : Changes for cFE 3.3.
-!  2007/05/17  WFM             : Added the Memory Pool Handle to HK packet.
+!  2005/11/08  SMA           : Initial
+!  2005/11/14  SMA           : Corrected for compiler byte alignment.
+!  2005/11/17  SMA           : Add Dave Kobe changes.
+!  2006/06/08  WFM           : Changes for cFE 3.3.
+!  2007/05/17  WFM           : Added the Memory Pool Handle to HK packet.
+!  2014/06/09  WFM           : Added LastLoadTblName and removed the last pad.
+!  2014/08/27  WFM           : Removed TBL_NAME_LEN #define and added comments
 !
 !==============================================================================
 !
-#include "osconfig.h"
-#include "cfe_mission_cfg.h"
-#define TBL_NAME_LEN (OS_MAX_API_NAME + CFE_TBL_MAX_NAME_LENGTH + 2)
+!! OS_MAX_PATH_LEN is defined in the osconfig.h file
+!! TBL_NAME_LEN is defined in the cfe_types.rdl file
 
 PACKET Pxxxx APID=nnnn, DESC="$sc $cpu TBL Telemetry Data Packet",
                         STALE = 36
@@ -77,7 +78,7 @@ PACKET Pxxxx APID=nnnn, DESC="$sc $cpu TBL Telemetry Data Packet",
   UB    $sc_$cpu_TBL_NumFreeShrBuf  DESC="$sc $cpu TBL Number of Free Shared Buffers",
                                     UNITS=Counts
 !
-  UB    $sc_$cpu_TBL_ByteAlignPad1  DESC="$sc $cpu TBL Byte Align Pad 1"
+  UB    $sc_$cpu_TBL_ByteAlign[3]  DESC="$sc $cpu TBL Byte Align Pad 1"
 !
   ULI    $sc_$cpu_TBL_MemPoolHdl     DESC="$sc $cpu TBL Memory Pool Handle" 
 ! 
@@ -86,12 +87,12 @@ PACKET Pxxxx APID=nnnn, DESC="$sc $cpu TBL Telemetry Data Packet",
     ULI $sc_$cpu_TBL_SUBSECONDS
   END
 !
-  CHAR  $sc_$cpu_TBL_LastUpdTblName[TBL_NAME_LEN]  DESC="$sc $cpu Table Name from the last Table updated"
+  CHAR  $sc_$cpu_TBL_LastUpdTblName[TBL_NAME_LEN]  DESC="$sc $cpu Table Name of the last Table updated"
 !
   CHAR  $sc_$cpu_TBL_LastFileLoaded[OS_MAX_PATH_LEN]  DESC="$sc $cpu Filename of the last Table image loaded"
 !
   CHAR  $sc_$cpu_TBL_LastFileDumped[OS_MAX_PATH_LEN]  DESC="$sc $cpu Filename of the last Table image loaded"
 !
-  UI    $sc_$cpu_TBL_ByteAlignPad2  DESC="$sc $cpu TBL Byte Align Pad 2"
+  CHAR  $sc_$cpu_TBL_LastLoadTblName[TBL_NAME_LEN]  DESC="$sc $cpu Table Name of the last Table Loaded"
 !
 END

@@ -1,4 +1,3 @@
-
 /*
 ** File:  cfe_es_perf.h
 **
@@ -10,8 +9,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used,
 **      distributed and modified only pursuant to the terms of that agreement.
 **
-**
-**
 ** Purpose: Performance Analyzer data structures
 **
 ** Design Notes:
@@ -19,6 +16,8 @@
 ** References:
 **
 ** $Log: cfe_es_perf.h  $
+** Revision 1.5 2012/01/13 11:50:03GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.4 2010/11/04 17:18:30EDT jmdagost 
 ** Forced enumerations to start at zero.
 ** Revision 1.3 2009/07/28 17:15:27EDT jmdagost 
@@ -75,18 +74,9 @@
 /*
 **  Defines
 */
-#define CFE_ES_PERF_32BIT_WORDS_IN_MASK ((CFE_ES_PERF_MAX_IDS) / 32)
-#define CFE_ES_PERF_CHILD_MS_DELAY       20
-#define CFE_ES_PERF_ENTRIES_BTWN_DLYS    50
 #define CFE_ES_PERF_CHILD_NAME           "ES_PerfFileWriter"
 #define CFE_ES_PERF_CHILD_STACK_PTR      0
-#define CFE_ES_PERF_CHILD_STACK_SIZE     4096
-#define CFE_ES_PERF_CHILD_PRIORITY       200
 #define CFE_ES_PERF_CHILD_FLAGS          0
-#define CFE_ES_PERF_FILTMASK_ALL         0xFFFFFFFF
-#define CFE_ES_PERF_FILTMASK_NONE        0
-#define CFE_ES_PERF_TRIGMASK_ALL         0xFFFFFFFF
-#define CFE_ES_PERF_TRIGMASK_NONE        0
 
 
 enum CFE_ES_PerfState_t {
@@ -104,40 +94,13 @@ enum CFE_ES_PerfMode_t {
 };
 
 typedef struct {
-    uint32         Data;
-    uint32         TimerUpper32;   /* TBU - timebase register */
-    uint32         TimerLower32;   /* TBL - timebase register */
-} CFE_ES_PerfDataEntry_t;
-
-typedef struct {
-    uint8                          Version;
-    uint8                          Endian;
-    uint8                          Spare[2];
-    uint32                         TimerTicksPerSecond;
-    uint32                         TimerLow32Rollover;
-    uint32                         State;
-    uint32                         Mode;
-    uint32                         TriggerCount;
-    uint32                         DataStart;
-    uint32                         DataEnd;
-    uint32                         DataCount;
-    uint32                         InvalidMarkerReported;
-    uint32                         FilterTriggerMaskSize;
-    uint32                         FilterMask[CFE_ES_PERF_32BIT_WORDS_IN_MASK];
-    uint32                         TriggerMask[CFE_ES_PERF_32BIT_WORDS_IN_MASK];
-} CFE_ES_PerfMetaData_t;
-
-typedef struct {
-    CFE_ES_PerfMetaData_t          MetaData;
-    CFE_ES_PerfDataEntry_t         DataBuffer[CFE_ES_PERF_DATA_BUFFER_SIZE];
-} CFE_ES_PerfData_t;
-
-typedef struct {
     uint32                         DataToWrite;
     uint32                         ChildID;
     char                           DataFileName[OS_MAX_PATH_LEN];
     int32                          DataFileDescriptor;
 } CFE_ES_PerfLogDump_t;
+
+extern CFE_ES_PerfLogDump_t    CFE_ES_PerfLogDumpStatus;
 
 #endif /* _cfe_es_perf_ */
 

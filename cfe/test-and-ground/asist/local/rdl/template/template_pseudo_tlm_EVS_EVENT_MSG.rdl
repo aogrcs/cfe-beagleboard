@@ -40,6 +40,9 @@
 !  09DEC09   W. Moleski      : Modified APPNAME and EVENT_TXT to use the
 !			     : appropriate configuration parameters rather than
 !			     : hard-coded values
+!  02MAY12   W. Moleski      : Modified event display appearance by removing
+!			     : the substring(PrxxTTIME...). Events will now
+!			     : display year and day as YY-DDD-
 !=============================================================
 !
 #include "osconfig.h"
@@ -85,7 +88,7 @@ UI $sc_$cpu_EVTMSG
            $sc_$cpu_NUM_FOUND_MESSAGES  = $sc_$cpu_FIND_EVENT[1].NUM_FOUND_MESSAGES
          ENDIF
      ENDDO
-     EVENT %substring(PrxxTTIME,8,19) & " " & p@$sc_$cpu_EVS_EVENTTYPE &;;
+     EVENT PrxxTTIME & " " & p@$sc_$cpu_EVS_EVENTTYPE &;;
            " CPU=" & p@$sc_$cpu_EVS_PROCESSORID  & ;;
            " APPNAME=" & $sc_$cpu_EVS_APPNAME & ;;
            " EVENT ID=" & $sc_$cpu_EVS_EVENTID  & " " &;;

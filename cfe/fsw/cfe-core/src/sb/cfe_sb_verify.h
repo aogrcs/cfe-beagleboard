@@ -18,6 +18,14 @@
 ** Author:   R.McGraw/SSI
 **
 ** $Log: cfe_sb_verify.h  $
+** Revision 1.11 2012/04/25 09:12:51GMT-05:00 rmcgraw 
+** DCR10525:1 Increased check on CFE_SB_MAX_SB_MSG_SIZE from 32768 to 65535
+** Revision 1.10 2012/01/13 12:15:14EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.9 2011/09/08 12:33:21EDT aschoeni 
+** Reduced BUF_MEMORY_BYTES upper limit to correct range
+** Revision 1.8 2011/02/03 15:21:53EST lwalling 
+** Added verification for mission config parameter CFE_SB_PACKET_TIME_FORMAT
 ** Revision 1.7 2010/11/08 14:58:26EST aschoeni 
 ** added CFE_SB_DEFAULT_MSG_LIMIT
 ** Revision 1.6 2010/11/04 16:41:54EDT aschoeni 
@@ -98,23 +106,31 @@
 #endif
 
 #if CFE_SB_BUF_MEMORY_BYTES < 512
-    #error CFE_SB_MAX_PIPE_DEPTH cannot be less than 512 bytes!
+    #error CFE_SB_BUF_MEMORY_BYTES cannot be less than 512 bytes!
 #endif
 
-#if CFE_SB_BUF_MEMORY_BYTES > 4294967296
-    #error CFE_SB_MAX_PIPE_DEPTH cannot be greater than 4294967296 bytes!
+#if CFE_SB_BUF_MEMORY_BYTES > 4294967295
+    #error CFE_SB_BUF_MEMORY_BYTES cannot be greater than 4294967295 bytes!
 #endif
 
 #ifndef MESSAGE_FORMAT_IS_CCSDS
     #error There is no message format (MESSAGE_FORMAT_IS_CCSDS) specified!
 #endif
 
+#ifndef CFE_SB_PACKET_TIME_FORMAT
+    #error CFE_SB_PACKET_TIME_FORMAT must be defined!
+#elif ((CFE_SB_PACKET_TIME_FORMAT != CFE_SB_TIME_32_16_SUBS) && \
+       (CFE_SB_PACKET_TIME_FORMAT != CFE_SB_TIME_32_32_SUBS) && \
+       (CFE_SB_PACKET_TIME_FORMAT != CFE_SB_TIME_32_32_M_20))
+    #error CFE_SB_PACKET_TIME_FORMAT must be CFE_SB_TIME_32_16_SUBS or CFE_SB_TIME_32_32_SUBS or CFE_SB_TIME_32_32_M_20!
+#endif
+
 #if CFE_SB_MAX_SB_MSG_SIZE < 6
      #error CFE_SB_MAX_SB_MSG_SIZE cannot be less than 6 (CCSDS Primary Hdr Size)!
 #endif
      
-#if CFE_SB_MAX_SB_MSG_SIZE > 32768
-    #error CFE_SB_MAX_SB_MSG_SIZE cannot be set greater than 32768!
+#if CFE_SB_MAX_SB_MSG_SIZE > 65535
+    #error CFE_SB_MAX_SB_MSG_SIZE cannot be set greater than 65535!
 #endif
 
 

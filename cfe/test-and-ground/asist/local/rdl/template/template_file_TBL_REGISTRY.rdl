@@ -20,18 +20,17 @@
 !
 !       HISTORY: 
 !
-!  2005/11/14  SMA             : Initial
-!  2005/11/15  SMA             : Mods per D. Kobe
-!  2006/06/08  WFM             : Updates for cFE 3.3
-!  2007/07/06  WFM             : Added Critical Flag
-!  2010/11/16  WFM             : Added CRC field after FileCreateSubseconds
+!  2005/11/14  SMA            : Initial
+!  2005/11/15  SMA            : Mods per D. Kobe
+!  2006/06/08  WFM            : Updates for cFE 3.3
+!  2007/07/06  WFM            : Added Critical Flag
+!  2010/11/16  WFM            : Added CRC field after FileCreateSubseconds
+!  2014/08/27  WFM	      : Removed TBL_NAME_LEN #define and added comments
 !                                                             
 !==============================================================================
 !
-#include "osconfig.h"
-#include "cfe_mission_cfg.h"
-#include "cfe_platform_cfg.h"
-#define TBL_NAME_LEN (OS_MAX_API_NAME + CFE_TBL_MAX_NAME_LENGTH + 2)
+!! OS_MAX_PATH_LEN and OS_MAX_API_NAME are defined in the osconfig.h file
+!! TBL_NAME_LEN is defined in the cfe_types.rdl file
 
 TYPES
    RECORD $sc_$cpu_TBL_RegistryFile        DESC="TBL Registry File"
@@ -67,6 +66,7 @@ TYPES
      UB   $sc_$cpu_TBL_Critical		DESC="$sc $cpu Critical TBL Flag",
 					DISCRETE, DRANGE=(0,1),
 					DLABEL=("FALSE","TRUE")
+     UI   $sc_$cpu_TBL_Spare		DESC="$sc $cpu spare for alignement"
 END
 END_TYPES
 

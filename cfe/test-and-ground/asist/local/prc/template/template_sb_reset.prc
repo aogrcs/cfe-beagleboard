@@ -16,16 +16,18 @@ PROC $sc_$cpu_sb_reset
 ;       a new subscription is added to the SB routing information.
 ;
 ;  Requirements Tested
-;	cSB4303	 	Upon Receipt of a Request to Subscribe to an SB message,
-;			the cFE shall establish a route using the
-;			Request-specified Message ID, the Request-specified
-;			Msg-to-Pipe limit and the Request-specified QoS.
-;	cSB4303.1	If the Subscription is a duplicate of a previous
-;			subscription then the cFE shall issue an Event Message.
-;       cSB4500		Upon a Power-on Reset, the cFE shall initialize the
-;                	Routing Information and clear all error counters.
-;       cSB4501  	Upon a Processor Reset, the cFE shall initialize the
-;                	Routing Information and clear all error counters.
+;     cSB4303	Upon Receipt of a Request to Subscribe to an SB message, the cFE
+;		shall establish a route using the Request-specified Message ID,
+;		the Request-specified ;Msg-to-Pipe limit and the
+;		Request-specified QoS.
+;     cSB4303.1	If the Subscription is a duplicate of a previous subscription
+;		then the cFE shall issue an Event Message.
+;     cSB4310	Upon reciept of Request, the cFE shall free resources allocation
+;		for the specified Application.
+;     cSB4500	Upon a Power-on Reset, the cFE shall initialize the Routing
+;		Information and clear all error counters.
+;     cSB4501  	Upon a Processor Reset, the cFE shall initialize the Routing
+;		Information and clear all error counters.
 ;
 ;  Prerequisite Conditions
 ;	Open event log and telemetry archive files.
@@ -45,6 +47,9 @@ PROC $sc_$cpu_sb_reset
 ;	06/13/05	Mike Tong	Original Procedure.
 ;	01/03/06	Walt Moleski	Modified for cFE B3.1
 ;	02/12/07	Walt Moleski	Modified for cFE B4.0
+;	02/08/12	Walt Moleski	Added variable for ram disk, replaced
+;					ut_setupevt with ut_setupevents
+;	09/09/14	Walt Moleski	Removed requirements 4311 & 4311.1
 ;
 ;  Arguments
 ;
@@ -62,7 +67,7 @@ PROC $sc_$cpu_sb_reset
 ;                         processed and command error counters.
 ;       ut_pfindicate   Print the pass fail status of a particular requirement
 ;                         number.
-;       ut_setupevt     Performs setup to verify that a particular event
+;       ut_setupevents     Performs setup to verify that a particular event
 ;                         message was received by ASIST.
 ;	ut_setrequirements	A directive to set the status of the cFE
 ;			 requirements array.
@@ -70,6 +75,8 @@ PROC $sc_$cpu_sb_reset
 ;  Expected Test Results and Analysis
 ;
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "ut_statusdefs.h"
 #include "ut_cfe_info.h"
@@ -80,16 +87,16 @@ PROC $sc_$cpu_sb_reset
 #include "tst_sb_events.h"
 #include "to_lab_events.h"
 
-global ut_req_array_size = 6
-global ut_requirement[0 .. ut_req_array_size]
+%liv (log_procedure) = logging
 
 #define SB_4303		0
 #define SB_43031	1
 #define SB_4310		2
-#define SB_4311		3
-#define SB_43111	4
-#define SB_4500		5
-#define SB_4501		6
+#define SB_4500		3
+#define SB_4501		4
+
+global ut_req_array_size = 4
+global ut_requirement[0 .. ut_req_array_size]
 
 for i = 0 to ut_req_array_size DO
   ut_requirement[i] = "U"
@@ -98,7 +105,7 @@ enddo
 ;**********************************************************************
 ; Set the local values
 ;**********************************************************************
-local cfe_requirements[0 .. ut_req_array_size] = ["SB_4303", "SB_4303.1", "SB_4310", "SB_4311", "SB_4311.1", "SB_4500", "SB_4501"]
+local cfe_requirements[0 .. ut_req_array_size] = ["SB_4303", "SB_4303.1", "SB_4310", "SB_4500", "SB_4501"]
 
 LOCAL cmd
 LOCAL rawcmd
@@ -123,6 +130,9 @@ LOCAL SB_State[maxroute]
 LOCAL SB_AppName[maxroute,16]
 LOCAL SB_PipeName[maxroute,16]
 
+local ramDir = "RAM:0"
+local hostCPU = "$CPU"
+
 write ";*********************************************************************"
 write ";  Run initialization procedure [ if necessary ]                      "
 write ";*********************************************************************"
@@ -146,12 +156,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
-                                                                                
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
+
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -167,14 +177,11 @@ write ";********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_START_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_SB", TST_SB_INIT_INF_EID, "INFO", 2
 
-s load_start_app ("TST_SB","$CPU")
-
-; Wait for app startup events
-;wait 10
+s load_start_app ("TST_SB",hostCPU)
 
 ut_tlmwait  $SC_$CPU_find_event[2].num_found_messages, 1
 IF (UT_TW_Status = UT_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Test Application Started"
   else
     Write "<!> Failed - Test Application start Event Message not received."
@@ -185,20 +192,21 @@ endif
 
 local pkt_id
 
-;;; Need to set the stream based upon the cpu being used
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-  stream_1 = x'900'
-  stream_2 = x'901'
-  pkt_id = x'101'
-elseif ("$CPU" = "CPU2") then
-  stream_1 = x'A00'
-  stream_2 = x'A01'
-  pkt_id = x'201'
-elseif ("$CPU" = "CPU3") then
-  stream_1 = x'B00'
-  stream_2 = x'B01'
-  pkt_id = x'301'
-endif
+;; Need to set the stream based upon the cpu being used
+;; CPU1 is the default
+stream_1 = x'900'
+stream_2 = x'901'
+pkt_id = x'101'
+
+;;if ("$CPU" = "CPU2") then
+;;  stream_1 = x'A00'
+;;  stream_2 = x'A01'
+;;  pkt_id = x'201'
+;;elseif ("$CPU" = "CPU3") then
+;;  stream_1 = x'B00'
+;;  stream_2 = x'B01'
+;;  pkt_id = x'301'
+;;endif
 
 write "Sending command to add subscription for TST_SB HK packet."
 /$SC_$CPU_TO_ADDPACKET Stream=stream_1 Pkt_Size=x'0' Priority=x'0' Reliability=x'1' Buflimit=x'4'
@@ -208,9 +216,6 @@ write "Sending command to add subscription for TST_SB TLM packet."
 /$SC_$CPU_TO_ADDPACKET Stream=stream_2 Pkt_Size=x'0' Priority=x'1' Reliability=x'0' Buflimit=x'4'
 wait 10
 
-ut_setrequirements SB_4311, "A"
-ut_setrequirements SB_43111, "A"
-
 write ";*********************************************************************"
 write ";  Step 1.3:  Save original SB routing file data in order to compare  "
 write ";  it later after performing a reset.                                 "
@@ -218,7 +223,7 @@ write ";*********************************************************************"
 stepnum = "1.3"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -249,7 +254,7 @@ write ";*********************************************************************"
 wait 5
 
 ctr = $SC_$CPU_SB_NoSubEC + 1
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_SEND_NO_SUBS_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_SEND_NO_SUBS_EID, "INFO", 1
 
 rawcmd = "0F" & %hex($CPU_CMDAPID_BASE + 16, 2) & "C0000035"     ; 6 bytes, primary header.
 rawcmd = rawcmd & "000000000000"  ; 6 bytes, secondary header, time.
@@ -273,7 +278,7 @@ ELSE
 ENDIF
 
 ;  Look for the event message
-if ($SC_$CPU_num_found_messages >= 1) then
+if ($SC_$CPU_find_event[1].num_found_messages >= 1) then
   Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   Write "<!> Failed - Event Message not received for No Subscription."
@@ -289,12 +294,12 @@ write ";*********************************************************************"
 write ";  Step 2.1:  Send a Add telemetry packet subscription to TO          "
 write ";  downlink command.                                                  "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "TO_LAB_APP", TO_ADDPKT_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TO_LAB_APP", TO_ADDPKT_INF_EID, "INFO", 1
 
 /$SC_$CPU_TO_AddPacket Stream=pkt_id Pkt_Size=0 Priority=0 Reliability=0 BufLimit=2
 wait 5
 
-if ($SC_$CPU_num_found_messages = 1) then
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
   write "<*> Passed (4303) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   ut_setrequirements SB_4303, "P"
 else
@@ -309,22 +314,19 @@ write ";  Step 2.2:  Remove the subscription for the TST_SB telemetry packet."
 write ";  This command is needed in order to receive the packet expected in  "
 write ";  the next two steps.                                                "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "TO_LAB_APP", TO_REMOVEPKT_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TO_LAB_APP", TO_REMOVEPKT_INF_EID, "INFO", 1
 
-cmd = "$SC_$CPU_TO_RemovePacket, Stream=stream_2"
+/$SC_$CPU_TO_RemovePacket, Stream=stream_2
 
-ut_sendcmd {cmd}
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-if (UT_SC_Status = UT_SC_Success) then
-;  Look for the event message
-   if ($SC_$CPU_num_found_messages = 1) then
-      Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
-   else
-      Write "<!> Failed - Event Message not received for TO_RemovePacket command."
-   endif
+IF (UT_TW_Status = UT_Success) THEN
+  write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
-   Write "<!> Error sending the TO_RemovePacket command."
+  write "<!> Failed - Event Message not received for TO_RemovePacket command."
 endif
+
+wait 5
 
 write ";*********************************************************************"
 write ";  Step 2.3:  Send a raw command.                                     "
@@ -478,12 +480,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
                                                                                 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -549,7 +551,7 @@ write ";*********************************************************************"
 stepnum = "3.3"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -600,14 +602,14 @@ WRITE ";**********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_START_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_SB", TST_SB_INIT_INF_EID, "INFO", 2
 
-s load_start_app ("TST_SB","$CPU")
+s load_start_app ("TST_SB",hostCPU)
 
 ; Wait for app startup events
 ;wait 10
 
 ut_tlmwait  $SC_$CPU_find_event[2].num_found_messages, 1
 IF (UT_TW_Status = UT_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Test Application Started"
   else
     Write "<!> Failed - Test Application start Event Message not received."
@@ -638,7 +640,7 @@ write ";*********************************************************************"
 wait 5
 
 ctr = $SC_$CPU_SB_NoSubEC + 1
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_SEND_NO_SUBS_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_SEND_NO_SUBS_EID, "INFO", 1
 
 rawcmd = %hex(pkt_id, 4) & "C0000035"     ; 6 bytes, primary header.
 rawcmd = rawcmd & "000000000000"  ; 6 bytes, secondary header, time.
@@ -663,7 +665,7 @@ ELSE
 ENDIF
 
 ;  Look for the event message
-if ($SC_$CPU_num_found_messages > 0) then
+if ($SC_$CPU_find_event[1].num_found_messages > 0) then
   Write "<*> Passed (4501) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   ut_setrequirements SB_4501, "P"
 else
@@ -681,28 +683,17 @@ write ";*********************************************************************"
 write ";  Step 4.1:  Send a Add telemetry packet subscription to TO         "
 write ";  downlink command.                                                "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "TO_LAB_APP", TO_ADDPKT_INF_EID, "INFO"
-
-;;cmd = "$SC_$CPU_TO_AddPacket, Stream=" &  ;;
-;;            "x'0F" & %hex($CPU_CMDAPID_BASE + 16, 2) & "', " &  ;;
-;;            "Pkt_Size=0, Priority=0, Reliability=0, "        &  ;;
-;;            "BufLimit=2"
-
-;;ut_sendcmd {cmd}
+ut_setupevents "$SC", "$CPU", "TO_LAB_APP", TO_ADDPKT_INF_EID, "INFO", 1
 
 /$SC_$CPU_TO_AddPacket Stream=pkt_id Pkt_Size=0 Priority=0 Reliability=0 BufLimit=2
 wait wait_time
 
-;;if (UT_SC_Status = UT_SC_Success) then
 ;  Look for the event message
-   if ($SC_$CPU_num_found_messages = 1) then
-      Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
-   else
-      Write "<!> Failed - Event Message not received for TO_AddPacket command."
-   endif
-;;else
-;;   Write "<!> Error sending the TO_AddPacket command."
-;;endif
+if ($SC_$CPU_find_event[1].num_found_messages = 1) then
+  write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
+else
+  write "<!> Failed - Event Message not received for TO_AddPacket command."
+endif
 
 WAIT 10
 
@@ -712,7 +703,7 @@ write ";*********************************************************************"
 stepnum = "4.2"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -783,7 +774,7 @@ wait wait_time
 
 ;;if (UT_SC_Status = UT_SC_Success) then
   ;; Look for the event message
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     write "<*> Passed (4303) - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
     ut_setrequirements SB_4303, "P"
     ut_tlmwait  $SC_$CPU_find_event[2].num_found_messages, 1
@@ -819,7 +810,7 @@ write ";*********************************************************************"
 stepnum = "4.4"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -876,25 +867,16 @@ write ";  downlink"" command. This step is performed to try to break the fsw."
 write ";  There is no requirement tested by this step other "
 write ";  than to execute the command and receive the expected messages.      "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "TO_LAB_APP", TO_REMOVEPKT_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "TO_LAB_APP", TO_REMOVEPKT_INF_EID, "INFO", 1
 
-cmd = "$SC_$CPU_TO_RemovePacket, Stream=pkt_id"
-;;cmd = "$SC_$CPU_TO_RemovePacket, Stream=" &  ;;
-;;            "x'0F" & %hex($CPU_CMDAPID_BASE + 16, 2) & "'"
+/$SC_$CPU_TO_RemovePacket, Stream=pkt_id
 
-ut_sendcmd {cmd}
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-wait wait_time
-
-if (UT_SC_Status = UT_SC_Success) then
-;  Look for the event message
-   if ($SC_$CPU_num_found_messages = 1) then
-      Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
-   else
-      Write "<!> Failed - Event Message not received for TO_RemovePacket command."
-   endif
+IF (UT_TW_Status = UT_Success) THEN
+  write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
-   Write "<!> Error sending the TO_RemovePacket command."
+  write "<!> Failed - Event Message not received for TO_RemovePacket command."
 endif
 
 WAIT 10
@@ -905,7 +887,7 @@ write ";*********************************************************************"
 stepnum = "5.2"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -961,30 +943,21 @@ write ";*********************************************************************"
 ut_setupevents "$SC", "$CPU", "TO_LAB_APP", TO_REMOVEPKT_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_UNSUB_NO_SUBS_EID, "INFO", 2
 
-cmd = "$SC_$CPU_TO_RemovePacket, Stream=pkt_id"
-;;cmd = "$SC_$CPU_TO_RemovePacket, Stream=" &  ;;
-;;            "x'0F" & %hex($CPU_CMDAPID_BASE + 16, 2) & "'"
+/$SC_$CPU_TO_RemovePacket, Stream=pkt_id
 
-ut_sendcmd {cmd}
+ut_tlmwait $SC_$CPU_find_event[1].num_found_messages, 1
 
-wait wait_time
-
-if (UT_SC_Status = UT_SC_Success) then
-;  Look for the event message
-   if ($SC_$CPU_num_found_messages = 1) then
-      Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
-   else
-      Write "<!> Failed - Event Message not received for TO_RemovePacket command."
-   endif
+IF (UT_TW_Status = UT_Success) THEN
+  write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
-   Write "<!> Error sending the TO_RemovePacket command."
+  write "<!> Failed - Event Message not received for TO_RemovePacket command."
 endif
 
-;WAIT 10
 ;;;;;;;;;;;;;;; EID 12 = CFE_SB_UNSUB_NO_SUBS_EID,;;;;;;;;;;
-ut_tlmwait  $SC_$CPU_find_event[2].eventid, 12
+;;ut_tlmwait $SC_$CPU_find_event[2].eventid, 12
+ut_tlmwait $SC_$CPU_find_event[2].num_found_messages, 1
 
-IF (UT_TW_Status = UT_Success  ) THEN
+IF (UT_TW_Status = UT_Success) THEN
   write "<*> Passed - Received SB Unsubscribe error event = 12."
 ELSE
   write "<!> Failed - Did not receive SB Unsubscribe error event = 12."
@@ -996,7 +969,7 @@ write ";*********************************************************************"
 stepnum = "5.4"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -1055,7 +1028,7 @@ write ";*********************************************************************"
 wait 5
 
 ctr = $SC_$CPU_SB_NoSubEC + 1
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_SEND_NO_SUBS_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_SEND_NO_SUBS_EID, "INFO", 1
 
 rawcmd = %hex(pkt_id, 4) & "C0000035"     ; 6 bytes, primary header.
 rawcmd = rawcmd & "000000000000"  ; 6 bytes, secondary header, time.
@@ -1079,7 +1052,7 @@ ELSE
 ENDIF
 
 ;  Look for the event message
-if ($SC_$CPU_num_found_messages > 0) then
+if ($SC_$CPU_find_event[1].num_found_messages > 0) then
   Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
 else
   Write "<!> Failed - Event Message not received for No Subscription."
@@ -1176,12 +1149,12 @@ wait 5
 write ";*********************************************************************"
 write "; Enable DEBUG Event Messages "
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
                                                                                 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
   write "<*> Passed - Debug events have been enabled."
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Event Msg ",$SC_$CPU_find_event[1].eventid," Found!"
   else
     Write "<!> Failed - Event Message not received for ENAEVENTTYPE command."
@@ -1248,7 +1221,7 @@ write ";*********************************************************************"
 stepnum = "6.3"
 outputfilename = "$sc_$cpu_sb_reset_" & stepnum & ".dat"
 
-start get_file_to_cvt("RAM:0", "cfe_sb_route.dat", outputfilename, "$CPU")
+start get_file_to_cvt(ramDir, "cfe_sb_route.dat", outputfilename, hostCPU)
 
 %liv (log_procedure) = FALSE
 
@@ -1299,7 +1272,7 @@ write "; 	   to delete an application."
 write ";*********************************************************************"
 ;; Start the TST_ES app
 write "; Starting the TST_ES application. "
-s load_start_app ("TST_ES", "$CPU")
+s load_start_app ("TST_ES", hostCPU)
 wait 10
                                                                                 
 ;; Add an Event Filter for the TST_ES HK Request Event in order to
@@ -1313,11 +1286,11 @@ write ";*********************************************************************"
 ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_START_INF_EID, "INFO", 1
 ut_setupevents "$SC", "$CPU", "TST_SB", TST_SB_INIT_INF_EID, "INFO", 2
 
-s load_start_app ("TST_SB","$CPU")
+s load_start_app ("TST_SB",hostCPU)
 
 ut_tlmwait  $SC_$CPU_find_event[2].num_found_messages, 1
 IF (UT_TW_Status = UT_Success) THEN
-  if ($SC_$CPU_num_found_messages = 1) then
+  if ($SC_$CPU_find_event[1].num_found_messages = 1) then
     Write "<*> Passed - Test Application Started"
   else
     Write "<!> Failed - Test Application start Event Message not received."
@@ -1327,7 +1300,7 @@ else
 endif
 
 ;  Dump the running apps
-start get_file_to_cvt ("RAM:0", "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", "$CPU")
+start get_file_to_cvt (ramDir, "cfe_es_app_info.log", "$sc_$cpu_es_app_info.log", hostCPU)
                                                                                 
 local tst_sbIndex = 0, app_info_file_index
 ;Loop thru the table looking for the TST_SB app

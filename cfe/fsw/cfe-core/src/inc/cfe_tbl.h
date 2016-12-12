@@ -1,8 +1,8 @@
 /*
 **
-**  $Id: cfe_tbl.h 1.8 2010/10/27 16:34:31EDT dkobe Exp  $
+**  $Id: cfe_tbl.h 1.9 2014/08/24 16:59:51GMT-05:00 sstrege Exp  $
 **
-**      Copyright (c) 2004-2012, United States government as represented by the 
+**      Copyright (c) 2004-2006, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
 **      All rights reserved. This software(cFE) was created at NASA's Goddard 
 **      Space Flight Center pursuant to government contracts.
@@ -23,6 +23,8 @@
 **  Notes:
 **
 **  $Log: cfe_tbl.h  $
+**  Revision 1.9 2014/08/24 16:59:51GMT-05:00 sstrege 
+**  Updated CFE_TBL_MAX_FULL_NAME_LEN definition to always fall on 4-byte boundary
 **  Revision 1.8 2010/10/27 16:34:31EDT dkobe 
 **  Added CRC field to Table Buffer data structure
 **  Revision 1.7 2010/10/27 13:55:07EDT dkobe 
@@ -79,9 +81,11 @@
 
 #define CFE_TBL_OPT_DEFAULT      (CFE_TBL_OPT_SNGL_BUFFER | CFE_TBL_OPT_LOAD_DUMP)
 
-/** Maximum length allowed for table name. <BR>
+/** Computation for maximum length allowed for a table name. <BR>
 ** NOTE: "+2" is for NULL Character and "." (i.e. - "AppName.TblName") */
-#define CFE_TBL_MAX_FULL_NAME_LEN (CFE_TBL_MAX_NAME_LENGTH + OS_MAX_API_NAME + 2)
+#define CFE_TBL_MAX_FULL_NAME_LEN_COMP (CFE_TBL_MAX_NAME_LENGTH + OS_MAX_API_NAME + 2)
+/* Ensure the table name falls on a 4-byte boundary */
+#define CFE_TBL_MAX_FULL_NAME_LEN (((CFE_TBL_MAX_FULL_NAME_LEN_COMP + 3)/4)*4)
 
 #define CFE_TBL_BAD_TABLE_HANDLE  (CFE_TBL_Handle_t) 0xFFFF
 

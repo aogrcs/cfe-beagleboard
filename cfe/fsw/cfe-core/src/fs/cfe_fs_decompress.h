@@ -1,6 +1,7 @@
 /*
-**   File: cfe_fs_decompress.h
+** $Id: cfe_fs_decompress.h 1.7 2012/01/13 12:11:28GMT-05:00 acudmore Exp  $
 **
+**   File: cfe_fs_decompress.h
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -23,6 +24,15 @@
 ** that if you modify it and redistribute it that you include comments to
 ** that effect with your name and the date.  Thank you. [The history has been
 ** moved to the file ChangeLog.]
+**
+** $Log: cfe_fs_decompress.h  $
+** Revision 1.7 2012/01/13 12:11:28GMT-05:00 acudmore 
+** Changed license text to reflect open source
+** Revision 1.6 2012/01/10 18:37:52EST aschoeni 
+** CFE return codes set directly; FS_gz_huft_build return code is now properly redefined
+** Revision 1.5 2011/01/20 10:49:04EST lwalling 
+** Add file ID and change history log to file header
+**
 */
 
 #ifndef CFE_FS_decompress_H
@@ -40,15 +50,14 @@
 /*
 ** Defines
 */
-
 #define SH2(p) ((uint16)(uint8)((p)[0]) | ((uint16)(uint8)((p)[1]) << 8))
 #define LG(p) ((uint32)(SH2(p)) | ((uint32)(SH2((p)+2)) << 16))
-#define NEXTBYTE()  (uint8)( gz_inptr<gz_insize ? gz_inbuf[gz_inptr++] : FS_gz_fill_inbuf() )
+#define NEXTBYTE()  (uint8)( State->inptr < State->insize ? State->inbuf[State->inptr++] : FS_gz_fill_inbuf_Reentrant(State) )
 #define DUMPBITS(n) { b>>=(n); k-=(n); }
 #define NEEDBITS(n) {								\
 	while(  k < (n)  )	{								\
 		b |= ( (uint32)NEXTBYTE() ) << k;				\
-		if ( gGuzError != CFE_SUCCESS ) return gGuzError;	\
+		if ( State->Error != CFE_SUCCESS ) return State->Error;	\
 		k += 8;									\
 	}											\
 }
@@ -94,24 +103,52 @@ typedef struct
    
 } HufTable;
 
+typedef struct
+{
+   int        srcFile_fd;
+   int        dstFile_fd;
+
+   uint32     bb;
+   uint32     bk;
+   uint32     outcnt;
+   uint32     insize;
+   uint32     inptr;
+   int32      bytes_in;
+   int32      bytes_out;
+
+   int32      Error;
+
+   uint8      inbuf[ INBUFSIZ_EXTRA ];
+   uint8      outbuf[ OUTBUFSIZ_EXTRA ];
+   uint8      window[ WSIZE_X2 ];
+   uint32     hufts;
+   uint32     max_hufts;
+
+   HufTable   hufTable[ MAX_HUF_TABLES ];
+
+} CFE_FS_Decompress_State_t;
 
 
 /*
-** Fundtion Prototypes
+** Function Prototypes
 */
-void   FS_gz_clear_bufs( void );
-int32  FS_gz_eat_header( void );
-int16  FS_gz_fill_inbuf( void );
-void   FS_gz_flush_window( void );
-int32  FS_gz_huft_build( uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, int32 * m );
-int32  FS_gz_inflate( void );
-int32  FS_gz_inflate_block( int32 * e );
-int32  FS_gz_inflate_codes( HufTable * tl, HufTable * td, int32 bl, int32 bd );
-int32  FS_gz_inflate_dynamic( void );
-int32  FS_gz_inflate_fixed( void );
-int32  FS_gz_inflate_stored( void );
-int32  FS_gz_unzip( void );
 uint32 FS_gz_updcrc( uint8 * s, uint32 n );
+/*
+ * Reentrant versions of all gz functions
+ */
+int32 CFE_FS_Decompress_Reentrant(CFE_FS_Decompress_State_t *State, const char * srcFileName, const char * dstFileName );
+void   FS_gz_clear_bufs_Reentrant( CFE_FS_Decompress_State_t *State );
+int32  FS_gz_eat_header_Reentrant( CFE_FS_Decompress_State_t *State );
+int16  FS_gz_fill_inbuf_Reentrant( CFE_FS_Decompress_State_t *State );
+void   FS_gz_flush_window_Reentrant( CFE_FS_Decompress_State_t *State );
+int32  FS_gz_huft_build_Reentrant( CFE_FS_Decompress_State_t *State, uint32 * b, uint32 n, uint32 s, uint16 * d, uint16 * e, int32 * m );
+int32  FS_gz_inflate_Reentrant( CFE_FS_Decompress_State_t *State );
+int32  FS_gz_inflate_block_Reentrant( CFE_FS_Decompress_State_t *State, int32 * e );
+int32  FS_gz_inflate_codes_Reentrant( CFE_FS_Decompress_State_t *State, HufTable * tl, HufTable * td, int32 bl, int32 bd );
+int32  FS_gz_inflate_dynamic_Reentrant( CFE_FS_Decompress_State_t *State );
+int32  FS_gz_inflate_fixed_Reentrant( CFE_FS_Decompress_State_t *State );
+int32  FS_gz_inflate_stored_Reentrant( CFE_FS_Decompress_State_t *State );
+int32  FS_gz_unzip_Reentrant( CFE_FS_Decompress_State_t *State );
 
 
 #endif /* CFE_FS_decompress_H */

@@ -38,6 +38,7 @@ PROC $SC_$CPU_time_resets_server_tai
 ;       08/22/05        J. Heavener     Incorporate updates from test
 ;                                       results review.
 ;       03/01/07        W. Moleski      Updates for cFE 4.0
+;       02/08/12        W. Moleski      Replaced ut_setupevt with ut_setupevents
 ;
 ;  Arguments
 ;	 None 
@@ -146,7 +147,7 @@ s load_start_app ("TST_TIME", "$CPU")
 wait 10
 
 ;; Check for expected events
-if ($SC_$CPU_num_found_messages = 1 AND ;;
+if ($SC_$CPU_find_event[1].num_found_messages = 1 AND ;;
     $SC_$CPU_find_event[2].num_found_messages = 1) then
   write "<*> Passed - Started TST_TIME application."
 endif
@@ -163,9 +164,10 @@ wait 2
 
 write " ; Add packet for TST_TIME_HK_TLM_MSG "
 
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-  startStream = x'913'
-elseif ("$CPU" = "CPU2") then
+;; CPU1 is the default
+startStream = x'913'
+
+if ("$CPU" = "CPU2") then
   startStream = x'A13'
 elseif ("$CPU" = "CPU3") then
   startStream = x'B13'
@@ -300,7 +302,7 @@ write "The Current value of Time Server Flywheel State Flag = ", P@$SC_$CPU_TIME
 write "The Current value of Command-to Flywheel State = ", P@$SC_$CPU_TIME_DFLAGCFLY
 
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, TST_TIME, TST_TIME_CKLSTATE_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_TIME, TST_TIME_CKLSTATE_INF_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -312,7 +314,7 @@ wait 5
 write "Current Clock State is $SC_$CPU_TIME_DAPISTATE = ", P@$SC_$CPU_Time_DAPIState
 write "Returned Clock State is $SC_$CPU_TT_CLKST = ", P@$SC_$CPU_TT_CLKST
 
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2308) - Expected event msg received."
   ut_setrequirements cTIME2308, "P"
 ELSE
@@ -334,7 +336,7 @@ write ";  "
 write ";  Requirement cTIME 2500"
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, CFE_TIME, CFE_TIME_STATE_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TIME, CFE_TIME_STATE_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -343,7 +345,7 @@ write "Command $SC_$CPU_TIME_SETSTATE = VALID sent at ", CMD_TIME_1
 wait 10
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2012) - Expected event msg received."
   ut_setrequirements cTIME2012, "P"
 ELSE
@@ -405,14 +407,14 @@ write ";  "
 write ";  Requirement cTIME 2500, 2502"
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, CFE_TIME, CFE_TIME_STATE_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TIME, CFE_TIME_STATE_EID, INFO, 1
 
 /$SC_$CPU_TIME_SetState FLYWHEEL
 write "Command $SC_$CPU_TIME_SETSTATE = FLYWHEEL sent at ", CMD_TIME_1
 wait 10
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2012) - Expected event msg received."
   ut_setrequirements cTIME2012, "P"
 ELSE
@@ -474,7 +476,7 @@ write ";  "
 write ";  Requirement cTIME 2308 "
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, TST_TIME, TST_TIME_CKLSTATE_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_TIME, TST_TIME_CKLSTATE_INF_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -484,7 +486,7 @@ write "Request $SC_$CPU_TST_CLKSTATE sent at ", CMD_TIME_1
 wait 5 
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2308) - Expected event msg received."
   ut_setrequirements cTIME2308, "P"
 ELSE
@@ -517,7 +519,7 @@ write "Current value of STCF Seconds is = ", $SC_$CPU_Time_DSTCFS
 write "Current value of STCF SubSeconds is = ", $SC_$CPU_Time_DSTCFSS
 
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, TST_TIME, TST_TIME_STCF_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_TIME, TST_TIME_STCF_INF_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -530,7 +532,7 @@ wait 5
 write "Request for $SC_$CPU_TST_TIME_STCF sent at ", CMD_TIME_1
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2306) - Expected event msg received."
   ut_setrequirements cTIME2306, "P"
 ELSE
@@ -580,7 +582,7 @@ write ";**********************************************************************"
 write ";  Step 4.2: Command a new STCF value."
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, CFE_TIME, CFE_TIME_STCF_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TIME, CFE_TIME_STCF_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -590,7 +592,7 @@ write "Command to set $SC_$CPU_TIME_SetClockSTCF SECONDS = 5000 SUBSECONDS = 500
 wait 5
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2006) - Expected event msg received."
   ut_setrequirements cTIME2006, "P"
 ELSE
@@ -623,7 +625,7 @@ write ";**********************************************************************"
 write ";  Step 4.3: Use the test application to request the current STCF."
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, TST_TIME, TST_TIME_STCF_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_TIME, TST_TIME_STCF_INF_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -633,7 +635,7 @@ Time_DSTCFSeconds = $SC_$CPU_Time_DSTCFS
 Time_DSTCFSSeconds = $SC_$CPU_Time_DSTCFSS
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2306) - Expected event msg received."
   ut_setrequirements cTIME2306, "P"
 ELSE
@@ -686,7 +688,7 @@ write ";**********************************************************************"
 write "; Step 5.1: Request the current Leap Seconds from TST_TIME."
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, TST_TIME, TST_TIME_LEAPSEC_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_TIME, TST_TIME_LEAPSEC_INF_EID, INFO, 1
 
 write "Write out the current value of the Leap Seconds prior to changing it "
 write "Current value of Leap Seconds is = ", $SC_$CPU_TIME_DLEAPS
@@ -699,7 +701,7 @@ write "Command $SC_$CPU_TST_TIME_LEAPSEC sent at ", CMD_TIME_1
 wait 5
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2307) - Expected event msg received."
   ut_setrequirements cTIME2307, "P"
 ELSE
@@ -716,7 +718,7 @@ write ";**********************************************************************"
 write ";  Step 5.2: Change the Leap Seconds."
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, CFE_TIME, CFE_TIME_LEAPS_EID, INFO
+ut_setupevents $SC, $CPU, CFE_TIME, CFE_TIME_LEAPS_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -726,7 +728,7 @@ write "Command $SC_$CPU_TIME_SetClockLeap = to 500 at ", CMD_TIME_1
 wait 5
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2005) - Expected event msg received."
   ut_setrequirements cTIME2005, "P"
 ELSE
@@ -749,7 +751,7 @@ write ";**********************************************************************"
 write ";  Step 5.3: Request the current Leap Seconds from TST_TIME."
 write ";**********************************************************************"
 ;; Setup for the expected event
-ut_setupevt $SC, $CPU, TST_TIME, TST_TIME_LEAPSEC_INF_EID, INFO
+ut_setupevents $SC, $CPU, TST_TIME, TST_TIME_LEAPSEC_INF_EID, INFO, 1
 
 CMD_TIME_1 =%GMT
 
@@ -759,7 +761,7 @@ write "Command $SC_$CPU_TST_TIME_LEAPSEC sent at ", CMD_TIME_1
 wait 5
 
 ;; Verify the receipt of the expected event message
-if ($SC_$CPU_num_found_messages = 1) THEN
+if ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
   write "<*> Passed (2307) - Expected event msg received."
   ut_setrequirements cTIME2307, "P"
 ELSE
@@ -856,7 +858,7 @@ ELSE
   ut_setrequirements cTIME2700, "F"
 ENDIF
 
-IF (Time_DMETSeconds >= New_DMETSeconds) THEN
+IF (Time_DMETSeconds <= New_DMETSeconds) THEN
   write "<*> Passed (2501;2700) - MET Seconds preserved."
   ut_setrequirements cTIME2501, "P"
   ut_setrequirements cTIME2700, "P"

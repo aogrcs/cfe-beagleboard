@@ -19,34 +19,42 @@
 **
 **
 ** $Log: cfe_sb_buf.c  $
-** Revision 1.13 2010/10/25 16:02:56EDT aschoeni 
+** Revision 1.17 2014/04/24 09:57:05GMT-05:00 rmcgraw 
+** DCR19487:1 - Remove size argument in CFE_SB_GetBufferFromCaller
+** Revision 1.16 2012/01/13 12:15:12EST acudmore
+** Changed license text to reflect open source
+** Revision 1.15 2011/12/20 10:26:04EST rmcgraw
+** DCR15187:1 Removed function CFE_SB_DecrMsgLimCnt
+** Revision 1.14 2011/09/09 14:25:44EDT aschoeni
+** Added fix for ZeroCopy issues
+** Revision 1.13 2010/10/25 16:02:56EDT aschoeni
 ** Allocation for sb message buffer now includes descriptor instead of separate allocation for descriptor
-** Revision 1.12 2009/07/29 12:02:50EDT aschoeni 
+** Revision 1.12 2009/07/29 12:02:50EDT aschoeni
 ** Updated GetBufferFromPool to deallocate the first buffer if the second buffer creation fails
-** Revision 1.11 2009/07/29 11:51:52EDT aschoeni 
+** Revision 1.11 2009/07/29 11:51:52EDT aschoeni
 ** Updated GetBufferFromCaller to deallocate the message buffer if the descriptor buffer fails to be created (otherwise it is never reclaimed)
-** Revision 1.10 2009/07/24 18:23:57EDT aschoeni 
+** Revision 1.10 2009/07/24 18:23:57EDT aschoeni
 ** Added Zero Copy Mode
-** Revision 1.9 2009/07/20 14:09:30EDT aschoeni 
+** Revision 1.9 2009/07/20 14:09:30EDT aschoeni
 ** Made GetAppTskName reentrant
-** Revision 1.8 2009/06/26 17:02:04EDT aschoeni 
+** Revision 1.8 2009/06/26 17:02:04EDT aschoeni
 ** Updated SB to use __func__ instead of __FILE__ for lock and unlock errors
-** Revision 1.7 2009/04/08 13:25:26EDT rmcgraw 
+** Revision 1.7 2009/04/08 13:25:26EDT rmcgraw
 ** DCR5802:4 Change data type int to int32
-** Revision 1.6 2009/02/11 14:19:50EST rmcgraw 
+** Revision 1.6 2009/02/11 14:19:50EST rmcgraw
 ** DCR6269:1 Removed the 'Buf' in mem pool names
-** Revision 1.5 2009/02/06 11:29:04EST rmcgraw 
+** Revision 1.5 2009/02/06 11:29:04EST rmcgraw
 ** DCR5801:2 General Cleanup
-** Revision 1.4 2009/02/03 11:06:58EST rmcgraw 
+** Revision 1.4 2009/02/03 11:06:58EST rmcgraw
 ** DCR5801:2 Changed destination desciptors from array based to linked list
-** Revision 1.3 2009/01/30 11:13:08EST rmcgraw 
+** Revision 1.3 2009/01/30 11:13:08EST rmcgraw
 ** DCR5801:6 Moved semaphore unlock to above GetAppid call in DecrMsgLimCnt
-** Revision 1.2 2009/01/23 15:00:16EST rmcgraw 
+** Revision 1.2 2009/01/23 15:00:16EST rmcgraw
 ** DCR5802:1 Removed redundant events in cfe_sb_buf.c
-** Revision 1.1 2008/04/17 08:05:31EDT ruperera 
+** Revision 1.1 2008/04/17 08:05:31EDT ruperera
 ** Initial revision
 ** Member added to cfe project on tlserver3
-** Revision 1.34 2007/09/19 17:03:57EDT rjmcgraw 
+** Revision 1.34 2007/09/19 17:03:57EDT rjmcgraw
 ** Fixed compiler error
 ** Revision 1.33 2007/09/19 14:39:25EDT rjmcgraw
 ** DCR4421 Removed use count error processing
@@ -79,12 +87,6 @@
 #include "cfe_es.h"
 #include "cfe_error.h"
 
-/*
-**  External Declarations
-*/
-extern cfe_sb_t CFE_SB;
-
-
 /******************************************************************************
 **  Function:   CFE_SB_GetBufferFromPool()
 **
@@ -115,21 +117,21 @@ CFE_SB_BufferD_t * CFE_SB_GetBufferFromPool(uint16 MsgId, uint16 Size) {
     }
 
     /* increment the number of buffers in use and adjust the high water mark if needed */
-    CFE_SB.StatTlmMsg.SBBuffersInUse++;
-    if(CFE_SB.StatTlmMsg.SBBuffersInUse > CFE_SB.StatTlmMsg.PeakSBBuffersInUse){
-        CFE_SB.StatTlmMsg.PeakSBBuffersInUse = CFE_SB.StatTlmMsg.SBBuffersInUse;
+    CFE_SB.StatTlmMsg.Payload.SBBuffersInUse++;
+    if(CFE_SB.StatTlmMsg.Payload.SBBuffersInUse > CFE_SB.StatTlmMsg.Payload.PeakSBBuffersInUse){
+        CFE_SB.StatTlmMsg.Payload.PeakSBBuffersInUse = CFE_SB.StatTlmMsg.Payload.SBBuffersInUse;
     }/* end if */
 
     /* Add the size of the actual buffer to the memory-in-use ctr and */
     /* adjust the high water mark if needed */
-    CFE_SB.StatTlmMsg.MemInUse+=stat1;
-    if(CFE_SB.StatTlmMsg.MemInUse > CFE_SB.StatTlmMsg.PeakMemInUse){
-        CFE_SB.StatTlmMsg.PeakMemInUse = CFE_SB.StatTlmMsg.MemInUse;
+    CFE_SB.StatTlmMsg.Payload.MemInUse+=stat1;
+    if(CFE_SB.StatTlmMsg.Payload.MemInUse > CFE_SB.StatTlmMsg.Payload.PeakMemInUse){
+        CFE_SB.StatTlmMsg.Payload.PeakMemInUse = CFE_SB.StatTlmMsg.Payload.MemInUse;
     }/* end if */
 
     /* first set ptr to actual msg buffer the same as ptr to descriptor */
     address = (uint8 *)bd;
-    
+
     /* increment actual msg buffer ptr beyond the descriptor */
     address += sizeof(CFE_SB_BufferD_t);
 
@@ -153,49 +155,19 @@ CFE_SB_BufferD_t * CFE_SB_GetBufferFromPool(uint16 MsgId, uint16 Size) {
 **
 **  Arguments:
 **    msgId        : Message ID
-**    size         : Size of the buffer in bytes.
 **    Address      : Address of the buffer
 **
 **  Return:
-**    Pointer to the buffer descriptor for the suplied buffer, or NULL if the 
+**    Pointer to the buffer descriptor for the suplied buffer, or NULL if the
 **    descriptor could not be allocated.
 */
 
-CFE_SB_BufferD_t * CFE_SB_GetBufferFromCaller(uint16 MsgId, 
-                                              uint16 Size, 
+CFE_SB_BufferD_t * CFE_SB_GetBufferFromCaller(uint16 MsgId,
                                               void *Address) {
-   int32                stat1;
-   CFE_SB_BufferD_t    *bd = NULL;
+   CFE_SB_BufferD_t    *bd = (CFE_SB_BufferD_t *)(((uint8 *)Address) - sizeof(CFE_SB_BufferD_t));
 
-    /* Allocate a new buffer descriptor from the SB memory pool.*/
-    stat1 = CFE_ES_GetPoolBuf((uint32 **)&bd, CFE_SB.Mem.PoolHdl,  sizeof(CFE_SB_BufferD_t));
-    if(stat1 < 0){
-         /*deallocate the message buffer if the descriptor buffer creation fails to prevent memory leak*/
-        stat1 = CFE_ES_PutPoolBuf(CFE_SB.Mem.PoolHdl, (uint32 *)Address);
-        if(stat1 > 0){
-            CFE_SB.StatTlmMsg.MemInUse-=stat1;
-        }
-        return NULL;
-    }
-
-    /* Add the size of a buffer descriptor to the memory-in-use ctr and */
-    /* adjust the high water mark if needed */
-    CFE_SB.StatTlmMsg.MemInUse+=stat1;
-    if(CFE_SB.StatTlmMsg.MemInUse > CFE_SB.StatTlmMsg.PeakMemInUse){
-        CFE_SB.StatTlmMsg.PeakMemInUse = CFE_SB.StatTlmMsg.MemInUse;
-    }/* end if */
-
-    /* increment the number of buffers in use and adjust the high water mark if needed */
-    CFE_SB.StatTlmMsg.SBBuffersInUse++;
-    if(CFE_SB.StatTlmMsg.SBBuffersInUse > CFE_SB.StatTlmMsg.PeakSBBuffersInUse){
-        CFE_SB.StatTlmMsg.PeakSBBuffersInUse = CFE_SB.StatTlmMsg.SBBuffersInUse;
-    }/* end if */
-
-    /* Initialize the buffer descriptor structure. */
+    /* Initialize the MsgId in the buffer descriptor (the rest has already been initialized in this case). */
     bd->MsgId     = MsgId;
-    bd->UseCount  = 1;
-    bd->Size      = Size;
-    bd->Buffer    = Address;
 
     return bd;
 
@@ -222,9 +194,9 @@ int32 CFE_SB_ReturnBufferToPool(CFE_SB_BufferD_t *bd){
     /* give the buf descriptor back to the buf descriptor pool */
     Stat = CFE_ES_PutPoolBuf(CFE_SB.Mem.PoolHdl, (uint32 *)bd);
     if(Stat > 0){
-        CFE_SB.StatTlmMsg.SBBuffersInUse--;
+        CFE_SB.StatTlmMsg.Payload.SBBuffersInUse--;
         /* Substract the size of a buffer descriptor from the Memory in use ctr */
-        CFE_SB.StatTlmMsg.MemInUse-=Stat;
+        CFE_SB.StatTlmMsg.Payload.MemInUse-=Stat;
     }/* end if */
 
     return CFE_SUCCESS;
@@ -269,51 +241,6 @@ int32 CFE_SB_DecrBufUseCnt(CFE_SB_BufferD_t *bd){
 }/* end CFE_SB_DecrBufUseCnt */
 
 
-/******************************************************************************
-**  Function:   CFE_SB_DecrMsgLimCnt()
-**
-**  Purpose:
-**    This function decrements the counter that is used to check the
-**    MsgIdToPipe Limit.
-**
-**  Arguments:
-**    dest : Pointer to the destination descriptor.
-**
-**  Return:
-**    CFE_SB_MSGCNT_ERR if an error is detected or
-**    CFE_SUCCESS for normal operation.
-*/
-int32 CFE_SB_DecrMsgLimCnt(CFE_SB_DestinationD_t *dest){
-
-    uint32 AppId = 0;
-    char FullName[(OS_MAX_API_NAME * 2)];
-
-    if(dest==NULL){
-        return CFE_SB_BAD_ARGUMENT;
-    }/* end if */
-
-    if (dest->BuffCount > 0){
-
-        dest->BuffCount--;
-
-    }else{
-
-        CFE_SB_UnlockSharedData(__func__,__LINE__);
-        CFE_ES_GetAppID(&AppId);        
-        CFE_EVS_SendEventWithAppID(CFE_SB_MSGCNT_ERR1_EID,CFE_EVS_ERROR,CFE_SB.AppId,
-              "MsgId-to-Pipe Lim Cntr Err,Cnt %d,Pipe %s,app %s,Lim %d",
-              dest->BuffCount,CFE_SB_GetPipeName(dest->PipeId),
-              CFE_SB_GetAppTskName(AppId,FullName),dest->MsgId2PipeLim);
-        CFE_SB_LockSharedData(__func__,__LINE__);
-        return CFE_SB_MSGCNT_ERR;
-
-    }/* end if */
-
-    return CFE_SUCCESS;
-
-}/* end CFE_SB_DecrMsgLimCnt */
-
-
 
 /******************************************************************************
 **  Function:   CFE_SB_GetDestinationBlk()
@@ -331,18 +258,18 @@ CFE_SB_DestinationD_t *CFE_SB_GetDestinationBlk(void)
 {
     int32 Stat;
     CFE_SB_DestinationD_t *Dest = NULL;
-        
+
     /* Allocate a new destination descriptor from the SB memory pool.*/
     Stat = CFE_ES_GetPoolBuf((uint32 **)&Dest, CFE_SB.Mem.PoolHdl,  sizeof(CFE_SB_DestinationD_t));
     if(Stat < 0){
         return NULL;
     }
-    
+
     /* Add the size of a destination descriptor to the memory-in-use ctr and */
     /* adjust the high water mark if needed */
-    CFE_SB.StatTlmMsg.MemInUse+=Stat;
-    if(CFE_SB.StatTlmMsg.MemInUse > CFE_SB.StatTlmMsg.PeakMemInUse){
-       CFE_SB.StatTlmMsg.PeakMemInUse = CFE_SB.StatTlmMsg.MemInUse;
+    CFE_SB.StatTlmMsg.Payload.MemInUse+=Stat;
+    if(CFE_SB.StatTlmMsg.Payload.MemInUse > CFE_SB.StatTlmMsg.Payload.PeakMemInUse){
+       CFE_SB.StatTlmMsg.Payload.PeakMemInUse = CFE_SB.StatTlmMsg.Payload.MemInUse;
     }/* end if */
 
     return Dest;
@@ -369,12 +296,12 @@ int32 CFE_SB_PutDestinationBlk(CFE_SB_DestinationD_t *Dest)
     if(Dest==NULL){
         return CFE_SB_BAD_ARGUMENT;
     }/* end if */
-    
+
     /* give the destination block back to the SB memory pool */
     Stat = CFE_ES_PutPoolBuf(CFE_SB.Mem.PoolHdl, (uint32 *)Dest);
     if(Stat > 0){
         /* Substract the size of the destination block from the Memory in use ctr */
-        CFE_SB.StatTlmMsg.MemInUse-=Stat;
+        CFE_SB.StatTlmMsg.Payload.MemInUse-=Stat;
     }/* end if */
 
     return CFE_SUCCESS;

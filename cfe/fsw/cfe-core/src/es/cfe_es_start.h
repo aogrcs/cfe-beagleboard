@@ -10,8 +10,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  cFE core startup module defines, data types and prototypes.
@@ -22,6 +20,8 @@
 **
 **  Notes:
 **  $Log: cfe_es_start.h  $
+**  Revision 1.2 2012/01/13 11:50:05GMT-05:00 acudmore 
+**  Changed license text to reflect open source
 **  Revision 1.1 2008/04/17 08:05:09EDT ruperera 
 **  Initial revision
 **  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/es/project.pj
@@ -73,14 +73,9 @@ typedef struct
     uint32                   ObjectType;                   /* The type of object being created */
     char                     ObjectName[OS_MAX_API_NAME];  /* task or OS object name */
     CFE_ES_FuncPtrUnion_t    FuncPtrUnion;                 /* task or function reference */
-    int                     *ObjectPtr;                    /* The reference to the object */
-    uint32                   ObjectKey;                    /* The ID of the Object being created */
-    uint32                   ObjectId;                     /* The ID assigned by the OS for the object */
     uint32                   ObjectPriority;               /* object priority */
     uint32                   ObjectSize;                   /* size used for stack, queue size, etc. */
     uint32                   ObjectFlags;                  /* extra flags to pass */
-    char                    *StackPtr;                     /* Stack pointer */
-    void                    *TcbPtr;                       /* Task control block pointer */
 
 } CFE_ES_ObjectTable_t;
 

@@ -19,18 +19,18 @@
 !
 !       HISTORY: 
 !
-!  2005/11/10  SMA             : Initial
-!  2005/11/15  MOB             ; Added 2 spare bytes at the end for alignment
-!  2005/11/15  SMA             ; Removed stale parameter.
-!  2006/06/08  WFM             ; Modified to reflect cFE 3.3 changes
-!  2007/07/06  WFM             ; Added Critical flag
-!  2010/11/16  WFM             ; Added CRC after Size
+!  2005/11/10  SMA           : Initial
+!  2005/11/15  MOB           : Added 2 spare bytes at the end for alignment
+!  2005/11/15  SMA           : Removed stale parameter.
+!  2006/06/08  WFM           : Modified to reflect cFE 3.3 changes
+!  2007/07/06  WFM           : Added Critical flag
+!  2010/11/16  WFM           : Added CRC after Size
+!  2014/08/27  WFM           : Removed TBL_NAME_LEN #define and added comments
 !
 !==============================================================================
 !
-#include "osconfig.h"
-#include "cfe_mission_cfg.h"
-#define TBL_NAME_LEN (OS_MAX_API_NAME + CFE_TBL_MAX_NAME_LENGTH + 2)
+!! OS_MAX_PATH_LEN and OS_MAX_API_NAME are defined in the osconfig.h file
+!! TBL_NAME_LEN is defined in the cfe_types.rdl file
 
 PACKET Pxxxx APID=nnnn, DESC="$sc $cpu TBL Registry Info Packet"
 !
@@ -75,7 +75,7 @@ PACKET Pxxxx APID=nnnn, DESC="$sc $cpu TBL Registry Info Packet"
   UB   $sc_$cpu_TBL_CritFlag	DESC="$sc $cpu Critical TBL Flag",
 				DISCRETE, DRANGE=(0,1), DLABEL=("FALSE","TRUE")
 !
-  UB   $sc_$cpu_TBL_Spare4      DESC="$sc $cpu TBL Spare4"
+  UB   $sc_$cpu_TBL_Spare4[3]   DESC="$sc $cpu TBL Spare4"
 !
 !
 END

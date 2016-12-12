@@ -10,148 +10,140 @@ PROC $sc_$cpu_es_reset
 ;	processor resets.
 ;
 ;  Requirements Tested
-;  	Based on Core Flight Executive Software Requirements 
-;
-;	cES1000:	Upon receipt of a Command, the cFE shall generate a
-;			Software Bus message that includes the following items:
-;			    a). Number of Registered Applications
-;			    b). Number of Registered Child Tasks
-;			    c). Number of Registered Shared Libraries
-;			    d). Number of entries in System Log
-;			    e). Percent of System Log Used
-;			    f). Current Exception and Reset Log Index
-;			    g). Number of Processor Resets
-;			    h). Maximum Number of Processor Resets before a
-;			        Power-On Reset
-;			    i). Boot Source
-;			    j). ES Valid Command Counter
-;			    k). ES Invalid Command Counter
-;	cES1001:	Upon receipt of a Command, the cFE shall generate a
-;			NO-OP event message.
-;	cES1002:	Upon receipt of a valid Command, the cFE shall increment
-;			a valid Command counter.
-;	cES1003:	Upon receipt of an invalid Command, the cFE shall
-;			increment a valid Command counter and generate an event
-;			message.
-;	cES1004:	Upon receipt of a Command, the cFE shall set to zero the
-;			valid Command counter and invalid Command counter.
-;	cES1005:	Upon receipt of a Command, the cFE shall create the
-;			Command specified Application by defining the 
-;			Application in the System Resources Definition using
-;			information from the Command specified file, and
-;			beginning execution of the Application.
-;	cES1005.1:	The Command shall include the following parameters: 
-;			    a) Application Name
-;			    b) Application Entry Point
-;			    c) Application File Name
-;			    d) Application Stack Size
-;			    e) Application Priority
-;			    f) Application Memory Start Page
-;			    g) Application Memory Page Count
-;	cES1009:	Upon receipt of a Command, the cFE shall perform a Power
-;			On Reset of the Core Flight Executive.
-;	cES1010:	Upon receipt of a Command, the cFE shall perform a 
-;			Processor Reset of the Core Flight Executive.
-;	cES1012:	Upon receipt of a Command, the cFE shall generate a file
-;			that contains all properties and states of all cFE
-;			Applications that are defined in the System Resources
-;			Definition.
-;	cES1016:	Upon receipt of a Command, the cFE shall copy the
-;			information contained in the Executive Services System
-;			Log into a Command specified file.
-;	cES1016.1:	
-;	cES1017:	The cFE shall maintain an Executive Services Exception
-;			and Reset Log which will log critical system data for
-;			exceptions and resets including: 
-;			    a) A time stamp
-;			    b) Processor Context information
-;			    c) Critical system variables
-;			    d) ASCII string stating the reason for the reset
-;	cES1019:	Upon receipt of a Command, the cFE shall copy the
-;			information contained in the Executive Services
-;			Exception and Reset Log Buffer into a Command specified
-;			file.
-;	cES1301:	Upon receipt of a Request, the cFE shall provide the
-;			type of last reset perfomed by the processor.
-;	cES1301.1:	The reset types include:
-;			    1) Power On Reset
-;			    2) Processor Reset
-;	cES1317:	Upon receipt of a Request, the cFE shall perform a Power
-;			On Reset of the Core Flight Executive.
-;	cES1318:	Upon receipt of a Request, the cFE shall perform a
-;			Processor Reset of the Core Flight Executive.
-;	cES1500:	Upon a Power-on Reset, the cFE shall identify the
-;			<PLATFORM_DEFINED> Power On reset sub-type.
-;	cES1501:	Upon a Power-On Reset, the cFE shall clear the Executive
-;			Services System Log.
-;	cES1502:	Upon a Power-On Reset, the cFE shall clear the Executive
-;			Services Exception and Reset Log.
-;	cES1503:	Upon a Power-On Reset, the cFE shall clear the Volatile
-;			File system.
-;	cES1504:	Upon a Power-On Reset, the cFE shall clear the contents
-;			of the Critical Data Store.
-;	cES1505:	Upon a Power-On Reset, the cFE shall create all
-;			operating system objects required by the cFE.
-;	cES1506:	Upon a Power-On Reset, the cFE shall mount the
-;			non-volatile file system.
-;	cES1507:	Upon a Power-On Reset, the cFE shall create, format and
-;			mount the volatile file system.
-;	cES1508:	Upon a Power-On Reset, the cFE shall process all entries
-;			in the cFE Startup File located in the non-volatile file
-;			system.
-;	cES1508.1:	The cFE shall create and start cFE Applications
-;			according to the entry in the cFE Startup file.
-;	cES1508.2:	The cFE shall create and initialize cFE Shared Libraries
-;			according to the entry in the cFE Startup File.
-;	cES1508.3:	The cFE shall create and initialize cFE Device Drivers
-;			according to the entry in the cFE Startup File.
-;	cES1509:	Upon a Power-On Reset, the cFE shall make an entry in
-;			the Executive Services Exception and Reset Log,
-;			recording the Power On Reset.
-;	cES1510:	Upon Processor Reset, the cFE shall identify the
-;			<PLATFORM_DEFINED> Processor reset sub-type.
-;	cES1511:	Upon Processor Reset, the cFE shall preserve the
-;			Executive Services System Log.
-;	cES1512:	Upon Processor Reset, the cFE shall preserve the
-;			Executive Services Exception and Reset Log.
-;	cES1513:	Upon Processor Reset, the cFE shall preserve the
-;			Volatile File system.
-;	cES1514:	Upon Processor Reset, the cFE shall preserve the
-;			contents of the Critical Data Store.
-;	cES1515:	Upon Processor Reset, the cFE shall create all operating
-;			system objects required by the cFE.
-;	cES1516:	Upon Processor Reset, the cFE shall mount the
-;			non-volatile file system.
-;	cES1517:	Upon Processor Reset, the cFE shall check and mount the
-;			volatile file system.
-;	cES1518:	Upon Processor Reset, the cFE shall process all entries
-;			in the cFE Startup File located in the volatile file
-;			system.
-;	cES1518.1:	The cFE shall create and start cFE Applications
-;			according to the entry in the cFE Startup File.
-;	cES1518.2:	The cFE shall create and initialize Shared Libraries
-;			according to the entry in the cFE Startup File.
-;	cES1519:	If the system startup file is not present in the
-;			volatile file system then the cFE shall process all
-;			entries in the cFE Startup File located in the
-;			non-volatile file system.
-;	cES1519.1:	The cFE shall create and start cFE Applications
-;			according to the entry in the cFE Startup File.
-;	cES1519.2:	The cFE shall create and initialize Shared Libraries
-;			according to the entry in the cFE Startup File.
-;	cES1520:	Upon Processor Reset, the cFE shall make an entry in the
-;			Executive Services Exception and Reset Log recording the
-;			Processor Reset.
-;	cES1521:	Upon Processor Reset, the cFE shall preserve the
-;			following:
-;				a) Boot Source
-;				b) Reset Type
-;				c) Reset Subtype
-;				d) Reset Reason
-;				e) Number of Processor Resets
-;				f) Maximum Processor Resets
-;				g) Number of entries in System Log
-;				h) Percent of System Log Used
+;    cES1000	Upon receipt of a Command, the cFE shall generate a Software Bus
+;		message that includes the following items:
+;			a). Number of Registered Applications
+;			b). Number of Registered Child Tasks
+;			c). Number of Registered Shared Libraries
+;			d). Reset Type
+;			e). Reset Subtype
+;			f). Number of entries in System Log
+;			g). Percent of System Log Used
+;			h). Current Exception and Reset Log Index
+;			i). Number of Processor Resets
+;			j). Maximum Number of Processor Resets before a
+;			    Power-On Reset
+;			k). Boot Source
+;			l). ES Valid Command Counter
+;			m). ES Invalid Command Counter
+;    cES1001	Upon receipt of a Command, the cFE shall generate a NO-OP event
+;		message.
+;    cES1002	Upon receipt of a valid Command, the cFE shall increment a valid
+;		Command counter.
+;    cES1003	Upon receipt of an invalid Command, the cFE shall increment a
+;		valid Command counter and generate an event message.
+;    cES1004	Upon receipt of a Command, the cFE shall set to zero the valid
+;		Command counter and invalid Command counter.
+;    cES1005	Upon receipt of a Command, the cFE shall create the Command
+;		specified Application by defining the Application in the System
+;		Resources Definition using information from the Command
+;		specified file, and beginning execution of the Application.
+;    cES1005.1	The Command shall include the following parameters: 
+;			a) Application Name
+;			b) Application Entry Point
+;			c) Application File Name
+;			d) Application Stack Size
+;			e) Application Priority
+;			f) Application Memory Start Page
+;			g) Application Memory Page Count
+;    cES1009	Upon receipt of a Command, the cFE shall perform a Power On
+;		Reset of the Core Flight Executive.
+;    cES1010	Upon receipt of a Command, the cFE shall perform a Processor
+;		Reset of the Core Flight Executive.
+;    cES1012	Upon receipt of a Command, the cFE shall generate a file that
+;		contains all properties and states of all cFE Applications that
+;		are defined in the System Resources Definition.
+;    cES1016	Upon receipt of a Command, the cFE shall copy the information
+;		contained in the Executive Services System Log into a Command
+;		specified file.
+;    cES1016.1	If a file is not specified, the cFE shall use the
+;		<PLATFORM_DEFINED> filename.
+;    cES1017	The cFE shall maintain an Executive Services Exception and Reset;		Log which will log critical system data for exceptions and
+;		resets including: 
+;			a) A time stamp
+;			b) Processor Context information
+;			c) Critical system variables
+;			d) ASCII string stating the reason for the reset
+;    cES1019	Upon receipt of a Command, the cFE shall copy the information
+;		contained in the Executive Services Exception and Reset Log
+;		Buffer into a Command specified file.
+;    cES1301	Upon receipt of a Request, the cFE shall provide the type of
+;		last reset perfomed by the processor.
+;    cES1301.1	The reset types include:
+;			1) Power On Reset
+;			2) Processor Reset
+;    cES1317	Upon receipt of a Request, the cFE shall perform a Power On
+;		Reset of the Core Flight Executive.
+;    cES1318	Upon receipt of a Request, the cFE shall perform a Processor
+;		Reset of the Core Flight Executive.
+;    cES1500	Upon a Power-on Reset, the cFE shall identify the
+;		<PLATFORM_DEFINED> Power On reset sub-type.
+;    cES1501	Upon a Power-On Reset, the cFE shall clear the Executive
+;		Services System Log.
+;    cES1502	Upon a Power-On Reset, the cFE shall clear the Executive
+;		Services Exception and Reset Log.
+;    cES1503	Upon a Power-On Reset, the cFE shall clear the Volatile File
+;		system.
+;    cES1504	Upon a Power-On Reset, the cFE shall clear the contents of the
+;		Critical Data Store.
+;    cES1505	Upon a Power-On Reset, the cFE shall create all operating system
+;		objects required by the cFE.
+;    cES1506	Upon a Power-On Reset, the cFE shall mount the non-volatile file
+;		system.
+;    cES1507	Upon a Power-On Reset, the cFE shall create, format and mount
+;		the volatile file system.
+;    cES1508	Upon a Power-On Reset, the cFE shall process all entries in the
+;		cFE Startup File located in the non-volatile file system.
+;    cES1508.1	The cFE shall create and start cFE Applications according to the
+;		entry in the cFE Startup file.
+;    cES1508.2	The cFE shall create and initialize cFE Shared Libraries
+;		according to the entry in the cFE Startup File.
+;    cES1508.3	The cFE shall create and initialize cFE Device Drivers according
+;		to the entry in the cFE Startup File.
+;    cES1509	Upon a Power-On Reset, the cFE shall make an entry in the
+;		Executive Services Exception and Reset Log, recording the Power
+;		On Reset.
+;    cES1510	Upon Processor Reset, the cFE shall identify the
+;		<PLATFORM_DEFINED> Processor reset sub-type.
+;    cES1511	Upon Processor Reset, the cFE shall preserve the Executive
+;		Services System Log.
+;    cES1512	Upon Processor Reset, the cFE shall preserve the Executive
+;		Services Exception and Reset Log.
+;    cES1513	Upon Processor Reset, the cFE shall preserve the Volatile File
+;		system.
+;    cES1514	Upon Processor Reset, the cFE shall preserve the contents of the
+;		Critical Data Store.
+;    cES1515	Upon Processor Reset, the cFE shall create all operating system
+;		objects required by the cFE.
+;    cES1516	Upon Processor Reset, the cFE shall mount the non-volatile file
+;		system.
+;    cES1517	Upon Processor Reset, the cFE shall check and mount the volatile
+;		file system.
+;    cES1518	Upon Processor Reset, the cFE shall process all entries in the
+;		cFE Startup File located in the volatile file system.
+;    cES1518.1	The cFE shall create and start cFE Applications according to the
+;		entry in the cFE Startup File.
+;    cES1518.2	The cFE shall create and initialize Shared Libraries according
+;		to the entry in the cFE Startup File.
+;    cES1519	If the system startup file is not present in the volatile file
+;		system then the cFE shall process all entries in the cFE Startup
+;		File located in the non-volatile file system.
+;    cES1519.1	The cFE shall create and start cFE Applications according to the
+;		entry in the cFE Startup File.
+;    cES1519.2	The cFE shall create and initialize Shared Libraries according
+;		to the entry in the cFE Startup File.
+;    cES1520	Upon Processor Reset, the cFE shall make an entry in the
+;		Executive Services Exception and Reset Log recording the
+;		Processor Reset.
+;    cES1521	Upon Processor Reset, the cFE shall preserve the following:
+;			a) Boot Source
+;			b) Reset Type
+;			c) Reset Subtype
+;			d) Reset Reason
+;			e) Number of Processor Resets
+;			f) Maximum Processor Resets
+;			g) Number of entries in System Log
+;			h) Percent of System Log Used
 ;
 ;  Prerequisite Conditions
 ;       The ASIST ground station is up and running.
@@ -161,6 +153,12 @@ PROC $sc_$cpu_es_reset
 ;  Change History
 ;	Date		Name			Description
 ;	01/03/07	W. Moleski	Initial development.
+;	09/18/14	W. Moleski	Added code to disable SCH Debug events
+;					after restarts.
+;       05/04/16        W. Moleski      Updated for 6.5.0 testing using CPU1 for
+;                                       commanding and added a hostCPU variable
+;                                       for the utility procs that connect to
+;                                       the host IP.
 ;
 ;  Arguments
 ;	None 
@@ -169,7 +167,7 @@ PROC $sc_$cpu_es_reset
 ;	Name					Description
 ;  	ut_pfindicate		Directive to print the pass fail status
 ;				of a particular requirement number.
-;  	ut_setupevt		Directive to look for a particular event
+;  	ut_setupevents		Directive to look for a particular event
 ;				and increment a value in the CVT to
 ;				indicate receipt.
 ;  	ut_setrequirements	Directive to status cfe requirements.
@@ -178,12 +176,16 @@ PROC $sc_$cpu_es_reset
 ;
 ;  Expected Test Results and Analysis
 ;**********************************************************************
+local logging = %liv (log_procedure)
+%liv (log_procedure) = FALSE
 
 #include "cfe_platform_cfg.h"
 #include "ut_statusdefs.h"
 #include "cfe_es_events.h"
 #include "cfe_es_resetTypes.h"
 #include "cfe_evs_events.h"
+
+%liv (log_procedure) = logging
 
 ;**********************************************************************
 ; Setup requirements checking
@@ -245,6 +247,8 @@ global ut_requirement[0 .. ut_req_array_size]
 ;**********************************************************************
 LOCAL i,j, numMaxErrors
 LOCAL cmdcnt, errcnt
+local ramDir = "RAM:0"
+local hostCPU = "$CPU"
 
 ;**********************************************************************
 ; Initialize the global requirement values to "U" for Untested.
@@ -279,7 +283,7 @@ wait 75
 cfe_startup $CPU
 wait 5
 
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
@@ -292,6 +296,19 @@ if (UT_SC_Status = UT_SC_Success) then
 else
   write "<!> Failed - Could not enable Debug events."
 endif
+
+;; Disable SCH Debug Events if SCH is running
+local SCHisRunning = FALSE
+for i = 1 to CFE_ES_MAX_APPLICATIONS do
+  if ($SC_$CPU_EVS_AppData[i].AppName = "SCH") then
+    SCHisRunning = TRUE
+  endif
+enddo 
+
+if (SCHisRunning = TRUE) then
+  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
+  wait 10  
+endif 
 
 write ";*********************************************************************"
 write "; Step 1.2: Verify the ES Housekeeping Telemetry items."
@@ -351,9 +368,9 @@ page $SC_$CPU_ES_ERLOG
 wait 10
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
-s get_file_to_cvt ("RAM:0","cfe_erlog.log","$sc_$cpu_reset_er13.log","$CPU")
+s get_file_to_cvt (ramDir,"cfe_erlog.log","$sc_$cpu_reset_er13.log",hostCPU)
 wait 10
 
 ; Check if the proper event was generated
@@ -377,7 +394,7 @@ write ";             The file system is formatted if it does not contain any "
 write ";             files."
 write ";*********************************************************************"
 ;; ftp the file referenced by CFE_ES_NONVOL_STARTUP_FILE from the spacecraft
-s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv.scr","$CPU","G")
+s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv.scr",hostCPU,"G")
 wait 10
 
 ;; Verify that the file was retrieved from the spacecraft
@@ -409,8 +426,8 @@ write ";*********************************************************************"
 page $SC_$CPU_EVS_LOG
 wait 10
 
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs.log", "$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -425,8 +442,8 @@ write ";*********************************************************************"
 page $SC_$CPU_ES_APP_INFO
 wait 10
 ;  Dump all running apps
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -456,7 +473,7 @@ write ";*********************************************************************"
 write "; Step 1.5.5: Get the System Log and verify that it contains the "
 write ";             proper entries."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="""""
 if (UT_SC_Status = UT_SC_Success) then
@@ -470,7 +487,7 @@ if (UT_SC_Status = UT_SC_Success) then
   endif
 
   ;; Get the file to the ground whether or not the event msg was rcv'd
-  s ftp_file ("RAM:0","cfe_es_syslog.log","$sc_$cpu_es_syslog145.log","$CPU","G")
+  s ftp_file (ramDir,"cfe_es_syslog.log","$sc_$cpu_es_syslog145.log",hostCPU,"G")
   wait 10
 
   ;; Check if the file above exists and pass the requirement if it does
@@ -499,7 +516,7 @@ write ";*********************************************************************"
 write ";*********************************************************************"
 write "; Step 2.1: NOOP Command"
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_NOOP_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_NOOP_INF_EID, "INFO", 1
 
 ut_sendcmd "$SC_$CPU_ES_NOOP"
 if (ut_sc_status = UT_SC_Success) then
@@ -528,10 +545,11 @@ write ";*********************************************************************"
 ;;;; function code = hex 'aa' (42 decimal)
 errcnt = $SC_$CPU_ES_CMDEC + 1
                                                                                 
-; Send commands to subscribe to the TST_ES HK packet
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-  /raw 1806c0000001aa
-elseif ("$CPU" = "CPU2") then
+;; Send commands to subscribe to the TST_ES HK packet
+;; CPU1 is the default
+/raw 1806c0000001aa
+
+if ("$CPU" = "CPU2") then
   /raw 1826c0000001aa
 elseif ("$CPU" = "CPU3") then
   /raw 1846c0000001aa
@@ -549,7 +567,7 @@ endif
 write ";*********************************************************************"
 write "; Step 2.3: Reset Counters Command"
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_RESET_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_RESET_INF_EID, "INFO", 1
 
 /$SC_$CPU_ES_RESETCTRS
 wait 5
@@ -586,7 +604,7 @@ endif
 write ";*********************************************************************"
 write "; Step 2.4: Send the NOOP Command again to increment the counter"
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_NOOP_INF_EID, "INFO"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_NOOP_INF_EID, "INFO", 1
 
 cmdcnt = $SC_$CPU_ES_CMDPC + 1
 
@@ -622,9 +640,10 @@ write ";*********************************************************************"
 errcnt = $SC_$CPU_ES_CMDEC + 1
                                                                                 
 ; Send commands to subscribe to the TST_ES HK packet
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-  /raw 1806c0000001aa
-elseif ("$CPU" = "CPU2") then
+;; CPU1 is the default
+/raw 1806c0000001aa
+
+if ("$CPU" = "CPU2") then
   /raw 1826c0000001aa
 elseif ("$CPU" = "CPU3") then
   /raw 1846c0000001aa
@@ -647,9 +666,9 @@ write "; Step 3.1: Upload some files to the spacecraft in order to modify the"
 write ";           contents of the volatile file system."
 write ";*********************************************************************"
 ;; ftp several test files to the volatile file system
-s ftp_file ("RAM:0","es_testfile_1","es_testfile_1","$CPU","P")
+s ftp_file (ramDir,"es_testfile_1","es_testfile_1",hostCPU,"P")
 wait 5
-s ftp_file ("RAM:0","es_testfile_2","es_testfile_2","$CPU","P")
+s ftp_file (ramDir,"es_testfile_2","es_testfile_2",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -659,8 +678,8 @@ write ";*********************************************************************"
 write "; Step 3.2.1: Startup the TST_ES application."
 write ";*********************************************************************"
 ;  Dump all running apps
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -688,12 +707,12 @@ enddo
 
 if (found_app = FALSE) then
   write "; Starting the TST_ES application. "
-  s load_start_app ("TST_ES", "$CPU")
+  s load_start_app ("TST_ES", hostCPU)
   wait 10
 
   ;; Dump all running apps again to verify that the TST_ES app is running
-  ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-  s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+  ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+  s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
   wait 10
 
   if ($SC_$CPU_num_found_messages = 1) then
@@ -721,16 +740,22 @@ if (found_app = FALSE) then
     ut_setrequirements ES_1005, "P"
     ut_setrequirements ES_10051, "P"
 
-    ; Send commands to subscribe to the TST_ES HK packet
-    if ("$CPU" = "CPU1" OR "$CPU" = "") then
-       stream = x'90D'
-    elseif ("$CPU" = "CPU2") then
+    ;; Send commands to subscribe to the TST_ES HK packet
+    ;; CPU1 is the default
+    stream = x'90D'
+
+    if ("$CPU" = "CPU2") then
        stream = x'A0D'
     elseif ("$CPU" = "CPU3") then
        stream = x'B0D'
     endif
 
     /$SC_$CPU_TO_ADDPACKET STREAM=stream PKT_SIZE=X'ffff' PRIORITY=X'0' RELIABILITY=X'0' BUFLIMIT=x'4'
+
+    ;; Add an Event Filter for the TST_ES HK Request Event in order to
+    ;; only receive this event 1 time rather than every 4 seconds
+    /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
+    wait 5
   else
     write "<!> Failed (1005;1005.1) - Failed to start the TST_ES app"
     ut_setrequirements ES_1005, "F"
@@ -800,28 +825,30 @@ wait 5
 write ";*********************************************************************"
 write "; Step 3.3: Upload a non-default volatile startup file."
 write ";*********************************************************************"
-write " Please verify that the RAM:0/apps directory exists on $CPU."
-write " If this directory does not exist, create it."
+write " Please verify that the RAM:0/apps directory exists on $CPU by entering"
+write " ls ""RAM:0"". If this directory does not exist, create it by entering "
+write " mkdir ""RAM:0/apps""."
 write " Type 'g' or 'go' when completed."
 wait
 
 ;; ftp several test files to the volatile file system
-s ftp_file ("RAM:0/apps","cfe_es_startup_vol.scr","cfe_es_startup.scr","$CPU","P")
+s ftp_file (ramDir & "/apps","cfe_es_startup_vol.scr","cfe_es_startup.scr",hostCPU,"P")
 wait 5
 
 ;; Upload the TST_ES2 application contained in the startup script
-s load_app ("RAM:0","TST_ES2", "$CPU")
+s load_app (ramDir,"TST_ES2", hostCPU)
 wait 10
 
 local tbl_1_pkt,tbl_2_pkt,tbl_1_appid,tbl_2_appid
 
 ;; Create the TST_ES2 Table load files
-if ("$CPU" = "CPU1" OR "$CPU" = "") then
-  tbl_1_pkt = "0FA4"
-  tbl_2_pkt = "0FA5"
-  tbl_1_appid = 4004
-  tbl_2_appid = 4005
-elseif ("$CPU" = "CPU2") then
+;; CPU1 is the default
+tbl_1_pkt = "0FA4"
+tbl_2_pkt = "0FA5"
+tbl_1_appid = 4004
+tbl_2_appid = 4005
+
+if ("$CPU" = "CPU2") then
   tbl_1_pkt = "0FC2"
   tbl_2_pkt = "0FC3"
   tbl_1_appid = 4034
@@ -850,9 +877,9 @@ $SC_$CPU_TST_ES_TABLE2_PAD = 0
 s create_tbl_file_from_cvt ("$CPU",tbl_2_appid,"Table #2 First Load", "SecondTblDef.dat","TST_ES2.MySecondTable", "$SC_$CPU_TST_ES_TABLE2_ELEMENT1", "$SC_$CPU_TST_ES_TABLE2_PAD")
 
 ;; Upload the TST_ES2 table load data files to /ram
-s ftp_file ("RAM:0","firsttbldef.dat","FirstTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"firsttbldef.dat","FirstTblDef.dat",hostCPU,"P")
 wait 10
-s ftp_file ("RAM:0","secondtbldef.dat","SecondTblDef.dat","$CPU","P")
+s ftp_file (ramDir,"secondtbldef.dat","SecondTblDef.dat",hostCPU,"P")
 wait 10
 
 write ";*********************************************************************"
@@ -869,7 +896,7 @@ wait 75
 cfe_startup $CPU
 wait 5
 
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
@@ -883,10 +910,23 @@ else
   write "<!> Failed - Could not enable Debug events."
 endif
 
+;; Disable SCH Debug Events if SCH is running
+SCHisRunning = FALSE
+for i = 1 to CFE_ES_MAX_APPLICATIONS do
+  if ($SC_$CPU_EVS_AppData[i].AppName = "SCH") then
+    SCHisRunning = TRUE
+  endif
+enddo 
+
+if (SCHisRunning = TRUE) then
+  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
+  wait 10  
+endif 
+
 write ";*********************************************************************"
 write "; Step 3.5: Dump the System and ER Logs after the Reset."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ; Verify that the system log indicates a "processor" reset
 /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="/ram/es_syslog1.log"
@@ -907,14 +947,14 @@ ut_setrequirements ES_1515, "A"
 ut_setrequirements ES_15182, "A"
 
 ;;;; Need to use ftp_file for System Log
-s ftp_file ("RAM:0","es_syslog1.log","$sc_$cpu_es_syslog1.log","$CPU","G")
+s ftp_file (ramDir,"es_syslog1.log","$sc_$cpu_es_syslog1.log",hostCPU,"G")
 wait 10
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;;;; Can use get_file_to_cvt to get ER Log to the ground
-s get_file_to_cvt ("RAM:0", "es_erlog.log", "$sc_$cpu_es_erlog35.log", "$CPU","ES_ERLOG")
+s get_file_to_cvt (ramDir, "es_erlog.log", "$sc_$cpu_es_erlog35.log", hostCPU,"ES_ERLOG")
 wait 10
 
 ; Check if the proper event was generated
@@ -948,7 +988,7 @@ write ";*********************************************************************"
 write "; Step 3.6: Verify the Volatile File system has been preserved."
 write ";*********************************************************************"
 ;; ftp the files uploaded in Step 3.1 to see if they still exist
-s ftp_file ("RAM:0","es_testfile_1","es_testfile_1_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_1","es_testfile_1_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_1_Verify"
 
@@ -962,7 +1002,7 @@ else
   ut_setrequirements ES_1517, "F"
 endif
 
-s ftp_file ("RAM:0","es_testfile_2","es_testfile_2_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_2","es_testfile_2_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_2_Verify"
 
@@ -984,8 +1024,8 @@ $SC_$CPU_TST_ES_CDSVAR4 = 0
 $SC_$CPU_TST_ES_CDSVAR5 = 0
 
 ;  Dump all running apps
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1014,6 +1054,11 @@ if (found_app = TRUE) then
   ; Subscribe to the HK packet
   /$SC_$CPU_TO_ADDPACKET STREAM=stream PKT_SIZE=X'ffff' PRIORITY=X'0' RELIABILITY=X'0' BUFLIMIT=x'4'
   wait 10
+
+  ;; Add an Event Filter for the TST_ES HK Request Event in order to
+  ;; only receive this event 1 time rather than every 4 seconds
+  /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
+  wait 5
 
   if (found_app2 = TRUE) then
     write "<*> Passed (1518) - Apps added to startup file are running."
@@ -1084,8 +1129,8 @@ endif
 write ";*********************************************************************"
 write "; Step 3.8: Verify the EVS log entries."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs.log", "$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1130,7 +1175,7 @@ write ";            that it is mounted. The file system is mounted if the   "
 write ";            startup file can be ftp'd to the ground. "
 write ";*********************************************************************"
 ;; ftp the file referenced by CFE_ES_NONVOL_STARTUP_FILE from the spacecraft
-s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_NV_311.scr","$CPU","G")
+s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_NV_311.scr",hostCPU,"G")
 wait 10
 
 ;; Verifiy that the file was retrieved from the spacecraft
@@ -1152,13 +1197,13 @@ write "; Step 4.1: Upload a new Non-Volatile startup file and the object files"
 write ";           for any added application contained in this file."
 write ";*********************************************************************"
 ;; Delete the existing startup file
-;;s ftp_file ("CF:0/apps","na","cfe_es_startup.scr","$CPU","R")
+;;s ftp_file ("CF:0/apps","na","cfe_es_startup.scr",hostCPU,"R")
 ;;wait 10
-s ftp_file ("CF:0/apps","cfe_es_startup_nv_1.scr","cfe_es_startup.scr","$CPU","P")
+s ftp_file ("CF:0/apps","cfe_es_startup_nv_1.scr","cfe_es_startup.scr",hostCPU,"P")
 wait 10
 
 ;; Upload the TST_ES application contained in the startup script
-s load_app ("CF:0/apps","TST_ES", "$CPU")
+s load_app ("CF:0/apps","TST_ES", hostCPU)
 wait 10
 
 write ";*********************************************************************"
@@ -1166,9 +1211,9 @@ write "; Step 4.2: Upload some files to the spacecraft in order to modify the"
 write ";           contents of the volatile file system."
 write ";*********************************************************************"
 ;; ftp several test files to the volatile file system
-s ftp_file ("RAM:0","es_testfile_3","es_testfile_3","$CPU","P")
+s ftp_file (ramDir,"es_testfile_3","es_testfile_3",hostCPU,"P")
 wait 5
-s ftp_file ("RAM:0","es_testfile_4","es_testfile_4","$CPU","P")
+s ftp_file (ramDir,"es_testfile_4","es_testfile_4",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -1227,7 +1272,7 @@ wait 75
 cfe_startup $CPU
 wait 5
 
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
@@ -1241,10 +1286,23 @@ else
   write "<!> Failed - Could not enable Debug events."
 endif
 
+;; Disable SCH Debug Events if SCH is running
+SCHisRunning = FALSE
+for i = 1 to CFE_ES_MAX_APPLICATIONS do
+  if ($SC_$CPU_EVS_AppData[i].AppName = "SCH") then
+    SCHisRunning = TRUE
+  endif
+enddo 
+
+if (SCHisRunning = TRUE) then
+  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
+  wait 10  
+endif 
+
 write ";*********************************************************************"
 write "; Step 4.5: Dump the System and ER Logs after the Reset."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ; Verify that the system log indicates a "Power-On" reset
 /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="/ram/es_syslog45.log"
@@ -1265,14 +1323,14 @@ ut_setrequirements ES_1505, "A"
 ut_setrequirements ES_15082, "A"
 
 ;;;; Need to use ftp_file for System Log
-s ftp_file ("RAM:0","es_syslog45.log","$sc_$cpu_es_syslog45.log","$CPU","G")
+s ftp_file (ramDir,"es_syslog45.log","$sc_$cpu_es_syslog45.log",hostCPU,"G")
 wait 10
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;;;; Can use get_file_to_cvt to get ER Log to the ground
-s get_file_to_cvt ("RAM:0", "cfe_erlog.log", "$sc_$cpu_es_erlog45.log", "$CPU")
+s get_file_to_cvt (ramDir, "cfe_erlog.log", "$sc_$cpu_es_erlog45.log", hostCPU)
 wait 5
 
 ; Check if the proper event was generated
@@ -1303,7 +1361,7 @@ write ";*********************************************************************"
 write "; Step 4.6: Verify the Volatile File system has been cleared."
 write ";*********************************************************************"
 ;; ftp the files uploaded in Step 4.1 to see if they have beed cleared
-s ftp_file ("RAM:0","es_testfile_3","es_testfile_3_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_3","es_testfile_3_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_3_Verify"
 
@@ -1317,7 +1375,7 @@ else
   ut_setrequirements ES_1507, "P"
 endif
 
-s ftp_file ("RAM:0","es_testfile_4","es_testfile_4_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_4","es_testfile_4_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_4_Verify"
 
@@ -1332,8 +1390,8 @@ else
 endif
 
 ;  Dump all running apps
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1361,6 +1419,11 @@ if (found_app = TRUE) then
   ; Subscribe to the HK packet
   /$SC_$CPU_TO_ADDPACKET STREAM=stream PKT_SIZE=X'ffff' PRIORITY=X'0' RELIABILITY=X'0' BUFLIMIT=x'4'
   wait 10
+
+  ;; Add an Event Filter for the TST_ES HK Request Event in order to
+  ;; only receive this event 1 time rather than every 4 seconds
+  /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
+  wait 5
 else
   write "<!> Failed - TST_ES Application was not started"
   ;; Do I need to quit here or just start the TST_ES app???
@@ -1423,8 +1486,8 @@ endif
 write ";*********************************************************************"
 write "; Step 4.8: Verify the EVS log entries."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs48.log", "$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs48.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1453,7 +1516,7 @@ write ";            that it is mounted. The file system is mounted if the   "
 write ";            startup file can be ftp'd to the ground. "
 write ";*********************************************************************"
 ;; ftp the file referenced by CFE_ES_NONVOL_STARTUP_FILE from the spacecraft
-s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv_410.scr","$CPU","G")
+s ftp_file ("CF:0/apps","cfe_es_startup.scr","cfe_es_startup_nv_410.scr",hostCPU,"G")
 wait 10
 
 ;; Verify that the file was retrieved from the spacecraft
@@ -1491,9 +1554,9 @@ write "; Step 5.1: Upload some files to the spacecraft in order to modify the"
 write ";           contents of the volatile file system."
 write ";*********************************************************************"
 ;; ftp several test files to the volatile file system
-s ftp_file ("RAM:0","es_testfile_5","es_testfile_5","$CPU","P")
+s ftp_file (ramDir,"es_testfile_5","es_testfile_5",hostCPU,"P")
 wait 5
-s ftp_file ("RAM:0","es_testfile_6","es_testfile_6","$CPU","P")
+s ftp_file (ramDir,"es_testfile_6","es_testfile_6",hostCPU,"P")
 wait 5
 
 write ";*********************************************************************"
@@ -1551,7 +1614,7 @@ write "; Step 5.3: Verify that the Volatile Startup file does not exist. This"
 write ";           will force the cFE to use the Non-Volatile Startup file. "
 write ";*********************************************************************"
 ;; Try to get the volatile startup file
-s ftp_file ("RAM:0/apps","cfe_es_startup.scr","cfe_es_startup_vol_Verify","$CPU","G")
+s ftp_file (ramDir & "/apps","cfe_es_startup.scr","cfe_es_startup_vol_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/cfe_es_startup_vol_Verify"
 
@@ -1578,7 +1641,7 @@ cfe_startup $CPU
 wait 5
 
 ;; Turn on DEBUG Events
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_ENAEVTTYPE_EID, "DEBUG", 1
 
 ut_sendcmd "$SC_$CPU_EVS_ENAEVENTTYPE DEBUG"
 if (UT_SC_Status = UT_SC_Success) then
@@ -1592,10 +1655,23 @@ else
   write "<!> Failed - Could not enable Debug events."
 endif
 
+;; Disable SCH Debug Events if SCH is running
+SCHisRunning = FALSE
+for i = 1 to CFE_ES_MAX_APPLICATIONS do
+  if ($SC_$CPU_EVS_AppData[i].AppName = "SCH") then
+    SCHisRunning = TRUE
+  endif
+enddo 
+
+if (SCHisRunning = TRUE) then
+  /$SC_$CPU_EVS_DISAPPEVTTYPE APPLICATION="SCH" DEBUG
+  wait 10  
+endif 
+
 write ";*********************************************************************"
 write "; Step 5.5: Dump the System and ER Logs after the Reset."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_SYSLOG2_EID, "DEBUG", 1
 
 ; Verify that the system log indicates a "processor" reset
 /$SC_$CPU_ES_WRITESYSLOG2FILE SYSLOGFILENAME="/ram/es_syslog1.log"
@@ -1616,14 +1692,14 @@ ut_setrequirements ES_1515, "A"
 ut_setrequirements ES_15192, "A"
 
 ;;;; Need to use ftp_file for System Log
-s ftp_file ("RAM:0","es_syslog1.log","$sc_$cpu_es_syslog1.log","$CPU","G")
+s ftp_file (ramDir,"es_syslog1.log","$sc_$cpu_es_syslog1.log",hostCPU,"G")
 wait 10
 
 ; Setup for the ERLog DEBUG event
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG"
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ERLOG2_EID, "DEBUG", 1
 
 ;;;; Can use get_file_to_cvt to get ER Log to the ground
-s get_file_to_cvt ("RAM:0", "es_erlog.log", "$sc_$cpu_es_erlog55.log", "$CPU","ES_ERLOG")
+s get_file_to_cvt (ramDir, "es_erlog.log", "$sc_$cpu_es_erlog55.log", hostCPU,"ES_ERLOG")
 wait 5
 
 ; Check if the proper event was generated
@@ -1657,7 +1733,7 @@ write ";*********************************************************************"
 write "; Step 5.6: Verify the Volatile File system has been preserved."
 write ";*********************************************************************"
 ;; ftp the files uploaded in Step 3.1 to see if they still exist
-s ftp_file ("RAM:0","es_testfile_5","es_testfile_5_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_5","es_testfile_5_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_5_Verify"
 
@@ -1671,7 +1747,7 @@ else
   ut_setrequirements ES_1517, "F"
 endif
 
-s ftp_file ("RAM:0","es_testfile_6","es_testfile_6_Verify","$CPU","G")
+s ftp_file (ramDir,"es_testfile_6","es_testfile_6_Verify",hostCPU,"G")
 wait 5
 filename = work_dir & "/image/es_testfile_6_Verify"
 
@@ -1693,8 +1769,8 @@ $SC_$CPU_TST_ES_CDSVAR4 = 0
 $SC_$CPU_TST_ES_CDSVAR5 = 0
 
 ;  Dump all running apps
-ut_setupevt "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0","cfe_es_app_info.log","$sc_$cpu_es_app_info.log","$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_ES", CFE_ES_ALL_APPS_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir,"cfe_es_app_info.log","$sc_$cpu_es_app_info.log",hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1722,6 +1798,12 @@ if (found_app = TRUE) then
   ; Subscribe to the HK packet
   /$SC_$CPU_TO_ADDPACKET STREAM=stream PKT_SIZE=X'ffff' PRIORITY=X'0' RELIABILITY=X'0' BUFLIMIT=x'4'
   wait 10
+
+  ;; Add an Event Filter for the TST_ES HK Request Event in order to
+  ;; only receive this event 1 time rather than every 4 seconds
+  /$SC_$CPU_EVS_ADDEVTFLTR Application="TST_ES" Event_ID=39 Event_Mask=X'ffff'
+  wait 5
+
   write "<*> Passed (1519) - TST_ES App added to startup file is running."
   ut_setrequirements ES_1519, "P"
 else
@@ -1789,8 +1871,8 @@ endif
 write ";*********************************************************************"
 write "; Step 5.8: Verify the EVS log entries."
 write ";*********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG"
-s get_file_to_cvt ("RAM:0", "cfe_evs.log", "$sc_$cpu_cfe_evs.log", "$CPU")
+ut_setupevents "$SC", "$CPU", "CFE_EVS", CFE_EVS_WRLOG_EID, "DEBUG", 1
+s get_file_to_cvt (ramDir, "cfe_evs.log", "$sc_$cpu_cfe_evs.log", hostCPU)
 wait 10
 
 if ($SC_$CPU_num_found_messages = 1) then
@@ -1836,11 +1918,11 @@ write ";*********************************************************************"
 write "; Step 6.1: Upload the original Non-Volatile startup file."
 write ";*********************************************************************"
 ;; Restore the original Non-volatile startup file
-s ftp_file ("CF:0/apps","cfe_es_startup_nv.scr","cfe_es_startup.scr","$CPU","P")
+s ftp_file ("CF:0/apps","cfe_es_startup_nv.scr","cfe_es_startup.scr",hostCPU,"P")
 wait 10
 
 ;; Delete any files uploaded to the CF:0/apps directory
-s ftp_file ("CF:0/apps","na","tst_es.o","$CPU","R")
+s ftp_file ("CF:0/apps","na","tst_es.o",hostCPU,"R")
 wait 10
 
 write ";*********************************************************************"

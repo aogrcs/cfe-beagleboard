@@ -10,7 +10,7 @@
 ## Warning Level Configuration
 ##
 # WARNINGS=-Wall -ansi -pedantic -Wstrict-prototypes
-WARNINGS=-Wall  -pedantic -Wstrict-prototypes
+WARNINGS=-Wall -Wstrict-prototypes
 
 ## 
 ## Host OS Include Paths ( be sure to put the -I switch in front of each directory )
@@ -20,7 +20,7 @@ SYSINCS=
 ##
 ## Target Defines for the OS, Hardware Arch, etc..
 ##
-TARGET_DEFS=-D__ix86__ -D_ix86_ -D_LINUX_OS_  -D$(OS) -DX86PC -DBUILD=$(BUILD) -D_REENTRANT -D _EMBED_  
+TARGET_DEFS+=-D__ix86__ -D_ix86_ -D_LINUX_OS_  -D$(OS) -DX86PC -DBUILD=$(BUILD) -D_REENTRANT -D _EMBED_  
 
 ## 
 ## Endian Defines
@@ -30,7 +30,7 @@ ENDIAN_DEFS=-D_EL -DENDIAN=_EL -DSOFTWARE_LITTLE_BIT_ORDER
 ##
 ## Compiler Architecture Switches
 ## 
-ARCH_OPTS = 
+ARCH_OPTS = -m32
 
 ##
 ## Application specific compiler switches 
@@ -86,7 +86,7 @@ CP=cp
 ##
 COMPILER=gcc
 ASSEMBLER=as
-LINKER=ld
+LINKER=ld -melf_i386 
 AR=ar
 NM=nm
 SIZE=size

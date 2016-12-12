@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# $Id: cfe_fs.mak 1.3 2008/07/08 15:40:39EDT apcudmore Exp  $
+# $Id: cfe_fs.mak 1.3 2008/07/08 14:40:39GMT-05:00 apcudmore Exp  $
 #
 # Purpose:  cFE File Services (FS) make file
 #
@@ -9,7 +9,7 @@
 # Notes:    Creates a combination of the File Services task and API library
 #
 # $Log: cfe_fs.mak  $
-# Revision 1.3 2008/07/08 15:40:39EDT apcudmore 
+# Revision 1.3 2008/07/08 14:40:39GMT-05:00 apcudmore 
 # Added CFE_FS global data, lock/unlock functions, log messages for decompress API.
 # Revision 1.2 2008/06/20 15:40:29EDT apcudmore 
 # Added support for OSAL based module loader

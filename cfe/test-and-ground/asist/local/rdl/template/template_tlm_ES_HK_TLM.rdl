@@ -29,6 +29,8 @@
 !  2009/08/05  WFM	: Added 3 new Heap mnemonics for cFE 6.0.0
 !  2010/11/24  WFM	: Modified CFESUBMINORVER to CFERevision and added
 !			: the new CFEMissionRevision mnemonic
+!  2012/01/19  WFM	: Replaced PAD1 and PAD2 with OSREVISION and
+!			: OSMISSIONREV for cFE 6.3.0.0
 !==============================================================================
 !
 #include "cfe_platform_cfg.h"
@@ -51,8 +53,8 @@ PACKET Pxxxx APID=nnnn, DESC="$sc $cpu ES Telemetry Data Packet",
   UB   $sc_$cpu_ES_CFEMSNREV	DESC="$sc $cpu cFE Mission Revision Label"
   UB   $sc_$cpu_ES_OSMAJORVER   DESC="$sc $cpu OS Major Version Label"
   UB   $sc_$cpu_ES_OSMINORVER   DESC="$sc $cpu OS Minor Version Label"
-  UB   $sc_$cpu_ES_PAD1
-  UB   $sc_$cpu_ES_PAD2
+  UB   $sc_$cpu_ES_OSREVISION	DESC="$sc $cpu OS Revision Label"
+  UB   $sc_$cpu_ES_OSMISSIONREV	DESC="$sc $cpu OS Mission Revision Label"
   ULI  $sc_$cpu_ES_SYSLOGBYTEUSED DESC="$sc $cpu Bytes used by the System Log"
   ULI  $sc_$cpu_ES_SYSLOGSIZE     DESC="$sc $cpu Total size of the System Log"
   ULI  $sc_$cpu_ES_SYSLOGENTRIES  DESC="$sc $cpu Entries in the System Log"

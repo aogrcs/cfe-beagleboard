@@ -12,8 +12,6 @@
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
 ** 
-**
-**
 **  Purpose:  
 **    This file contains definitions needed for the cFE ES Logs. The 
 **    logs include the Mode Transition log, the System Log, and the
@@ -26,6 +24,8 @@
 **  Notes:
 ** 
 ** $Log: cfe_es_log.h  $
+** Revision 1.2 2012/01/13 11:50:02GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.1 2008/04/17 08:05:06EDT ruperera 
 ** Initial revision
 ** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/es/project.pj
@@ -45,7 +45,6 @@
 ** Include Files
 */
 #include "cfe.h"
-#include "cfe_platform_cfg.h"
 #include "cfe_es.h"
 #include "cfe_es_global.h" 
 
@@ -76,7 +75,7 @@
 */
 int32 CFE_ES_SysLogOverwrite(uint32 Mode);
 void  CFE_ES_SysLogClear(void);
-int32 CFE_ES_SysLogDump(char *Filename);
+int32 CFE_ES_SysLogDump(const char *Filename);
 
 /*
 ** Processor Performance log management
@@ -88,7 +87,7 @@ void CFE_ES_PerfLogDump(void);
 ** Exception and Reset Log API
 */
 int32 CFE_ES_WriteToERLog( uint32 EntryType,   uint32  ResetType, uint32 ResetSubtype, 
-                              char  *Description, uint32 *Context,   uint32 ContextSize );
-int32 CFE_ES_ERLogDump(char *Filename);
+                              const char  *Description, const uint32 *Context,   uint32 ContextSize );
+int32 CFE_ES_ERLogDump(const char *Filename);
 
 #endif  /* _cfe_es_log_ */

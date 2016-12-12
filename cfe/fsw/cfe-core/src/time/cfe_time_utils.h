@@ -1,11 +1,11 @@
 /*
 
-** $Id: cfe_time_utils.h 1.3 2009/06/10 09:23:15EDT acudmore Exp  $
+** $Id: cfe_time_utils.h 1.8 2014/07/07 10:22:52GMT-05:00 acudmore Exp  $
 **
 **
-**      Copyright ¿ 2004-2012, United States government as represented by the 
+**      Copyright ï¿½ 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software(cFE) was created at NASA¿s Goddard 
+**      All rights reserved. This software(cFE) was created at NASAï¿½s Goddard 
 **      Space Flight Center pursuant to government contracts.
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
@@ -19,6 +19,16 @@
 ** Notes:
 **
 ** $Log: cfe_time_utils.h  $
+** Revision 1.8 2014/07/07 10:22:52GMT-05:00 acudmore 
+** Added spare byte to TIME task global data structure for alignment.
+** Revision 1.7 2014/04/14 10:51:41GMT-05:00 lwalling 
+** Created platform config definitions for Time 1HZ and Time TONE task priorities and stack sizes
+** Revision 1.6 2012/01/13 12:21:36EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.5 2011/11/30 15:10:06EST jmdagost 
+** Replaced ifdef/ifndef preprocessor tests with if...==TRUE/if...!=TRUE tests
+** Revision 1.4 2011/01/18 16:05:53EST lwalling 
+** Make sending 1hz command packet a configuration option
 ** Revision 1.3 2009/06/10 09:23:15EDT acudmore 
 ** Changed OS_Mem* and OS_BSP* calls to CFE_PSP_* calls
 ** Revision 1.2 2008/08/06 22:42:37EDT dkobe 
@@ -81,8 +91,6 @@
 #define CFE_TIME_TASK_TONE_NAME  "TIME_TONE_TASK"
 #define CFE_TIME_TASK_1HZ_NAME   "TIME_1HZ_TASK"
 #define CFE_TIME_TASK_STACK_PTR  0
-#define CFE_TIME_TASK_STACK_SIZE 4096
-#define CFE_TIME_TASK_PRIORITY   25
 #define CFE_TIME_TASK_FLAGS      0
 
 /*
@@ -259,9 +267,16 @@ typedef struct
   boolean               IsToneGood;
 
   /*
+  ** Spare byte for alignment 
+  */
+  boolean               Spare;
+
+  /*
   ** Local 1Hz wake-up command packet (not related to time at tone)...
   */
+  #if (CFE_TIME_ENA_1HZ_CMD_PKT == TRUE)
   CFE_TIME_1HzCmd_t     Local1HzCmd;
+  #endif
 
   /*
   ** Time at the tone command packets (sent by time servers)...
@@ -305,8 +320,20 @@ typedef struct
 
 } CFE_TIME_TaskData_t;
 
+/*
+** Time task global data (from "cfe_time_task.c")...
+*/
+extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
+
+
 /*************************************************************************/
 
+/*
+** Macro to copy systime into another systime.
+** Preferred to use this macro as it does not require the two arguments to be exactly the same type,
+** it will work with any two structures that define "Seconds" and "Subseconds" members.
+*/
+#define CFE_TIME_Copy(m,t)   { (m)->Seconds = (t)->Seconds; (m)->Subseconds = (t)->Subseconds; }
 
 /*
 ** Function prototypes (get local clock)...
@@ -316,12 +343,14 @@ CFE_TIME_SysTime_t CFE_TIME_LatchClock(void);
 /*
 ** Function prototypes (Time Services utilities data)...
 */
+int32 CFE_TIME_TaskInit (void);
+void  CFE_TIME_TaskPipe(CFE_SB_MsgPtr_t MessagePtr);
 void CFE_TIME_InitData(void);
 void CFE_TIME_QueryResetVars(void);
-void CFE_TIME_UpdateResetVars(CFE_TIME_Reference_t *Reference);
+void CFE_TIME_UpdateResetVars(const CFE_TIME_Reference_t *Reference);
 uint16 CFE_TIME_GetStateFlags(void);
 void CFE_TIME_GetDiagData(void);
-void CFE_TIME_GetHkData(CFE_TIME_Reference_t *Reference);
+void CFE_TIME_GetHkData(const CFE_TIME_Reference_t *Reference);
 
 /*
 ** Function prototypes (reference)...
@@ -331,27 +360,27 @@ void CFE_TIME_GetReference(CFE_TIME_Reference_t *Reference);
 /*
 ** Function prototypes (calculate TAI/UTC)...
 */
-CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(CFE_TIME_Reference_t *Reference);
-CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(CFE_TIME_Reference_t *Reference);
+CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(const CFE_TIME_Reference_t *Reference);
+CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(const CFE_TIME_Reference_t *Reference);
 
-int16 CFE_TIME_CalculateState(CFE_TIME_Reference_t *Reference);
+int16 CFE_TIME_CalculateState(const CFE_TIME_Reference_t *Reference);
 
 /*
 ** Function prototypes (set time globals)...
 */
 void CFE_TIME_SetState(int16 NewState);
-#ifdef CFE_TIME_CFG_SOURCE
+#if (CFE_TIME_CFG_SOURCE == TRUE)
 void CFE_TIME_SetSource(int16 NewSource);
 #endif
 
-#ifdef CFE_TIME_CFG_SIGNAL
+#if (CFE_TIME_CFG_SIGNAL == TRUE)
 void CFE_TIME_SetSignal(int16 NewSignal);
 #endif
 
-#ifdef CFE_TIME_CFG_CLIENT
+#if (CFE_TIME_CFG_CLIENT == TRUE)
 void CFE_TIME_SetDelay(CFE_TIME_SysTime_t NewDelay, int16 Direction);
 #endif
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime);
 void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET);
 void CFE_TIME_SetSTCF(CFE_TIME_SysTime_t NewSTCF);
@@ -363,22 +392,22 @@ void CFE_TIME_Set1HzAdj(CFE_TIME_SysTime_t NewAdjust, int16 Direction);
 /*
 ** Function prototypes (send time at tone data packet -- local MET)...
 */
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_ToneSend(void); /* signal to send time at tone packet */
 #endif
 
 /*
 ** Function prototypes (send time at tone data packet -- external time)...
 */
-#ifdef CFE_TIME_CFG_SRC_MET
+#if (CFE_TIME_CFG_SRC_MET == TRUE)
 int32 CFE_TIME_ToneSendMET(CFE_TIME_SysTime_t NewMET);
 #endif
 
-#ifdef CFE_TIME_CFG_SRC_GPS
+#if (CFE_TIME_CFG_SRC_GPS == TRUE)
 int32 CFE_TIME_ToneSendGPS(CFE_TIME_SysTime_t NewTime, int16 NewLeaps);
 #endif
 
-#ifdef CFE_TIME_CFG_SRC_TIME
+#if (CFE_TIME_CFG_SRC_TIME == TRUE)
 int32 CFE_TIME_ToneSendTime(CFE_TIME_SysTime_t NewTime);
 #endif
 
@@ -386,7 +415,7 @@ int32 CFE_TIME_ToneSendTime(CFE_TIME_SysTime_t NewTime);
 ** Function prototypes (process time at the tone signal and data packet)...
 */
 void CFE_TIME_ToneSignal(void);
-void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_t *Packet);
+void CFE_TIME_ToneData(CFE_TIME_ToneDataCmd_Payload_t *Packet);
 void CFE_TIME_ToneVerify(CFE_TIME_SysTime_t Time1, CFE_TIME_SysTime_t Time2);
 void CFE_TIME_ToneUpdate(void);
 
@@ -402,6 +431,8 @@ void CFE_TIME_NotifyTimeSynchApps(void);
 */
 void CFE_TIME_Local1HzISR(void);
 void CFE_TIME_Local1HzTask(void);
+void CFE_TIME_Local1HzTimerCallback(uint32 TimerId, void *Arg);
+
 
 #endif /* _cfe_time_utils_ */
 

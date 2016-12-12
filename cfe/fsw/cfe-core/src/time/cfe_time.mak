@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# $Id: cfe_time.mak 1.1 2008/04/17 08:05:38EDT ruperera Exp  $
+# $Id: cfe_time.mak 1.1 2008/04/17 07:05:38GMT-05:00 ruperera Exp  $
 #
 # Purpose:  cFE Time Services (TIME) make file
 #
@@ -9,7 +9,7 @@
 # Notes:    Creates a combination of the Time Services task and API library
 #
 # $Log: cfe_time.mak  $
-# Revision 1.1 2008/04/17 08:05:38EDT ruperera 
+# Revision 1.1 2008/04/17 07:05:38GMT-05:00 ruperera 
 # Initial revision
 # Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/time/project.pj
 # Revision 1.3 2007/08/24 13:04:51EDT apcudmore 

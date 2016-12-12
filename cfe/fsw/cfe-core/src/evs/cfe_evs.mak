@@ -1,14 +1,14 @@
 ###############################################################################
 # File: evs.mak
-# $Id: cfe_evs.mak 1.1 2008/04/17 08:05:12EDT ruperera Exp  $
+# $Id: cfe_evs.mak 1.1 2008/04/17 07:05:12GMT-05:00 ruperera Exp  $
 #
 # Purpose:
 #   Compile the Event Services (EVS) task.
 #
-# $Date: 2008/04/17 08:05:12EDT $
+# $Date: 2008/04/17 07:05:12GMT-05:00 $
 # $Revision: 1.1 $
 # $Log: cfe_evs.mak  $
-# Revision 1.1 2008/04/17 08:05:12EDT ruperera 
+# Revision 1.1 2008/04/17 07:05:12GMT-05:00 ruperera 
 # Initial revision
 # Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-CFE-PROJECT/fsw/cfe-core/src/evs/project.pj
 # Revision 1.4 2007/08/24 13:04:49EDT apcudmore 

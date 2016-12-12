@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_time_utils.c 1.5 2010/10/25 15:00:06EDT jmdagost Exp  $
+** $Id: cfe_time_utils.c 1.10 2012/10/01 16:37:48GMT-05:00 aschoeni Exp  $
 **
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
@@ -20,6 +20,16 @@
 ** Notes:
 **
 ** $Log: cfe_time_utils.c  $
+** Revision 1.10 2012/10/01 16:37:48GMT-05:00 aschoeni 
+** removed relative path in include (handle in makefile)
+** Revision 1.9 2012/01/13 12:21:36EST acudmore 
+** Changed license text to reflect open source
+** Revision 1.8 2011/12/07 19:20:04EST aschoeni 
+** Removed returns for TIME and SB for cleaning up apps
+** Revision 1.7 2011/11/30 15:10:06EST jmdagost 
+** Replaced ifdef/ifndef preprocessor tests with if...==TRUE/if...!=TRUE tests
+** Revision 1.6 2011/01/18 16:05:51EST lwalling 
+** Make sending 1hz command packet a configuration option
 ** Revision 1.5 2010/10/25 15:00:06EDT jmdagost 
 ** Corrected bad apostrophe in prologue.
 ** Revision 1.4 2010/10/04 15:16:16EDT jmdagost 
@@ -66,15 +76,10 @@
 */
 #include "cfe_time_utils.h"
 
-#include "../es/cfe_es_global.h"
+#include "private/cfe_es_resetdata_typedef.h"
 
 #include <string.h>
 
-
-/*
-** Time task global data (from "cfe_time_task.c")...
-*/
-extern CFE_TIME_TaskData_t CFE_TIME_TaskData;
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -119,14 +124,15 @@ void CFE_TIME_QueryResetVars(void)
     int32 status;
     
     uint32 resetAreaSize;
+    cpuaddr resetAreaAddr;
     CFE_ES_ResetData_t  *CFE_TIME_ResetDataPtr;
    
     /*
     ** Get the pointer to the Reset area from the BSP
     */
-    status = CFE_PSP_GetResetArea (&(CFE_TIME_ResetDataPtr), &(resetAreaSize));
+    status = CFE_PSP_GetResetArea (&(resetAreaAddr), &(resetAreaSize));
       
-    if (status == OS_ERROR)
+    if (status != CFE_PSP_SUCCESS)
     {
         /* There is something wrong with the Reset Area */
         CFE_TIME_TaskData.DataStoreStatus = CFE_TIME_RESET_AREA_BAD;
@@ -134,6 +140,7 @@ void CFE_TIME_QueryResetVars(void)
     
     else
     {
+        CFE_TIME_ResetDataPtr = (CFE_ES_ResetData_t *)resetAreaAddr;
         
         /* Get the structure from the Reset Area */
         LocalResetVars = CFE_TIME_ResetDataPtr -> TimeResetVars;
@@ -195,10 +202,11 @@ void CFE_TIME_QueryResetVars(void)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-void CFE_TIME_UpdateResetVars(CFE_TIME_Reference_t *Reference)
+void CFE_TIME_UpdateResetVars(const CFE_TIME_Reference_t *Reference)
 {
     CFE_TIME_ResetVars_t LocalResetVars;
     uint32 resetAreaSize;
+    cpuaddr resetAreaAddr;
     CFE_ES_ResetData_t  *CFE_TIME_ResetDataPtr;
     /*
     ** Update the data only if our Reset Area is valid...
@@ -220,11 +228,11 @@ void CFE_TIME_UpdateResetVars(CFE_TIME_Reference_t *Reference)
         /*
         ** Get the pointer to the Reset area from the BSP
         */
-        CFE_PSP_GetResetArea (&(CFE_TIME_ResetDataPtr), &(resetAreaSize));
-
-        CFE_TIME_ResetDataPtr -> TimeResetVars = LocalResetVars;
-
- 
+        if (CFE_PSP_GetResetArea (&(resetAreaAddr), &(resetAreaSize)) == CFE_PSP_SUCCESS)
+        {
+           CFE_TIME_ResetDataPtr = (CFE_ES_ResetData_t *)resetAreaAddr;
+           CFE_TIME_ResetDataPtr -> TimeResetVars = LocalResetVars;
+        }
     }
 
     return;
@@ -270,7 +278,7 @@ void CFE_TIME_InitData(void)
     CFE_TIME_TaskData.ClockSetState  = CFE_TIME_NOT_SET;
     CFE_TIME_TaskData.ClockFlyState  = CFE_TIME_IS_FLY;
 
-#ifdef CFE_TIME_CFG_SOURCE
+#if (CFE_TIME_CFG_SOURCE == TRUE)
     CFE_TIME_TaskData.ClockSource    = CFE_TIME_USE_EXTERN;
 #else
     CFE_TIME_TaskData.ClockSource    = CFE_TIME_USE_INTERN;
@@ -333,7 +341,7 @@ void CFE_TIME_InitData(void)
     /*
     ** Range checking for external time source data...
     */
-    #ifdef CFE_TIME_CFG_SOURCE
+    #if (CFE_TIME_CFG_SOURCE == TRUE)
     CFE_TIME_TaskData.MaxDelta.Seconds    = CFE_TIME_MAX_DELTA_SECS;
     CFE_TIME_TaskData.MaxDelta.Subseconds = CFE_TIME_Micro2SubSecs(CFE_TIME_MAX_DELTA_SUBS);
     #else
@@ -396,7 +404,7 @@ void CFE_TIME_InitData(void)
     /*
     ** Initialize "time at the tone" data command packet...
     */
-    #ifdef CFE_TIME_CFG_SERVER
+    #if (CFE_TIME_CFG_SERVER == TRUE)
     CFE_SB_InitMsg(&CFE_TIME_TaskData.ToneDataCmd,
                     CFE_TIME_DATA_CMD_MID,
                     sizeof(CFE_TIME_ToneDataCmd_t), TRUE);
@@ -405,8 +413,8 @@ void CFE_TIME_InitData(void)
     /*
     ** Initialize simulated tone signal (time server only)...
     */
-    #ifdef CFE_TIME_CFG_SERVER
-      #ifdef CFE_TIME_CFG_FAKE_TONE
+    #if (CFE_TIME_CFG_SERVER == TRUE)
+      #if (CFE_TIME_CFG_FAKE_TONE == TRUE)
     CFE_SB_InitMsg(&CFE_TIME_TaskData.FakeToneCmd,
                     CFE_TIME_FAKE_CMD_MID,
                     sizeof(CFE_TIME_FakeToneCmd_t), TRUE);
@@ -414,11 +422,13 @@ void CFE_TIME_InitData(void)
     #endif
 
     /*
-    ** Initialize local 1Hz "wake-up" command packet...
+    ** Initialize local 1Hz "wake-up" command packet (optional)...
     */
+    #if (CFE_TIME_ENA_1HZ_CMD_PKT == TRUE)
     CFE_SB_InitMsg(&CFE_TIME_TaskData.Local1HzCmd,
                     CFE_TIME_1HZ_CMD_MID,
                     sizeof(CFE_TIME_1HzCmd_t), TRUE);
+    #endif
 
     return;
 
@@ -501,7 +511,7 @@ uint16 CFE_TIME_GetStateFlags(void)
     /*
     ** This instance of Time Service is a "server"...
     */
-    #ifdef CFE_TIME_CFG_SERVER
+    #if (CFE_TIME_CFG_SERVER == TRUE)
     StateFlags |= CFE_TIME_FLAG_SERVER;
     #endif
 
@@ -516,53 +526,53 @@ uint16 CFE_TIME_GetStateFlags(void)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-void CFE_TIME_GetHkData(CFE_TIME_Reference_t *Reference)
+void CFE_TIME_GetHkData(const CFE_TIME_Reference_t *Reference)
 {
 
     /*
     ** Get command execution counters...
     */
-    CFE_TIME_TaskData.HkPacket.CmdCounter = CFE_TIME_TaskData.CmdCounter;
-    CFE_TIME_TaskData.HkPacket.ErrCounter = CFE_TIME_TaskData.ErrCounter;
+    CFE_TIME_TaskData.HkPacket.Payload.CmdCounter = CFE_TIME_TaskData.CmdCounter;
+    CFE_TIME_TaskData.HkPacket.Payload.ErrCounter = CFE_TIME_TaskData.ErrCounter;
 
     /*
     ** Current "as calculated" clock state...
     */
-    CFE_TIME_TaskData.HkPacket.ClockStateAPI = (int16) CFE_TIME_CalculateState(Reference);
+    CFE_TIME_TaskData.HkPacket.Payload.ClockStateAPI = (int16) CFE_TIME_CalculateState(Reference);
 
     /*
     ** Current clock state flags...
     */
-    CFE_TIME_TaskData.HkPacket.ClockStateFlags = CFE_TIME_GetStateFlags();
+    CFE_TIME_TaskData.HkPacket.Payload.ClockStateFlags = CFE_TIME_GetStateFlags();
 
     /*
     ** Leap Seconds...
     */
-    CFE_TIME_TaskData.HkPacket.LeapSeconds = Reference->AtToneLeaps;
+    CFE_TIME_TaskData.HkPacket.Payload.LeapSeconds = Reference->AtToneLeaps;
 
     /*
     ** Current MET and STCF time values...
     */
-    CFE_TIME_TaskData.HkPacket.SecondsMET = Reference->CurrentMET.Seconds;
-    CFE_TIME_TaskData.HkPacket.SubsecsMET = Reference->CurrentMET.Subseconds;
+    CFE_TIME_TaskData.HkPacket.Payload.SecondsMET = Reference->CurrentMET.Seconds;
+    CFE_TIME_TaskData.HkPacket.Payload.SubsecsMET = Reference->CurrentMET.Subseconds;
 
-    CFE_TIME_TaskData.HkPacket.SecondsSTCF = Reference->AtToneSTCF.Seconds;
-    CFE_TIME_TaskData.HkPacket.SubsecsSTCF = Reference->AtToneSTCF.Subseconds;
+    CFE_TIME_TaskData.HkPacket.Payload.SecondsSTCF = Reference->AtToneSTCF.Seconds;
+    CFE_TIME_TaskData.HkPacket.Payload.SubsecsSTCF = Reference->AtToneSTCF.Subseconds;
 
     /*
     ** 1Hz STCF adjustment values (server only)...
     */
-    #ifdef CFE_TIME_CFG_SERVER
-    CFE_TIME_TaskData.HkPacket.Seconds1HzAdj = CFE_TIME_TaskData.OneHzAdjust.Seconds;   
-    CFE_TIME_TaskData.HkPacket.Subsecs1HzAdj = CFE_TIME_TaskData.OneHzAdjust.Subseconds;    
+    #if (CFE_TIME_CFG_SERVER == TRUE)
+    CFE_TIME_TaskData.HkPacket.Payload.Seconds1HzAdj = CFE_TIME_TaskData.OneHzAdjust.Seconds;
+    CFE_TIME_TaskData.HkPacket.Payload.Subsecs1HzAdj = CFE_TIME_TaskData.OneHzAdjust.Subseconds;
     #endif
 
     /*
     ** Time at tone delay values (client only)...
     */
-    #ifdef CFE_TIME_CFG_CLIENT
-    CFE_TIME_TaskData.HkPacket.SecondsDelay = CFE_TIME_TaskData.AtToneDelay.Seconds;   
-    CFE_TIME_TaskData.HkPacket.SubsecsDelay = CFE_TIME_TaskData.AtToneDelay.Subseconds;    
+    #if (CFE_TIME_CFG_CLIENT == TRUE)
+    CFE_TIME_TaskData.HkPacket.Payload.SecondsDelay = CFE_TIME_TaskData.AtToneDelay.Seconds;
+    CFE_TIME_TaskData.HkPacket.Payload.SubsecsDelay = CFE_TIME_TaskData.AtToneDelay.Subseconds;
     #endif
 
 
@@ -581,81 +591,84 @@ void CFE_TIME_GetHkData(CFE_TIME_Reference_t *Reference)
 void CFE_TIME_GetDiagData(void)
 {
     CFE_TIME_Reference_t Reference;
+    CFE_TIME_SysTime_t TempTime;
 
     /*
     ** Get reference time values (local time, time at tone, etc.)...
     */
     CFE_TIME_GetReference(&Reference);
 
-    CFE_TIME_TaskData.DiagPacket.AtToneMET   = Reference.AtToneMET;
-    CFE_TIME_TaskData.DiagPacket.AtToneSTCF  = Reference.AtToneSTCF;
-    CFE_TIME_TaskData.DiagPacket.AtToneDelay = Reference.AtToneDelay;
-    CFE_TIME_TaskData.DiagPacket.AtToneLatch = Reference.AtToneLatch;
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.AtToneMET, &Reference.AtToneMET);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.AtToneSTCF, &Reference.AtToneSTCF);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.AtToneDelay, &Reference.AtToneDelay);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.AtToneLatch, &Reference.AtToneLatch);
 
-    CFE_TIME_TaskData.DiagPacket.AtToneLeaps   = Reference.AtToneLeaps;
-    CFE_TIME_TaskData.DiagPacket.ClockStateAPI = CFE_TIME_CalculateState(&Reference);
+    CFE_TIME_TaskData.DiagPacket.Payload.AtToneLeaps   = Reference.AtToneLeaps;
+    CFE_TIME_TaskData.DiagPacket.Payload.ClockStateAPI = CFE_TIME_CalculateState(&Reference);
 
     /*
     ** Data values that reflect the time (right now)...
     */
-    CFE_TIME_TaskData.DiagPacket.TimeSinceTone = Reference.TimeSinceTone;
-    CFE_TIME_TaskData.DiagPacket.CurrentLatch  = Reference.CurrentLatch;
-    CFE_TIME_TaskData.DiagPacket.CurrentMET    = Reference.CurrentMET;
-    CFE_TIME_TaskData.DiagPacket.CurrentTAI    = CFE_TIME_CalculateTAI(&Reference);
-    CFE_TIME_TaskData.DiagPacket.CurrentUTC    = CFE_TIME_CalculateUTC(&Reference);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.TimeSinceTone, &Reference.TimeSinceTone);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.CurrentLatch, &Reference.CurrentLatch);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.CurrentMET, &Reference.CurrentMET);
+    TempTime = CFE_TIME_CalculateTAI(&Reference);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.CurrentTAI, &TempTime);
+    TempTime = CFE_TIME_CalculateUTC(&Reference);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.CurrentUTC, &TempTime);
 
     /*
     ** Data values used to define the current clock state...
     */
-    CFE_TIME_TaskData.DiagPacket.ClockSetState  = Reference.ClockSetState;
-    CFE_TIME_TaskData.DiagPacket.ClockFlyState  = Reference.ClockFlyState;
-    CFE_TIME_TaskData.DiagPacket.ClockSource    = CFE_TIME_TaskData.ClockSource;
-    CFE_TIME_TaskData.DiagPacket.ClockSignal    = CFE_TIME_TaskData.ClockSignal;
-    CFE_TIME_TaskData.DiagPacket.ServerFlyState = CFE_TIME_TaskData.ServerFlyState;
-    CFE_TIME_TaskData.DiagPacket.Forced2Fly     = (int16) CFE_TIME_TaskData.Forced2Fly;
+    CFE_TIME_TaskData.DiagPacket.Payload.ClockSetState  = Reference.ClockSetState;
+    CFE_TIME_TaskData.DiagPacket.Payload.ClockFlyState  = Reference.ClockFlyState;
+    CFE_TIME_TaskData.DiagPacket.Payload.ClockSource    = CFE_TIME_TaskData.ClockSource;
+    CFE_TIME_TaskData.DiagPacket.Payload.ClockSignal    = CFE_TIME_TaskData.ClockSignal;
+    CFE_TIME_TaskData.DiagPacket.Payload.ServerFlyState = CFE_TIME_TaskData.ServerFlyState;
+    CFE_TIME_TaskData.DiagPacket.Payload.Forced2Fly     = (int16) CFE_TIME_TaskData.Forced2Fly;
 
     /*
     ** Clock state flags...
     */
-    CFE_TIME_TaskData.DiagPacket.ClockStateFlags = CFE_TIME_GetStateFlags();
+    CFE_TIME_TaskData.DiagPacket.Payload.ClockStateFlags = CFE_TIME_GetStateFlags();
 
     /*
     ** STCF adjustment direction values...
     */
-    CFE_TIME_TaskData.DiagPacket.OneTimeDirection = CFE_TIME_TaskData.OneTimeDirection;
-    CFE_TIME_TaskData.DiagPacket.OneHzDirection   = CFE_TIME_TaskData.OneHzDirection;
-    CFE_TIME_TaskData.DiagPacket.DelayDirection   = CFE_TIME_TaskData.DelayDirection;
+    CFE_TIME_TaskData.DiagPacket.Payload.OneTimeDirection = CFE_TIME_TaskData.OneTimeDirection;
+    CFE_TIME_TaskData.DiagPacket.Payload.OneHzDirection   = CFE_TIME_TaskData.OneHzDirection;
+    CFE_TIME_TaskData.DiagPacket.Payload.DelayDirection   = CFE_TIME_TaskData.DelayDirection;
 
     /*
     ** STCF adjustment values...
     */
-    CFE_TIME_TaskData.DiagPacket.OneTimeAdjust = CFE_TIME_TaskData.OneTimeAdjust;
-    CFE_TIME_TaskData.DiagPacket.OneHzAdjust   = CFE_TIME_TaskData.OneHzAdjust; 
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.OneTimeAdjust, &CFE_TIME_TaskData.OneTimeAdjust);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.OneHzAdjust, &CFE_TIME_TaskData.OneHzAdjust);
 
     /*
     ** Most recent local clock latch values...
     */
-    CFE_TIME_TaskData.DiagPacket.ToneSignalLatch = CFE_TIME_TaskData.ToneSignalLatch;
-    CFE_TIME_TaskData.DiagPacket.ToneDataLatch   = CFE_TIME_TaskData.ToneDataLatch;
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.ToneSignalLatch, &CFE_TIME_TaskData.ToneSignalLatch);
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.ToneDataLatch, &CFE_TIME_TaskData.ToneDataLatch);
 
     /*
     ** Miscellaneous counters (subject to reset command)...
     */
-    CFE_TIME_TaskData.DiagPacket.ToneMatchCount  = CFE_TIME_TaskData.ToneMatchCount;
-    CFE_TIME_TaskData.DiagPacket.ToneMatchErrors = CFE_TIME_TaskData.ToneMatchErrors;
-    CFE_TIME_TaskData.DiagPacket.ToneSignalCount = CFE_TIME_TaskData.ToneSignalCount;
-    CFE_TIME_TaskData.DiagPacket.ToneDataCount   = CFE_TIME_TaskData.ToneDataCount;
-    CFE_TIME_TaskData.DiagPacket.ToneIntCount    = CFE_TIME_TaskData.ToneIntCount;
-    CFE_TIME_TaskData.DiagPacket.ToneIntErrors   = CFE_TIME_TaskData.ToneIntErrors;
-    CFE_TIME_TaskData.DiagPacket.ToneTaskCount   = CFE_TIME_TaskData.ToneTaskCount;
-    CFE_TIME_TaskData.DiagPacket.VersionCount    = CFE_TIME_TaskData.VersionCount;
-    CFE_TIME_TaskData.DiagPacket.LocalIntCount   = CFE_TIME_TaskData.LocalIntCount;
-    CFE_TIME_TaskData.DiagPacket.LocalTaskCount  = CFE_TIME_TaskData.LocalTaskCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneMatchCount  = CFE_TIME_TaskData.ToneMatchCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneMatchErrors = CFE_TIME_TaskData.ToneMatchErrors;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneSignalCount = CFE_TIME_TaskData.ToneSignalCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneDataCount   = CFE_TIME_TaskData.ToneDataCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneIntCount    = CFE_TIME_TaskData.ToneIntCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneIntErrors   = CFE_TIME_TaskData.ToneIntErrors;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneTaskCount   = CFE_TIME_TaskData.ToneTaskCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.VersionCount    = CFE_TIME_TaskData.VersionCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.LocalIntCount   = CFE_TIME_TaskData.LocalIntCount;
+    CFE_TIME_TaskData.DiagPacket.Payload.LocalTaskCount  = CFE_TIME_TaskData.LocalTaskCount;
 
     /*
     ** Miscellaneous counters (not subject to reset command)...
     */
-    CFE_TIME_TaskData.DiagPacket.VirtualMET = CFE_TIME_TaskData.VirtualMET;
+    CFE_TIME_TaskData.DiagPacket.Payload.VirtualMET = CFE_TIME_TaskData.VirtualMET;
 
     /*
     ** Time window verification values (converted from micro-secs)...
@@ -666,24 +679,24 @@ void CFE_TIME_GetDiagData(void)
     **    be as little as zero, and the maximum must be something less
     **    than a second.
     */
-    CFE_TIME_TaskData.DiagPacket.MinElapsed = CFE_TIME_TaskData.MinElapsed;
-    CFE_TIME_TaskData.DiagPacket.MaxElapsed = CFE_TIME_TaskData.MaxElapsed;
+    CFE_TIME_TaskData.DiagPacket.Payload.MinElapsed = CFE_TIME_TaskData.MinElapsed;
+    CFE_TIME_TaskData.DiagPacket.Payload.MaxElapsed = CFE_TIME_TaskData.MaxElapsed;
 
     /*
     ** Maximum local clock value (before roll-over)...
     */
-    CFE_TIME_TaskData.DiagPacket.MaxLocalClock = CFE_TIME_TaskData.MaxLocalClock;
+    CFE_TIME_Copy(&CFE_TIME_TaskData.DiagPacket.Payload.MaxLocalClock, &CFE_TIME_TaskData.MaxLocalClock);
 
     /*
     ** Tone signal tolerance limits...
     */
-    CFE_TIME_TaskData.DiagPacket.ToneOverLimit  = CFE_TIME_TaskData.ToneOverLimit;
-    CFE_TIME_TaskData.DiagPacket.ToneUnderLimit = CFE_TIME_TaskData.ToneUnderLimit;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneOverLimit  = CFE_TIME_TaskData.ToneOverLimit;
+    CFE_TIME_TaskData.DiagPacket.Payload.ToneUnderLimit = CFE_TIME_TaskData.ToneUnderLimit;
 
     /*
     ** Reset Area access status...
     */
-    CFE_TIME_TaskData.DiagPacket.DataStoreStatus  = CFE_TIME_TaskData.DataStoreStatus;
+    CFE_TIME_TaskData.DiagPacket.Payload.DataStoreStatus  = CFE_TIME_TaskData.DataStoreStatus;
 
     return;
 
@@ -752,7 +765,7 @@ void CFE_TIME_GetReference(CFE_TIME_Reference_t *Reference)
     /*
     ** Synchronize "this" time client to the time server...
     */
-    #ifdef CFE_TIME_CFG_CLIENT
+    #if (CFE_TIME_CFG_CLIENT == TRUE)
     if (CFE_TIME_TaskData.DelayDirection == CFE_TIME_ADD_ADJUST)
     {
         CurrentMET = CFE_TIME_Add(CurrentMET, Reference->AtToneDelay);
@@ -776,7 +789,7 @@ void CFE_TIME_GetReference(CFE_TIME_Reference_t *Reference)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(CFE_TIME_Reference_t *Reference)
+CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(const CFE_TIME_Reference_t *Reference)
 {
     CFE_TIME_SysTime_t TimeAsTAI;
 
@@ -793,7 +806,7 @@ CFE_TIME_SysTime_t CFE_TIME_CalculateTAI(CFE_TIME_Reference_t *Reference)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(CFE_TIME_Reference_t *Reference)
+CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(const CFE_TIME_Reference_t *Reference)
 {
     CFE_TIME_SysTime_t TimeAsUTC;
 
@@ -811,7 +824,7 @@ CFE_TIME_SysTime_t CFE_TIME_CalculateUTC(CFE_TIME_Reference_t *Reference)
 /*                                                                         */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-int16 CFE_TIME_CalculateState(CFE_TIME_Reference_t *Reference)
+int16 CFE_TIME_CalculateState(const CFE_TIME_Reference_t *Reference)
 {
     int16 ClockState;
 
@@ -831,7 +844,7 @@ int16 CFE_TIME_CalculateState(CFE_TIME_Reference_t *Reference)
             ** If the server is fly-wheel then the client must also
             **    report fly-wheel (even if it is not)...
             */
-            #ifdef CFE_TIME_CFG_CLIENT
+            #if (CFE_TIME_CFG_CLIENT == TRUE)
             if (CFE_TIME_TaskData.ServerFlyState == CFE_TIME_IS_FLY)
             {
                 ClockState = CFE_TIME_FLYWHEEL;
@@ -884,7 +897,7 @@ void CFE_TIME_SetState(int16 NewState)
     {
         CFE_TIME_TaskData.Forced2Fly    = TRUE;
         CFE_TIME_TaskData.ClockFlyState = CFE_TIME_IS_FLY;
-        #ifdef CFE_TIME_CFG_SERVER
+        #if (CFE_TIME_CFG_SERVER == TRUE)
         CFE_TIME_TaskData.ServerFlyState = CFE_TIME_IS_FLY;
         #endif
     }
@@ -916,7 +929,7 @@ void CFE_TIME_SetState(int16 NewState)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SOURCE
+#if (CFE_TIME_CFG_SOURCE == TRUE)
 void CFE_TIME_SetSource(int16 NewSource)
 {
     int32 IntFlags;
@@ -945,7 +958,7 @@ void CFE_TIME_SetSource(int16 NewSource)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SIGNAL
+#if (CFE_TIME_CFG_SIGNAL == TRUE)
 void CFE_TIME_SetSignal(int16 NewSignal)
 {
     int32 IntFlags; 
@@ -982,7 +995,7 @@ void CFE_TIME_SetSignal(int16 NewSignal)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_CLIENT
+#if (CFE_TIME_CFG_CLIENT == TRUE)
 void CFE_TIME_SetDelay(CFE_TIME_SysTime_t NewDelay, int16 Direction)
 {
     int32 IntFlags;
@@ -1012,7 +1025,7 @@ void CFE_TIME_SetDelay(CFE_TIME_SysTime_t NewDelay, int16 Direction)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime)
 {
     int32 IntFlags; 
@@ -1037,7 +1050,7 @@ void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime)
     /*
     ** Restore leap seconds if default time format is UTC...
     */
-    #ifdef CFE_TIME_CFG_DEFAULT_UTC
+    #if (CFE_TIME_CFG_DEFAULT_UTC == TRUE)
     NewSTCF.Seconds += Reference.AtToneLeaps;
     #endif
 
@@ -1071,7 +1084,7 @@ void CFE_TIME_SetTime(CFE_TIME_SysTime_t NewTime)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET)
 {
     int32 IntFlags;
@@ -1090,7 +1103,7 @@ void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET)
     /*
     ** Update h/w MET register...
     */
-    #ifndef CFE_TIME_CFG_VIRTUAL
+    #if (CFE_TIME_CFG_VIRTUAL != TRUE)
     OS_SetLocalMET(NewMET.Seconds);
     #endif
 
@@ -1112,7 +1125,7 @@ void CFE_TIME_SetMET(CFE_TIME_SysTime_t NewMET)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetSTCF(CFE_TIME_SysTime_t NewSTCF)
 {
     int32 IntFlags;
@@ -1141,7 +1154,7 @@ void CFE_TIME_SetSTCF(CFE_TIME_SysTime_t NewSTCF)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetLeaps(int16 NewLeaps)
 {
     int32 IntFlags;
@@ -1170,7 +1183,7 @@ void CFE_TIME_SetLeaps(int16 NewLeaps)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_SetAdjust(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 {
     int32 IntFlags;
@@ -1213,7 +1226,7 @@ void CFE_TIME_SetAdjust(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifdef CFE_TIME_CFG_SERVER
+#if (CFE_TIME_CFG_SERVER == TRUE)
 void CFE_TIME_Set1HzAdj(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 {
     int32 IntFlags;
@@ -1248,7 +1261,6 @@ void CFE_TIME_Set1HzAdj(CFE_TIME_SysTime_t NewAdjust, int16 Direction)
 
 int32 CFE_TIME_CleanUpApp(uint32 AppId)
 {
-    int32  Status = CFE_SUCCESS;
     uint32 i = 0;
     
     while (i<CFE_TIME_MAX_NUM_SYNCH_FUNCS)
@@ -1262,7 +1274,7 @@ int32 CFE_TIME_CleanUpApp(uint32 AppId)
         i++;
     }
     
-    return Status;
+    return CFE_SUCCESS;
 }
 
 /************************/

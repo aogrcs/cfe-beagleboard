@@ -18,6 +18,8 @@
 ** Author:  A. Cudmore/NASA GSFC 
 **
 ** $Log: cfe_fs_priv.h  $
+** Revision 1.4 2012/01/13 12:11:29GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.3 2010/10/04 17:07:14EDT jmdagost 
 ** Cleaned up copyright symbol.
 ** Revision 1.2 2008/07/08 15:40:41EDT apcudmore 
@@ -62,9 +64,11 @@ typedef struct
 ** FS Function Prototypes
 */
 
-int32  CFE_FS_EarlyInit(void);
-void   CFE_FS_LockSharedData(const char *FunctionName );
-void   CFE_FS_UnlockSharedData(const char *FunctionName );
+extern void CFE_FS_LockSharedData(const char *FunctionName );
+extern void CFE_FS_UnlockSharedData(const char *FunctionName );
+extern void CFE_FS_ByteSwapCFEHeader(CFE_FS_Header_t *Hdr);
+extern void CFE_FS_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
+
 
 #endif /* _cfe_fs_priv_ */
 /*****************************************************************************/

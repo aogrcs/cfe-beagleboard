@@ -16,121 +16,100 @@ local logging = %liv (log_procedure)
 
 %liv (log_procedure) = logging
 
-local hostname = %liv(LOCALHOST) ; get hostname from ASIST STOL local internal variable
+write "*** Sending INFO message for CFE_EVS."
+ut_setupevents $SC, $CPU, CFE_EVS, CFE_EVS_NOOP_EID, INFO, 1
 
-; strip off 'gpm-' from rainman hostname
-if (%locate(hostname,"-") <> 0) then
-  hostname = %substring(hostname,%locate(hostname,"-")+1,%length(hostname))
-  hostname = %upper(hostname)
-endif
-
-
-write
-write "     Sending INFO message for CFE_EVS."
-ut_setupevt $SC, $CPU, CFE_EVS, CFE_EVS_NOOP_EID, INFO
-wait 5
 /$SC_$CPU_EVS_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-   write "     Event Message: ", $SC_$CPU_find_event[1].event_txt 
-ELSE
-   write "     Event Message NOT generated."
-ENDIF
-write
-
-write "     Sending INFO message for CFE_SB."
-ut_setupevt $SC, $CPU, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO
 wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
+
+write "*** Sending INFO message for CFE_SB."
+ut_setupevents $SC, $CPU, CFE_SB, CFE_SB_CMD0_RCVD_EID, INFO, 1
+
 /$SC_$CPU_SB_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-   write "     Event Message: ", $SC_$CPU_find_event[1].event_txt
- 
+wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
 ELSE
-   write "     Event Message NOT generated."
+  write "Event Message NOT generated."
 ENDIF
 
-write ""
+write "*** Sending INFO message for CFE_ES."
+ut_setupevents $SC, $CPU, CFE_ES, CFE_ES_NOOP_INF_EID, INFO, 1
 
-write "     Sending INFO message for CFE_ES."
-ut_setupevt $SC, $CPU, CFE_ES, CFE_ES_NOOP_INF_EID, INFO
-wait 5
 /$SC_$CPU_ES_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-   write "     Event Message: ", $SC_$CPU_find_event[1].event_txt
-ELSE
-   write "     Event Message NOT generated."
-ENDIF
-write
-;
-write "     Sending INFO message for CFE_TIME."
-ut_setupevt $SC, $CPU, CFE_TIME, CFE_TIME_NOOP_EID, INFO
 wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
+ 
+write "*** Sending INFO message for CFE_TIME."
+ut_setupevents $SC, $CPU, CFE_TIME, CFE_TIME_NOOP_EID, INFO, 1
+
 /$SC_$CPU_TIME_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-   write "     Event Message: ", $SC_$CPU_find_event[1].event_txt
-ELSE
-   write "     Event Message NOT generated."
-ENDIF
-write
-
-write "     Sending INFO message for CFE_TBL."
-ut_setupevt $SC, $CPU, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO
 wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
+
+write "*** Sending INFO message for CFE_TBL."
+ut_setupevents $SC, $CPU, CFE_TBL, CFE_TBL_NOOP_INF_EID, INFO, 1
+
 /$SC_$CPU_TBL_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-   write "     Event Message: ", $SC_$CPU_find_event[1].event_txt 
-ELSE
-   write "     Event Message NOT generated."
-ENDIF
-write
-write "     Sending INFO message for CI_APP."
-ut_setupevt $SC, $CPU, CI_LAB_APP, 5, INFO
 wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
+
+write "*** Sending INFO message for CI_APP."
+ut_setupevents $SC, $CPU, CI_LAB_APP, 5, INFO, 1
+
 /$SC_$CPU_CI_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-   write "     Event Message: ", $SC_$CPU_find_event[1].event_txt 
-ELSE
-   write "     Event Message NOT generated."
-ENDIF
-write
-
-write "     Sending INFO message for TO_APP."
-ut_setupevt $SC, $CPU, TO_LAB_APP, 18, INFO
 wait 5
- /$SC_$CPU_TO_NOOP
-wait 7
-write
-IF ($SC_$CPU_num_found_messages = 1) THEN
-  write "     Event Message: ", $SC_$CPU_find_event[1].event_txt 
-ELSE
-  write "     Event Message NOT generated."
-ENDIF
-write
 
-write "     Sending INFO message for TST_EVS."
-ut_setupevt $SC, $CPU, TST_EVS, 17, INFO
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
+
+write "*** Sending INFO message for TO_APP."
+ut_setupevents $SC, $CPU, TO_LAB_APP, 18, INFO, 1
+
+/$SC_$CPU_TO_NOOP
 wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
+
+write "*** Sending INFO message for TST_EVS."
+ut_setupevents $SC, $CPU, TST_EVS, 17, INFO, 1
+
 /$SC_$CPU_TST_EVS_NOOP
-wait 7
-write
-
-IF ($SC_$CPU_num_found_messages = 1) THEN
-  write "     Event Message: ", $SC_$CPU_find_event[1].event_txt 
-ELSE
-  write "     Event Message NOT generated."
-ENDIF
-write ""
 wait 5
+
+IF ($SC_$CPU_find_event[1].num_found_messages = 1) THEN
+  write "Event Message generated."
+ELSE
+  write "Event Message NOT generated."
+ENDIF
 
 endproc

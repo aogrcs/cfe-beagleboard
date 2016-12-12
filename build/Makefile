@@ -4,53 +4,52 @@
 # Purpose:
 #   Main makefile for Mission build and all apps
 #
-# History:
+# $Id: Makefile 1.5 2014/06/27 15:44:43GMT-05:00 rmcgraw Exp  $
+#
+# $Log: Makefile  $
+# Revision 1.5 2014/06/27 15:44:43GMT-05:00 rmcgraw 
+# DCR22713:1 Removed extra tabs and inserted history log
 #
 ###############################################################################
 ##
 ## Top Level rules:
 ## If you want to build the testapps every time, just add the testapps targets
-## to the primary targets below ( or uncomment the testapps versions ) 
-## 
+## to the primary targets below ( or uncomment the testapps versions )
+##
 export MISSIONNAME:=Mission
 
 ##############################################################################
 ## Build rules
 
+## Note: if you add "cpuN" directories, you can simplify your
+## build procedure by adding appropriate "make -C" lines
+## in this file.
+
 all ::
-	$(MAKE) -C pc-linux all
-#	$(MAKE) -C mcp750-vxworks6 all
-	
+	$(MAKE) -C cpu1 all
+
 clean ::
-	$(MAKE) -C pc-linux clean
-#	$(MAKE) -C mcp750-vxworks6 clean
+	$(MAKE) -C cpu1 clean
 
 install ::
-	$(MAKE) -C pc-linux install
-#	$(MAKE) -C mcp750-vxworks6 install
-	
+	$(MAKE) -C cpu1 install
+
 depend ::
-	$(MAKE) -C pc-linux depend
-#	$(MAKE) -C mcp750-vxworks6 depend
-		
+	$(MAKE) -C cpu1 depend
+
 #-------------------------------------------------------------------------------
-# Doxygen rules 
+# Doxygen rules
 
 
-usersguide :: 
-	$(MAKE) -C pc-linux  usersguide
-#	$(MAKE) -C mcp750-vxworks6  usersguide
+usersguide ::
+	$(MAKE) -C cpu1  usersguide
 
-detaileddocs :: 
-	$(MAKE) -C pc-linux  detaileddocs
-#	$(MAKE) -C mcp750-vxworks6  detaileddocs
+detaileddocs ::
+	$(MAKE) -C cpu1  detaileddocs
 
 installdocs ::
-	$(MAKE) -C pc-linux  installdocs
-#	$(MAKE) -C mcp750-vxworks6  installdocs
+	$(MAKE) -C cpu1  installdocs
 
 cleandocs ::
-	$(MAKE) -C pc-linux cleandocs
-#	$(MAKE) -C mcp750-vxworks6  cleandocs
-	  
+	$(MAKE) -C cpu1  cleandocs
 

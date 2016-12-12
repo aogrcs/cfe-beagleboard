@@ -1,5 +1,5 @@
 /*
-** $Id: cfe_tbl_task.h 1.7 2010/10/27 17:53:37EDT dkobe Exp  $
+** $Id: cfe_tbl_task.h 1.8 2012/01/13 12:17:41GMT-05:00 acudmore Exp  $
 **
 **      Copyright (c) 2004-2012, United States government as represented by the 
 **      administrator of the National Aeronautics Space Administration.  
@@ -17,6 +17,8 @@
 ** Notes:
 **
 ** $Log: cfe_tbl_task.h  $
+** Revision 1.8 2012/01/13 12:17:41GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.7 2010/10/27 17:53:37EDT dkobe 
 ** Added TableLoadedOnce flag to Critical Table Registry
 ** Revision 1.6 2010/10/27 16:37:16EDT dkobe 
@@ -53,7 +55,7 @@
 /*
 ** Required header files
 */
-#include "cfe.h"
+#include "private/cfe_private.h"
 #include "cfe_tbl_events.h"
 #include "cfe_tbl_msg.h"
 
@@ -357,6 +359,60 @@ typedef struct
 
 
 /*************************************************************************/
+/*
+ * Functions
+ */
+
+/*****************************************************************************/
+/**
+** \brief cFE Table Services Core Application Initialization
+**
+** \par Description
+**        This function initializes all data associated with the cFE Table
+**        Services Core Application.  It is only called when the Application
+**        is first started.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \return #CFE_SUCCESS  \copydoc CFE_SUCCESS
+** \return Any of the return values from #CFE_EVS_Register
+** \return Any of the return values from #CFE_SB_CreatePipe
+** \return Any of the return values from #CFE_SB_Subscribe
+** \return Any of the return values from #CFE_EVS_SendEvent
+******************************************************************************/
+int32 CFE_TBL_TaskInit(void);
+
+/*****************************************************************************/
+/**
+** \brief Processes command pipe messages
+**
+** \par Description
+**          Processes messages obtained from the command pipe.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \param[in] MessagePtr a pointer to the message received from the command pipe
+**
+** \retval None
+******************************************************************************/
+void  CFE_TBL_TaskPipe(CFE_SB_Msg_t *MessagePtr);
+
+/*****************************************************************************/
+/**
+** \brief Table Service Application Data Initialization
+**
+** \par Description
+**          Initializes all data necessary for the Table Service Application.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval None
+******************************************************************************/
+void  CFE_TBL_InitData(void);
+
 
 #endif /* _cfe_tbl_task_ */
 

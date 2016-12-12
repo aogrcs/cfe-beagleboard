@@ -1,7 +1,7 @@
 /*
 **  File: 
 **  cfe_es_task.h
-**  $Id: cfe_es_task.h 1.2 2009/07/28 16:40:58EDT jmdagost Exp  $
+**  $Id: cfe_es_task.h 1.3 2012/01/13 11:50:06GMT-05:00 acudmore Exp  $
 **
 **
 **
@@ -12,8 +12,6 @@
 **
 **      This is governed by the NASA Open Source Agreement and may be used, 
 **      distributed and modified only pursuant to the terms of that agreement.
-** 
-**
 **
 **  Purpose:
 **  cFE Executive Services (ES) task header file
@@ -26,6 +24,8 @@
 **
 **
 ** $Log: cfe_es_task.h  $
+** Revision 1.3 2012/01/13 11:50:06GMT-05:00 acudmore 
+** Changed license text to reflect open source
 ** Revision 1.2 2009/07/28 16:40:58EDT jmdagost 
 ** Deleted prototype for no-longer-used ComputeChecksum function.
 ** Revision 1.1 2008/04/17 08:05:10EDT ruperera 
@@ -148,6 +148,13 @@ typedef struct
 
 } CFE_ES_TaskData_t;
 
+/*
+** Executive Services (ES) task global data.
+*/
+extern CFE_ES_TaskData_t CFE_ES_TaskData;
+
+
+
 /*************************************************************************/
 
 /*
@@ -186,7 +193,7 @@ void CFE_ES_TlmPoolStatsCmd(CFE_SB_MsgPtr_t Msg);
 void CFE_ES_DumpCDSRegCmd( const CFE_SB_Msg_t *MessagePtr );
 boolean CFE_ES_ValidateHandle(CFE_ES_MemHandle_t  Handle);
 boolean CFE_ES_VerifyCmdLength(CFE_SB_MsgPtr_t msg, uint16 ExpectedLength);
-void CFE_ES_FileWriteByteCntErr(char *Filename,uint32 Requested,uint32 Actual);
+void CFE_ES_FileWriteByteCntErr(const char *Filename,uint32 Requested,uint32 Actual);
 
 /*************************************************************************/
 

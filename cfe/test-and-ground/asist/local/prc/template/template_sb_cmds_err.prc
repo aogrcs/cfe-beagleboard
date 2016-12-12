@@ -33,6 +33,7 @@ PROC $SC_$CPU_sb_cmds_err
 ;	04/27/05	Mike Tong	Original Procedure.
 ;	12/19/05	Walt Moleski	Mods for cFE 3.1
 ;	08/30/06	Walt Moleski	Updated for cFE 3.3 regression testing
+;	02/08/12	Walt Moleski	Replaced ut_setupevt with ut_setupevents
 ;
 ;  Arguments
 ;
@@ -43,15 +44,15 @@ PROC $SC_$CPU_sb_cmds_err
 ;
 ;	Name			Description
 ;       ut_tlmwait      Wait for a specified telemetry point to update to
-;                         a specified value. 
+;                       a specified value. 
 ;       ut_sendcmd      Send commands to the spacecraft. Verifies command
-;                         processed and command error counters.
+;                       processed and command error counters.
 ;       ut_sendrawcmd   Send raw commands to the spacecraft. Verifies command
-;                         processed and command error counters.
+;                       processed and command error counters.
 ;       ut_pfindicate   Print the pass fail status of a particular requirement
-;                         number.
-;       ut_setupevt     Performs setup to verify that a particular event
-;                         message was received by ASIST.
+;                       number.
+;       ut_setupevents  Performs setup to verify that a particular event
+;                       message was received by ASIST.
 ;
 ;  Expected Test Results and Analysis
 ;	This proc should run to completion with no unexpected errors.
@@ -90,9 +91,9 @@ LOCAL i
 LOCAL cmdSize
 
 write ";**********************************************************************"
-write ";  Step 1:  Send a command with an invalid command code of 7.          "
+write ";  Step 1:  Send a command with an invalid command code. "
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_BAD_CMD_CODE_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_BAD_CMD_CODE_EID, "ERROR", 1
 
 rawcmd = "18"&%hex($CPU_CMDAPID_BASE + SB_CMDAPID_OFF, 2)&"C0000001"    ; 6 bytes
 ;;rawcmd = rawcmd & "0700"    ; 2 bytes
@@ -102,7 +103,7 @@ Ut_sendrawcmd "$SC_$CPU_SB", {rawcmd}
 
 if (ut_rcs_status = UT_RCS_CmdFailure) then
 ;  Look for the event message
-   if ($SC_$CPU_num_found_messages > 0) then
+   if ($SC_$CPU_find_event[1].num_found_messages > 0) then
       Write "<*> Passed (4005) - Event Msg ",$SC_$CPU_find_event[1].eventid," rcv'd!!!" 
       ut_setrequirements SB_4005 "P"
    else
@@ -121,7 +122,7 @@ write ";  Step 2a:  Send a raw command with a too big packet size of           "
 write ";           CFE_SB_MAX_SB_MSG_SIZE bytes + 1 (= 32769 bytes).          "
 write ";  32769 bytes - 7 bytes =  32762 bytes = x'7FFA'                      "
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_MSG_TOO_BIG_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_MSG_TOO_BIG_EID, "ERROR", 1
 
 cmdSize = CFE_SB_MAX_SB_MSG_SIZE - 6
 write "Setting cmdSize to ", cmdSize
@@ -131,7 +132,7 @@ rawcmd = rawcmd & "05000000"    ; 4 bytes
 Ut_sendrawcmd "$SC_$CPU_SB", {rawcmd}
 
 ;  Look for the event message
-if ($SC_$CPU_num_found_messages > 0) then
+if ($SC_$CPU_find_event[1].num_found_messages > 0) then
    Write "<*> Passed (4305.6;4701) - Event Msg ",$SC_$CPU_find_event[1].eventid," rcv'd!!!" 
    ut_setrequirements SB_43056 "P"
    ut_setrequirements SB_4701 "P"
@@ -171,7 +172,7 @@ write ";**********************************************************************"
 write ";  Step 3:  Send a Disable Routing command with a bad MsgId=x'0FFF'.   "
 write ";  Important assumption:  TO_TLM_PIPE has a PipeId = 8.                "
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_DSBL_RTE1_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_DSBL_RTE1_EID, "ERROR", 1
 
 ;;Ut_sendcmd  "$SC_$CPU_SB_DisRoute MID=x'0FFF', PID=8"
 /$SC_$CPU_SB_DisRoute MID=x'0FFF', PID=8
@@ -179,7 +180,7 @@ wait 5
 
 ;  Look for the event message
 ;;if (ut_sc_status = UT_SC_CmdFailure) then
-   if ($SC_$CPU_num_found_messages > 0) then
+   if ($SC_$CPU_find_event[1].num_found_messages > 0) then
       Write "<*> Passed (4004;4005) - Event Msg ",$SC_$CPU_find_event[1].eventid," rcv'd!!!" 
       ut_setrequirements SB_4004 "P"
       ut_setrequirements SB_4005 "P"
@@ -199,13 +200,13 @@ wait wait_time
 write ";**********************************************************************"
 write ";  Step 4:  Send a Disable Routing command with a bad pipe ID=x'FE'.   "
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_DSBL_RTE3_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_DSBL_RTE3_EID, "ERROR", 1
 
 Ut_sendcmd  "$SC_$CPU_SB_DisRoute MID=x'0890', PID=x'FE'"
 
 if (ut_sc_status = UT_SC_CmdFailure) then
 ;  Look for the event message
-   if ($SC_$CPU_num_found_messages > 0) then
+   if ($SC_$CPU_find_event[1].num_found_messages > 0) then
       Write "<*> Passed (4004;4005) - Event Msg ",$SC_$CPU_find_event[1].eventid," rcv'd!!!" 
       ut_setrequirements SB_4004 "P"
       ut_setrequirements SB_4005 "P"
@@ -226,13 +227,13 @@ write ";**********************************************************************"
 write ";  Step 5:  Send a Enable Routing command with a bad MsgId=x'0FFF'.    "
 write ";  Important assumption:  TO_TLM_Pipe has a PipeId = 8.                "
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_ENBL_RTE1_EID, "ERROR" 
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_ENBL_RTE1_EID, "ERROR", 1 
 
 Ut_sendcmd  "$SC_$CPU_SB_EnaRoute MID=x'0FFF', PID=8"
 
 if (ut_sc_status = UT_SC_CmdFailure) then
 ;  Look for the event message
-   if ($SC_$CPU_num_found_messages > 0) then
+   if ($SC_$CPU_find_event[1].num_found_messages > 0) then
       Write "<*> Passed (4004;4005) - Event Msg ",$SC_$CPU_find_event[1].eventid," rcv'd!!!" 
       ut_setrequirements SB_4004 "P"
       ut_setrequirements SB_4005 "P"
@@ -252,13 +253,13 @@ wait wait_time
 write ";**********************************************************************"
 write ";  Step 6:  Send a Enable Routing command with a bad pipe ID=x'FE'.    "
 write ";**********************************************************************"
-ut_setupevt "$SC", "$CPU", "CFE_SB", CFE_SB_ENBL_RTE3_EID, "ERROR"
+ut_setupevents "$SC", "$CPU", "CFE_SB", CFE_SB_ENBL_RTE3_EID, "ERROR", 1
 
 Ut_sendcmd  "$SC_$CPU_SB_EnaRoute MID=x'0890', PID=x'FE'"
 
 if (ut_sc_status = UT_SC_CmdFailure) then
 ;  Look for the event message
-   if ($SC_$CPU_num_found_messages > 0) then
+   if ($SC_$CPU_find_event[1].num_found_messages > 0) then
       Write "<*> Passed (4004;4005) - Event Msg ",$SC_$CPU_find_event[1].eventid," rcv'd!!!" 
       ut_setrequirements SB_4004 "P"
       ut_setrequirements SB_4005 "P"
